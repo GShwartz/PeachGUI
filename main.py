@@ -1,11 +1,10 @@
-import subprocess
-import tkinter
-
 from PIL import Image, ImageTk
 from datetime import datetime
 from termcolor import colored
 from threading import Thread
 from colorama import init
+import subprocess
+import threading
 import os.path
 import socket
 import psutil
@@ -13,10 +12,12 @@ import time
 import sys
 
 # GUI
+import tkinter
 from tkinter import simpledialog
 from tkinter import messagebox
-from tkinter import *
+from PyQt5 import QtGui
 from tkinter import ttk
+from tkinter import *
 import tkinter as tk
 
 # Local Modules
@@ -35,6 +36,7 @@ class App(tk.Tk):
     connHistory = []
     ips = []
     targets = []
+    threads = []
 
     # Temp dict to hold connected station's ID# & IP
     temp = {}
@@ -45,6 +47,9 @@ class App(tk.Tk):
     serverIP = str(socket.gethostbyname(hostname))
     path = r'c:\Peach'
     log_path = fr'{path}\server_log.txt'
+
+    WIDTH = 1335
+    HEIGHT = 935
 
     def __init__(self):
         super().__init__()
@@ -64,9 +69,22 @@ class App(tk.Tk):
         listenerThread.start()
 
         # ======== GUI Config ===========
+        # Set Window Title
         self.title("Peach")
-        self.height = self.winfo_height()
-        self.width = self.winfo_width()
+
+        # Update screen geometry variables
+        self.update_idletasks()
+        self.width = self.winfo_screenwidth()
+        self.height = self.winfo_screenheight()
+
+        # Set Mid Screen Coordinates
+        x = (self.width / 2) - (self.WIDTH / 2)
+        y = (self.height / 2) - (self.HEIGHT / 2)
+
+        # Set Window Size & Location
+        self.geometry(f'{self.WIDTH}x{self.HEIGHT}+{int(x)}+{int(y)}')
+
+        # Set Closing protocol
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         # =-=-=-=-=-=-= FRAMES =-=-=-=-=-=-=-=
@@ -92,11 +110,11 @@ class App(tk.Tk):
         self.top_bar_label = LabelFrame(self.main_frame, text="Server Information", relief='solid')
         self.top_bar_label.grid(row=0, column=1, sticky='news')
 
-        # Main Frame Table space
+        # Table Frame in Main Frame
         self.main_frame_table = Frame(self.main_frame, relief='flat')
         self.main_frame_table.grid(row=1, column=1, sticky="news", pady=5)
 
-        # Controller Buttons LabelFrame
+        # Controller Buttons LabelFrame in Main Frame
         self.controller_btns = LabelFrame(self.main_frame, text="Controller", relief='solid', height=50)
         self.controller_btns.grid(row=2, column=0, columnspan=5, sticky="ews", pady=5)
 
@@ -108,11 +126,17 @@ class App(tk.Tk):
                                     command=lambda: self.refresh())
         self.refresh_bt.grid(row=0, sticky="nwes")
 
-        # Update Clients
+        # Update Clients Button
         self.btn_update_clients = tk.Button(self.sidebar_frame,
                                             text="Update Clients", width=15, pady=10,
                                             command="")
         self.btn_update_clients.grid(row=2, sticky="nwes")
+
+        # EXIT Button
+        self.btn_update_clients = tk.Button(self.sidebar_frame,
+                                            text="Exit", width=15, pady=10,
+                                            command=lambda: self.exit())
+        self.btn_update_clients.grid(row=3, sticky="nwes")
 
         # Create Connected Table inside Main Frame when show connected btn pressed
         self.table_frame = ttk.LabelFrame(self.main_frame_table, text="Connected Stations")
@@ -150,6 +174,14 @@ class App(tk.Tk):
         self.style.configure("Treeview", rowheight=20)
         self.style.map("Treeview")
 
+        # Details LabelFrame
+        self.details_labelFrame = LabelFrame(self.main_frame, height=500, text="Details", relief='ridge')
+        self.details_labelFrame.grid(row=3, sticky='news', columnspan=3)
+
+        # Status LabelFrame
+        self.status_labelFrame = LabelFrame(self.main_frame, height=35, text='Status', relief='solid', pady=5)
+        self.status_labelFrame.grid(row=4, column=1, sticky='news')
+
         self.server_information()
         self.show_available_connections()
 
@@ -165,7 +197,6 @@ class App(tk.Tk):
         self.server_information()
         self.show_available_connections()
 
-    # ======== GUI Section =========
     # Display Server Information Thread
     def dsi_thread(self):
         # Display Server Information
@@ -267,17 +298,37 @@ class App(tk.Tk):
                               f'from clients list...')
         extract()
 
-    # Close App Window
+    # Close App
     def on_closing(self, event=0):
         self.destroy()
 
-    # ======== Server Section =========
-    def reset(self) -> None:
-        self.__init__()
-        self.server = socket.socket()
-        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.server.bind((self.serverIp, self.serverPort))
-        self.server.listen()
+    # EXIT
+    def exit(self):
+        if len(app.targets) > 0:
+            try:
+                for t in app.targets:
+                    self.logIt_thread(self.log_path, msg=f'Sending exit command to connected stations...')
+                    t.send('exit'.encode())
+                    self.logIt_thread(self.log_path, msg=f'Send completed.')
+
+                    self.logIt_thread(self.log_path, msg=f'Closing socket connections...')
+                    t.close()
+                    self.logIt_thread(self.log_path, msg=f'Socket connections closed.')
+
+            except ConnectionResetError as e:
+                self.logIt_thread(self.log_path, debug=True, msg=f'Connection Error: {e}.')
+                print(f"[{colored('X', 'red')}]Connection Reset by client.")
+
+                self.logIt_thread(self.log_path, debug=True, msg=f'Exiting app with code 1...')
+                sys.exit(1)
+
+        # Terminate Background Threads
+        for thread in self.threads:
+            thread.join()
+
+        self.logIt_thread(self.log_path, msg=f'Exiting app with code 0...')
+        self.destroy()
+        sys.exit(0)
 
     def bytes_to_number(self, b: int) -> int:
         self.logIt_thread(self.log_path, msg=f'Running bytes_to_number({b})...')
@@ -318,6 +369,7 @@ class App(tk.Tk):
     def logIt_thread(self, log_path=None, debug=False, msg='') -> None:
         self.logit_thread = Thread(target=self.logIt, args=(log_path, debug, msg), name="Log Thread")
         self.logit_thread.start()
+        self.threads.append(self.logit_thread)
 
     def run(self) -> None:
         self.logIt_thread(self.log_path, msg=f'Running run()...')
@@ -944,7 +996,7 @@ class App(tk.Tk):
             self.logIt_thread(self.log_path, msg=f'Runtime Error: {e}.')
             return False
 
-    def selectItem(self, event):
+    def selectItem(self, event) -> bool:
         def make_buttons():
             # Screenshot Button
             self.screenshot_btn = Button(self.controller_btns, text="Screenshot", width=15, pady=5,
@@ -1014,7 +1066,7 @@ class App(tk.Tk):
                                 # Reset temp dict
                                 self.temp.clear()
 
-                                return
+                                return True
 
 
 def get_date() -> str:
