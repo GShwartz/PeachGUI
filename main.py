@@ -153,9 +153,14 @@ class App(tk.Tk):
         self.show_available_connections()
 
     # Refresh server info & connected stations table with vital signs
-    def refresh(self):
+    def refresh(self, sure=None):
         self.tmp_availables = []
-        self.vital_signs()
+        if sure:
+            self.vital_signs(sure=True)
+
+        else:
+            self.vital_signs()
+
         self.server_information()
         self.show_available_connections()
 
@@ -501,14 +506,8 @@ class App(tk.Tk):
             self.logIt_thread(self.log_path, msg=f'Iteration Error: {e}')
             return
 
-    def vital_signs(self) -> bool:
-        self.logIt_thread(self.log_path, msg=f'Running vital_signs()...')
-        if len(self.targets) == 0:
-            messagebox.showinfo("Refresh", "No Connected Stations.")
-            return
-
-        sure = messagebox.askquestion("Start Vitals Check", "This will start the vitals check. Are you sure?")
-        if sure:
+    def vital_signs(self, sure=None) -> bool:
+        def execute():
             callback = 'yes'
             i = 0
 
@@ -555,56 +554,26 @@ class App(tk.Tk):
                                     if ipKey == self.ips[i]:
                                         self.remove_lost_connection(conKey, ipKey)
 
-                    self.refresh()
-
             self.logIt_thread(self.log_path, msg=f'=== End of vital_signs() ===')
             print(f"\n[{colored('*', 'green')}]Vital Signs Process completed.\n")
+
+        self.logIt_thread(self.log_path, msg=f'Running vital_signs()...')
+        if len(self.targets) == 0:
+            messagebox.showinfo("Refresh", "No Connected Stations.")
+            return
+
+        if sure is not None:
+            execute()
+            return True
+
+        sure = messagebox.askquestion("Start Vitals Check", "This will start the vitals check. Are you sure?")
+        if sure:
+            execute()
+            return True
 
         else:
             self.logIt_thread(self.log_path, msg=f'Closing vital_signs()...')
             return False
-
-    def show_shell_commands(self, ip: str) -> None:
-        self.logIt_thread(self.log_path, msg=f'Running show_shell_commands()...')
-        self.logIt_thread(self.log_path, msg=f'Displaying headline...')
-        print("\t\t" + f"{colored('=', 'blue')}" * 20, f"=> {colored('REMOTE CONTROL', 'red')} <=",
-              f"{colored('=', 'blue')}" * 20)
-
-        self.logIt_thread(self.log_path, msg=f'Displaying Station IP | Station Name | Logged User in headline...')
-        for conKey, ipValue in self.clients.items():
-            for ipKey, userValue in ipValue.items():
-                if ipKey == ip:
-                    for item in self.tmp_availables:
-                        if item[1] == ip:
-                            for identKey, timeValue in userValue.items():
-                                loggedUser = item[3]
-                                clientVersion = item[4]
-                                print("\t" + f"IP: {colored(f'{ipKey}', 'green')} | "
-                                             f"Station Name: {colored(f'{identKey}', 'green')} | "
-                                             f"Logged User: {colored(f'{loggedUser}', 'green')} | "
-                                             f"Client Version: {colored(clientVersion, 'green')}")
-
-        print("\t\t" + f"{colored('=', 'yellow')}" * 62 + "\n")
-
-        self.logIt_thread(self.log_path, msg=f'Displaying shell commands menu...')
-        print(f"\t\t[{colored('1', 'cyan')}]Screenshot          \t\t---------------> "
-              f"Capture screenshot.")
-        print(f"\t\t[{colored('2', 'cyan')}]System Info         \t\t---------------> "
-              f"Show Station's System Information")
-        print(f"\t\t[{colored('3', 'cyan')}]Last Restart Time   \t\t---------------> "
-              f"Show remote station's last restart time")
-        print(f"\t\t[{colored('4', 'cyan')}]Anydesk             \t\t---------------> "
-              f"Start Anydesk")
-        print(f"\t\t[{colored('5', 'cyan')}]Tasks               \t\t---------------> "
-              f"Show remote station's running tasks")
-        print(f"\t\t[{colored('6', 'cyan')}]Restart             \t\t---------------> "
-              f"Restart remote station")
-        print(f"\t\t[{colored('7', 'cyan')}]CLS                 \t\t---------------> "
-              f"Clear Screen")
-        print(f"\n\t\t[{colored('8', 'red')}]Back                \t\t---------------> "
-              f"Back to Control Center \n")
-
-        self.logIt_thread(self.log_path, msg=f'=== End of show_shell_commands() ===')
 
     def restart(self, con: str, ip: str, sname: str) -> bool:
         # Display MessageBox on screen
@@ -614,6 +583,7 @@ class App(tk.Tk):
                 self.logIt_thread(self.log_path, msg=f'Sending restart command to client...')
                 con.send('restart'.encode())
                 self.remove_lost_connection(con, ip)
+                self.refresh(sure=True)
                 return True
 
             except (RuntimeError, WindowsError, socket.error) as e:
