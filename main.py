@@ -1,3 +1,4 @@
+import subprocess
 import tkinter
 
 from PIL import Image, ImageTk
@@ -201,7 +202,7 @@ class App(tk.Tk):
     def show_available_connections(self) -> None:
         if len(self.ips) == 0 and len(self.targets) == 0:
             self.logIt_thread(self.log_path, msg=f'No connected Stations')
-            print(f"[{colored('*', 'cyan')}]No connected stations.\n")
+            # print(f"[{colored('*', 'cyan')}]No connected stations.\n")
 
         self.logIt_thread(self.log_path, msg=f'Running show_available_connections()...')
 
@@ -239,12 +240,12 @@ class App(tk.Tk):
                                 self.table.insert('', 'end', values=(session, stationMAC, stationIP,
                                                                      stationName, loggedUser, clientVersion))
 
-                                print(f"Session [{colored(f'{session}', 'cyan')}] | "
-                                      f"Station MAC: {colored(f'{stationMAC}', 'green')} | "
-                                      f"Station IP: {colored(f'{stationIP}', 'green')} | "
-                                      f"Station Name: {colored(f'{stationName}', 'green')} | "
-                                      f"Logged User: {colored(f'{loggedUser}', 'green')} | "
-                                      f"Client Version: {colored(clientVersion, 'green')}")
+                                # print(f"Session [{colored(f'{session}', 'cyan')}] | "
+                                #       f"Station MAC: {colored(f'{stationMAC}', 'green')} | "
+                                #       f"Station IP: {colored(f'{stationIP}', 'green')} | "
+                                #       f"Station Name: {colored(f'{stationName}', 'green')} | "
+                                #       f"Logged User: {colored(f'{loggedUser}', 'green')} | "
+                                #       f"Client Version: {colored(clientVersion, 'green')}")
 
             self.logIt_thread(self.log_path, msg=f'Extraction completed.')
 
@@ -255,8 +256,8 @@ class App(tk.Tk):
         # Clear previous entries in GUI table
         self.table.delete(*self.table.get_children())
 
-        print(f"[{colored('*', 'cyan')}] {colored('Available Connections', 'green')} [{colored('*', 'cyan')}]")
-        print(f"{colored('=', 'yellow') * 29}")
+        # print(f"[{colored('*', 'cyan')}] {colored('Available Connections', 'green')} [{colored('*', 'cyan')}]")
+        # print(f"{colored('=', 'yellow') * 29}")
 
         self.logIt_thread(self.log_path, msg=f'Creating available list...')
         make_tmp()
@@ -805,6 +806,9 @@ class App(tk.Tk):
             con.send('n'.encode())
             return
 
+    def browse_local_files(self, sname: str):
+        return subprocess.Popen(rf"explorer {self.path}\{sname}")
+
     def shell(self, con: str, ip: str) -> None:
         self.logIt_thread(self.log_path, msg=f'Running shell({con}, {ip})...')
         errCount = 0
@@ -977,6 +981,12 @@ class App(tk.Tk):
                                       command=lambda: self.restart(clientConn, ip, sname))
 
             self.anydesk_btn.grid(row=0, column=5, sticky="w", pady=5, padx=2, ipadx=2)
+
+            # Browse Local Files Button
+            self.anydesk_btn = Button(self.controller_btns, text="Local Files", width=15, pady=5,
+                                      command=lambda: self.browse_local_files(sname))
+
+            self.anydesk_btn.grid(row=0, column=6, sticky="w", pady=5, padx=2, ipadx=2)
 
         rowid = self.table.identify_row(event.y)
         row = self.table.item(rowid)['values']
