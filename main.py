@@ -12,6 +12,7 @@ import time
 import sys
 
 # GUI
+from tkinter import simpledialog
 from tkinter import messagebox
 from tkinter import *
 from tkinter import ttk
@@ -508,7 +509,6 @@ class App(tk.Tk):
 
         sure = messagebox.askquestion("Start Vitals Check", "This will start the vitals check. Are you sure?")
         if sure:
-            temp = self.clients
             callback = 'yes'
             i = 0
 
@@ -553,8 +553,9 @@ class App(tk.Tk):
                             for macKey, ipVal in macValue.items():
                                 for ipKey, identValue in ipVal.items():
                                     if ipKey == self.ips[i]:
-                                        print(ipKey)
                                         self.remove_lost_connection(conKey, ipKey)
+
+                    self.refresh()
 
             self.logIt_thread(self.log_path, msg=f'=== End of vital_signs() ===')
             print(f"\n[{colored('*', 'green')}]Vital Signs Process completed.\n")
@@ -654,7 +655,7 @@ class App(tk.Tk):
                 self.logIt_thread(self.log_path, debug=True, msg=f'Runtime Error: {e}.')
                 return False
 
-    def anydesk(self, con: str, ip: str) -> bool:
+    def anydesk(self, con: str, ip: str, sname: str) -> bool:
         self.logIt_thread(self.log_path, msg=f'Running anydesk({con}, {ip})...')
         try:
             self.logIt_thread(self.log_path, msg=f'Sending anydesk command to {con}...')
@@ -668,42 +669,37 @@ class App(tk.Tk):
             if "OK" not in msg:
                 self.logIt_thread(self.log_path, msg=f'Printing msg from client...')
                 print(msg)
-                while True:
-                    try:
-                        install_anydesk = messagebox.askquestion("Install Anydesk",
-                                                                 "Anydesk isn't installed on the remote machine. do you with to install?")
-                        # install_input = str(input("Install Anydesk [Y/n]? "))
+                install_anydesk = messagebox.askyesno("Install Anydesk",
+                                                      "Anydesk isn't installed on the remote machine. do you with to install?")
 
-                    except ValueError:
-                        print(f"[{colored('!', 'red')}]Wrong input.")
-                        continue
+                if install_anydesk:
+                    print("Installing anydesk...")
+                    self.logIt_thread(self.log_path, msg=f'Sending install command to {con}...')
+                    con.send('y'.encode())
+                    self.logIt_thread(self.log_path, msg=f'Send Completed.')
 
-                    if install_anydesk:
-                        print("Installing anydesk...")
-                        self.logIt_thread(self.log_path, msg=f'Sending install command to {con}...')
-                        con.send('y'.encode())
-                        self.logIt_thread(self.log_path, msg=f'Send Completed.')
+                    while True:
+                        self.logIt_thread(self.log_path, msg=f'Waiting for response from client...')
+                        msg = con.recv(1024).decode()
+                        self.logIt_thread(self.log_path, msg=f'Client response: {msg}.')
 
-                        while True:
-                            self.logIt_thread(self.log_path, msg=f'Waiting for response from client...')
-                            msg = con.recv(1024).decode()
-                            self.logIt_thread(self.log_path, msg=f'Client response: {msg}.')
+                        if "OK" not in str(msg):
+                            print(msg)
+                            continue
 
-                            if "OK" not in str(msg):
-                                print(msg)
-                                continue
+                        else:
+                            print(msg)
+                            return
 
-                            else:
-                                print(msg)
-                                return False
+                else:
+                    self.logIt_thread(self.log_path, msg=f'Sending cancel command to {con}...')
+                    con.send('n'.encode())
+                    self.logIt_thread(self.log_path, msg=f'Send Completed.')
+                    return
 
-                        return True
-
-                    else:
-                        self.logIt_thread(self.log_path, msg=f'Sending cancel command to {con}...')
-                        con.send('n'.encode())
-                        self.logIt_thread(self.log_path, msg=f'Send Completed.')
-                        break
+            else:
+                msgBox = messagebox.showinfo(f"From {ip} | {sname}", f"Anydesk Running.\t\t\t\t")
+                return
 
         except (WindowsError, ConnectionError, socket.error) as e:
             self.logIt_thread(self.log_path, msg=f'Connection Error: {e}.')
@@ -762,12 +758,89 @@ class App(tk.Tk):
             except RuntimeError:
                 return
 
+    def tasks(self, con: str, ip: str, sname: str):
+        if len(self.targets) == 0:
+            self.logIt_thread(self.log_path, debug=False, msg=f'No available connections.')
+            print(f"[{colored('*', 'red')}]No connected stations.")
+            return False
+
+        self.logIt_thread(self.log_path, debug=False, msg=f'Initializing Module: tasks...')
+        tsks = tasks.Tasks(con, ip, self.clients, self.connections,
+                           self.targets, self.ips, self.tmp_availables, self.path, self.log_path)
+
+        self.logIt_thread(self.log_path, debug=False, msg=f'Calling tasks.tasks()...')
+        if not tsks.tasks(ip):
+            con.send('n'.encode())
+            return False
+
+        killTask = messagebox.askyesno(f"Tasks from {ip} | {sname}", "Kill Task?\t\t\t\t")
+        if killTask:
+            try:
+                task_to_kill = simpledialog.askstring(title='Task To Kill', prompt="Task to kill\t\t\t\t")
+                if task_to_kill is None:
+                    con.send('n'.encode())
+                    return False
+
+                if len(task_to_kill) < 1:
+                    con.send('n'.encode())
+                    return False
+
+                if not str(task_to_kill).endswith('exe'):
+                    return False
+
+                confirmKill = messagebox.askyesno(f'Kill task: {task_to_kill} on {sname}',
+                                                  f'Are you sure you want to kill {task_to_kill}?')
+
+                if confirmKill:
+                    try:
+                        self.logIt_thread(self.log_path, msg=f'Sending kill command to {ip}.')
+                        con.send('kill'.encode())
+                        self.logIt_thread(self.log_path, msg=f'Send complete.')
+
+                        self.logIt_thread(self.log_path, msg=f'Sending task name to {ip}...')
+                        con.send(task_to_kill.encode())
+                        self.logIt_thread(self.log_path, msg=f'Send complete.')
+
+                        self.logIt_thread(self.log_path, msg=f'Waiting for confirmation from {ip}...')
+                        msg = con.recv(1024).decode()
+                        self.logIt_thread(self.log_path, msg=f'{ip}: {msg}')
+                        print(f"[{colored('*', 'green')}]{msg}\n")
+
+                        messagebox.showinfo(f'Kill {task_to_kill}', f'Task {task_to_kill} killed.')
+
+                        return
+
+                    except (WindowsError, socket.error) as e:
+                        self.logIt_thread(self.log_path, msg=f'Error: {e}.')
+                        print(f"[{colored('!', 'red')}]Client lost connection.")
+                        self.remove_lost_connection(con, ip)
+
+                else:
+                    self.logIt_thread(self.log_path, msg=f'Sending pass command to {ip}.')
+                    con.send('pass'.encode())
+                    self.logIt_thread(self.log_path, msg=f'Send complete.')
+                    return
+
+                return True
+
+            except (WindowsError, socket.error, ConnectionResetError, ConnectionError) as e:
+                print(f"[{colored('!', 'red')}]Client lost connection.")
+                try:
+                    self.remove_lost_connection(con, ip)
+
+                except RuntimeError as e:
+                    return False
+
+        else:
+            con.send('n'.encode())
+            return
+
     def shell(self, con: str, ip: str) -> None:
         self.logIt_thread(self.log_path, msg=f'Running shell({con}, {ip})...')
         errCount = 0
         while True:
             self.logIt_thread(self.log_path, msg=f'Calling self.show_shell_commands({ip})...')
-            self.show_shell_commands(ip)
+            # self.show_shell_commands(ip)
 
             # Wait for User Input
             self.logIt_thread(self.log_path, msg=f'Waiting for user input...')
@@ -823,7 +896,7 @@ class App(tk.Tk):
                     break
 
                 self.logIt_thread(self.log_path, debug=False, msg=f'Initializing Module: tasks...')
-                tsks = tasks.Tasks(con, ip, ttl, self.clients, self.connections,
+                tsks = tasks.Tasks(con, ip, self.clients, self.connections,
                                    self.targets, self.ips, self.tmp_availables, path, self.log_path)
 
                 self.logIt_thread(self.log_path, debug=False, msg=f'Calling tasks.tasks()...')
@@ -890,6 +963,7 @@ class App(tk.Tk):
                                           f"Removed from Availables list.\n")
 
             self.logIt_thread(self.log_path, msg=f'Connections removed.')
+
             return True
 
         except RuntimeError as e:
@@ -904,11 +978,11 @@ class App(tk.Tk):
 
             self.screenshot_btn.grid(row=0, sticky="w", pady=5, padx=2, ipadx=2)
 
-            # System Information Button
-            self.sysinfo_btn = Button(self.controller_btns, text="SysInfo", width=15, pady=5,
-                                      command=lambda: self.sysinfo(clientConn, ip))
+            # Anydesk Button
+            self.anydesk_btn = Button(self.controller_btns, text="Anydesk", width=15, pady=5,
+                                      command=lambda: self.anydesk(clientConn, ip, sname))
 
-            self.sysinfo_btn.grid(row=0, column=1, sticky="w", pady=5, padx=2, ipadx=2)
+            self.anydesk_btn.grid(row=0, column=1, sticky="w", pady=5, padx=2, ipadx=2)
 
             # Last Restart Button
             self.last_restart_btn = Button(self.controller_btns, text="Last Restart", width=15, pady=5,
@@ -916,17 +990,23 @@ class App(tk.Tk):
 
             self.last_restart_btn.grid(row=0, column=2, sticky="w", pady=5, padx=2, ipadx=2)
 
-            # Anydesk Button
-            self.anydesk_btn = Button(self.controller_btns, text="Anydesk", width=15, pady=5,
-                                      command=lambda: self.anydesk(clientConn, ip))
+            # System Information Button
+            self.sysinfo_btn = Button(self.controller_btns, text="SysInfo", width=15, pady=5,
+                                      command=lambda: self.sysinfo(clientConn, ip))
 
-            self.anydesk_btn.grid(row=0, column=3, sticky="w", pady=5, padx=2, ipadx=2)
+            self.sysinfo_btn.grid(row=0, column=3, sticky="w", pady=5, padx=2, ipadx=2)
+
+            # Tasks Button
+            self.tasks_btn = Button(self.controller_btns, text="Tasks", width=15, pady=5,
+                                    command=lambda: self.tasks(clientConn, ip, sname))
+
+            self.tasks_btn.grid(row=0, column=4, sticky="w", pady=5, padx=2, ipadx=2)
 
             # Restart Button
             self.anydesk_btn = Button(self.controller_btns, text="Restart", width=15, pady=5,
                                       command=lambda: self.restart(clientConn, ip, sname))
 
-            self.anydesk_btn.grid(row=0, column=4, sticky="w", pady=5, padx=2, ipadx=2)
+            self.anydesk_btn.grid(row=0, column=5, sticky="w", pady=5, padx=2, ipadx=2)
 
         rowid = self.table.identify_row(event.y)
         row = self.table.item(rowid)['values']
@@ -937,9 +1017,6 @@ class App(tk.Tk):
         except IndexError:
             pass
 
-        # finally:
-        #     print(self.temp)
-
         # Create a Controller Box with Buttons and connect to TreeView Table
         for id, ip in self.temp.items():
             for clientConn, clientValues in self.clients.items():
@@ -949,7 +1026,8 @@ class App(tk.Tk):
                             for sname in vals.keys():
                                 make_buttons()
 
-                                shellThread = Thread(target=self.shell, args=(clientConn, clientIP), name="Shell Thread")
+                                shellThread = Thread(target=self.shell, args=(clientConn, clientIP),
+                                                     name="Shell Thread")
                                 shellThread.daemon = True
                                 shellThread.start()
 
@@ -967,77 +1045,6 @@ def get_date() -> str:
 
 
 def main(ip: str, port: int) -> None:
-    def headline() -> None:
-        app.logIt_thread(log_path, debug=False, msg=f'Running headline()...')
-        app.logIt_thread(log_path, debug=False, msg=f'Displaying banner...')
-        print("\n\t\t▄███████▄    ▄████████    ▄████████  ▄████████    ▄█    █▄")
-        print("\t\t███    ███   ███    ███   ███    ███ ███    ███   ███    ███")
-        print("\t\t███    ███   ███    █▀    ███    ███ ███    █▀    ███    ███")
-        print("\t\t███    ███  ▄███▄▄▄       ███    ███ ███         ▄███▄▄▄▄███▄▄")
-        print("\t\t▀█████████▀  ▀▀███▀▀▀     ▀███████████ ███        ▀▀███▀▀▀▀███▀")
-        print("\t\t███          ███    █▄    ███    ███ ███    █▄    ███    ███")
-        print("\t\t███          ███    ███   ███    ███ ███    ███   ███    ███")
-        print("\t\t▄████▀        ██████████   ███    █▀  ████████▀    ███    █▀")
-        print(f""
-              f"\t\t{colored('|| By Gil Shwartz', 'green')} {colored('@2022 ||', 'yellow')}\n")
-
-        app.logIt_thread(log_path, debug=False, msg=f'Displaying options...')
-        print(f"\t\t({colored('1', 'yellow')})Remote Control          ---------------> "
-              f"Show Remote Commands")
-        print(f"\t\t({colored('2', 'yellow')})Connection History      ---------------> "
-              f"Show connection history.")
-        print(f"\t\t({colored('3', 'yellow')})Show Connected Stations ---------------> "
-              f"Display Current connected stations")
-        print(f"\t\t({colored('4', 'yellow')})CLS                     ---------------> "
-              f"Clear Local Screen")
-        print(f"\t\t({colored('5', 'yellow')})Server Info             ---------------> "
-              f"Show Server Information")
-        print(f"\t\t({colored('6', 'yellow')})Update clients          ---------------> "
-              f"Send an update command to connected clients")
-        print(f"\n\t\t({colored('7', 'red')})Exit                     ---------------> "
-              f"Close connections and exit program.\n")
-
-        app.logIt_thread(log_path, debug=False, msg=f'=== End of headline() ===')
-
-    def validate() -> str:
-        app.logIt_thread(log_path, msg=f'Waiting for user input...')
-        command = input("CONTROL@> ")
-        app.logIt_thread(log_path, msg=f'User input: {command}.')
-
-        try:
-            app.logIt_thread(log_path, msg=f'Performing input validation on {command}...')
-            int(command)
-
-            return command
-
-        except ValueError:
-            app.logIt_thread(log_path, msg=f'Wrong input detected.')
-            print(
-                f"[{colored('*', 'red')}]Numbers only. Choose between "
-                f"[{colored('1', 'yellow')} - {colored('7', 'yellow')}].\n")
-
-    def remote_shell() -> bool:
-        app.logIt_thread(log_path, msg=f'Running remote shell commands condition...')
-        if len(app.clients) != 0:
-            print(f"{colored('=', 'blue')}=>{colored('Remote Shell', 'red')}<={colored('=', 'blue')}")
-
-            # Show Available Connections
-            app.logIt_thread(log_path, msg=f'Calling server.show_available_connections()...')
-            app.show_available_connections()
-
-            # Get Number from User and start Remote Shell
-            app.logIt_thread(log_path, msg=f'Calling server.get_station_number()...')
-            station = app.get_station_number()
-            if station:
-                app.logIt_thread(log_path, msg=f'Calling server.shell({station[1]}, {station[2]})...')
-                if app.shell(station[1], station[2]):
-                    return True
-
-        else:
-            app.logIt_thread(log_path, msg=f'No available connections.')
-            print(f"[{colored('*', 'cyan')}]No available connections.")
-            return False
-
     def choices() -> None:
         app.logIt_thread(log_path, msg=f'Validating input number is in the menu...')
         if int(command) <= 0 or int(command) > 7:
@@ -1112,8 +1119,3 @@ def main(ip: str, port: int) -> None:
 if __name__ == '__main__':
     app = App()
     app.mainloop()
-
-    # COLORS
-    # root = tk.Tk()
-    # app = ColorChart(root)
-    # root.mainloop()
