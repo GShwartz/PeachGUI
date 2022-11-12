@@ -49,7 +49,7 @@ class App(tk.Tk):
     log_path = fr'{path}\server_log.txt'
 
     WIDTH = 1335
-    HEIGHT = 935
+    HEIGHT = 960
 
     def __init__(self):
         super().__init__()
@@ -179,7 +179,7 @@ class App(tk.Tk):
         self.details_labelFrame.grid(row=3, sticky='news', columnspan=3)
 
         # Status LabelFrame
-        self.status_labelFrame = LabelFrame(self.main_frame, height=35, text='Status', relief='solid', pady=5)
+        self.status_labelFrame = LabelFrame(self.main_frame, height=45, text='Status', relief='solid', pady=5)
         self.status_labelFrame.grid(row=4, column=1, sticky='news')
 
         self.server_information()
@@ -201,7 +201,7 @@ class App(tk.Tk):
     def dsi_thread(self):
         # Display Server Information
         infoThread = Thread(target=self.server_information, name="ServerInfo")
-        infoThread.daemon = True
+        # infoThread.daemon = True
         infoThread.start()
 
     # Display Server Information
@@ -226,7 +226,7 @@ class App(tk.Tk):
     def sac_thread(self):
         self.sacThread = Thread(target=self.show_available_connections,
                                 name="Show Available Connections Thread")
-        self.sacThread.daemon = True
+        # self.sacThread.daemon = True
         self.sacThread.start()
 
     # Show Available Connections
@@ -327,23 +327,25 @@ class App(tk.Tk):
             thread.join()
 
         self.logIt_thread(self.log_path, msg=f'Exiting app with code 0...')
-        self.destroy()
         sys.exit(0)
 
+    # ================ Utilities ================
     def bytes_to_number(self, b: int) -> int:
         self.logIt_thread(self.log_path, msg=f'Running bytes_to_number({b})...')
-        dt = get_date()
+        dt = self.get_date()
         res = 0
         for i in range(4):
             res += b[i] << (i * 8)
         return res
 
+    # Get current date & time
     def get_date(self) -> str:
         d = datetime.now().replace(microsecond=0)
         dt = str(d.strftime("%m/%d/%Y %H:%M:%S"))
 
         return dt
 
+    # Log Debugger
     def logIt(self, logfile=None, debug=None, msg='') -> bool:
         dt = self.get_date()
         if debug:
@@ -366,20 +368,23 @@ class App(tk.Tk):
             except FileExistsError:
                 pass
 
+    # Run log func in new Thread
     def logIt_thread(self, log_path=None, debug=False, msg='') -> None:
         self.logit_thread = Thread(target=self.logIt, args=(log_path, debug, msg), name="Log Thread")
         self.logit_thread.start()
         self.threads.append(self.logit_thread)
 
+    # Run Connect func in a new Thread
     def run(self) -> None:
         self.logIt_thread(self.log_path, msg=f'Running run()...')
         self.logIt_thread(self.log_path, msg=f'Calling connect() in new thread...')
-        self.connectThread = Thread(target=self.connect, daemon=True, name=f"Connect Thread")
+        self.connectThread = Thread(target=self.connect, name=f"Connect Thread")
         self.connectThread.start()
 
         self.logIt_thread(self.log_path, msg=f'Adding thread to threads list...')
         self.logIt_thread(self.log_path, msg=f'Thread added to threads list.')
 
+    # Listen for connections and sort new connections to designated lists/dicts
     def connect(self) -> None:
         def get_mac_address() -> str:
             self.logIt_thread(self.log_path, msg=f'Waiting for MAC address from {self.ip}...')
@@ -489,7 +494,7 @@ class App(tk.Tk):
 
             # Create a Dict of Connection, IP, Computer Name, Date & Time
             self.logIt_thread(self.log_path, msg=f'Fetching current date & time...')
-            dt = get_date()
+            dt = self.get_date()
             self.logIt_thread(self.log_path, msg=f'Creating a connection dict...')
             self.temp_connection_record = {self.conn: {self.ip: {self.ident: {self.user: dt}}}}
             self.logIt_thread(self.log_path, msg=f'Connection dict created: {self.temp_connection_record}')
@@ -503,6 +508,7 @@ class App(tk.Tk):
             if self.welcome_message():
                 continue
 
+    # Send welcome message to connected clients
     def welcome_message(self) -> bool:
         self.logIt_thread(self.log_path, msg=f'Running welcome_message()...')
 
@@ -559,10 +565,15 @@ class App(tk.Tk):
             self.logIt_thread(self.log_path, msg=f'Iteration Error: {e}')
             return
 
+    # Check if connected stations are still connected
     def vital_signs(self, sure=None) -> bool:
         def execute():
             callback = 'yes'
             i = 0
+
+            # Display Progress status in Status LabelFrame
+            runningLabel = Label(self.status_labelFrame, relief='flat', border=2, text="running vitals check...")
+            runningLabel.grid(row=0, column=0, sticky='news')
 
             self.logIt_thread(self.log_path, msg=f'Iterating Through Temp Connected Sockets List...')
             for t in self.targets:
@@ -610,6 +621,10 @@ class App(tk.Tk):
             self.logIt_thread(self.log_path, msg=f'=== End of vital_signs() ===')
             print(f"\n[{colored('*', 'green')}]Vital Signs Process completed.\n")
 
+            # Display Status message
+            runningLabel = Label(self.status_labelFrame, text="Vitals check completed.", background='white')
+            runningLabel.grid(row=0, sticky='news')
+
         self.logIt_thread(self.log_path, msg=f'Running vital_signs()...')
         if len(self.targets) == 0:
             messagebox.showinfo("Refresh", "No Connected Stations.")
@@ -628,6 +643,7 @@ class App(tk.Tk):
             self.logIt_thread(self.log_path, msg=f'Closing vital_signs()...')
             return False
 
+    # Restart Client
     def restart(self, con: str, ip: str, sname: str) -> bool:
         # Display MessageBox on screen
         self.sure = messagebox.askyesno(f"Restart for: {ip} | {sname}", f"Are you sure you want to restart {sname}?\t")
@@ -650,6 +666,7 @@ class App(tk.Tk):
         else:
             return False
 
+    # Display Clients Last Restart
     def last_restart(self, con: str, ip: str, sname: str) -> bool:
         try:
             self.logIt_thread(self.log_path, debug=False, msg=f'Sending lr command to client...')
@@ -660,8 +677,16 @@ class App(tk.Tk):
             msg = con.recv(4096).decode()
             self.logIt_thread(self.log_path, debug=False, msg=f'Client response: {msg}')
 
+            # Display Status Message
+            runningLabel = Label(self.status_labelFrame, relief='flat', border=2, text=f"Showing {sname}'s last restart...")
+            runningLabel.grid(row=0, column=0, sticky='news')
+
             # Display MessageBox on screen
             messagebox.showinfo(f"Last Restart for: {ip} | {sname}", f"\t{msg.split('|')[1][15:]}\t\t\t")
+
+            # Clear Status Message
+            runningLabel = Label(self.status_labelFrame, relief='flat', border=2, text="")
+            runningLabel.grid(row=0, column=0, sticky='news')
 
             return True
 
@@ -678,8 +703,14 @@ class App(tk.Tk):
                 self.logIt_thread(self.log_path, debug=True, msg=f'Runtime Error: {e}.')
                 return False
 
+    # Run Anydesk on Client
     def anydesk(self, con: str, ip: str, sname: str) -> bool:
         self.logIt_thread(self.log_path, msg=f'Running anydesk({con}, {ip})...')
+
+        # Clear Status Message
+        runningLabel = Label(self.status_labelFrame, relief='flat', border=2, text="")
+        runningLabel.grid(row=0, column=0, sticky='news')
+
         try:
             self.logIt_thread(self.log_path, msg=f'Sending anydesk command to {con}...')
             con.send('anydesk'.encode())
@@ -696,6 +727,10 @@ class App(tk.Tk):
                                                       "Anydesk isn't installed on the remote machine. do you with to install?")
 
                 if install_anydesk:
+                    # Display Status Message
+                    runningLabel = Label(self.status_labelFrame, relief='flat', text=f"Installing Anydesk on {sname}...")
+                    runningLabel.grid(row=0, column=0, sticky='news')
+
                     print("Installing anydesk...")
                     self.logIt_thread(self.log_path, msg=f'Sending install command to {con}...')
                     con.send('y'.encode())
@@ -705,12 +740,17 @@ class App(tk.Tk):
                         self.logIt_thread(self.log_path, msg=f'Waiting for response from client...')
                         msg = con.recv(1024).decode()
                         self.logIt_thread(self.log_path, msg=f'Client response: {msg}.')
+                        textVar = StringVar()
+                        textVar.set(msg)
 
                         if "OK" not in str(msg):
                             print(msg)
                             continue
 
                         else:
+                            # Display Status Message
+                            runningLabel = Label(self.status_labelFrame, relief='flat', textvariable=f"{textVar}")
+                            runningLabel.grid(row=0, column=0, sticky='news')
                             print(msg)
                             return
 
@@ -737,7 +777,12 @@ class App(tk.Tk):
                 self.logIt_thread(self.log_path, debug=True, msg=f'Runtime Error: {e}.')
                 return False
 
+    # Screenshot from Client
     def screenshot(self, con: str, ip: str) -> None:
+        # Disable Screenshot Button
+        self.screenshot_btn.config(state=DISABLED)
+        self.controller_btns.after(3000, lambda: self.screenshot_btn.config(state=NORMAL))
+
         try:
             print(f"[{colored('*', 'cyan')}]Fetching screenshot...")
             self.logIt_thread(self.log_path, msg=f'Sending screen command to client...')
@@ -760,6 +805,7 @@ class App(tk.Tk):
             self.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip}...)')
             self.remove_lost_connection(con, ip)
 
+    # Client System Information
     def sysinfo(self, con: str, ip: str):
         try:
             self.logIt_thread(self.log_path, msg=f'Initializing Module: sysinfo...')
@@ -781,6 +827,7 @@ class App(tk.Tk):
             except RuntimeError:
                 return
 
+    # Display/Kill Tasks on Client
     def tasks(self, con: str, ip: str, sname: str):
         if len(self.targets) == 0:
             self.logIt_thread(self.log_path, debug=False, msg=f'No available connections.')
@@ -858,12 +905,18 @@ class App(tk.Tk):
             con.send('n'.encode())
             return
 
+    # Browse local files by Clients Station Names
     def browse_local_files(self, sname: str):
         return subprocess.Popen(rf"explorer {self.path}\{sname}")
 
+    # Shell Connection to Client
     def shell(self, con: str, ip: str) -> None:
         self.logIt_thread(self.log_path, msg=f'Running shell({con}, {ip})...')
-        errCount = 0
+
+        # Display Status message
+        runningLabel = Label(self.status_labelFrame, relief='flat', border=1, text="")
+        runningLabel.grid(row=0, column=0, sticky='news')
+
         while True:
             self.logIt_thread(self.log_path, msg=f'Calling self.show_shell_commands({ip})...')
             # self.show_shell_commands(ip)
@@ -967,6 +1020,7 @@ class App(tk.Tk):
 
         self.logIt_thread(self.log_path, debug=False, msg=f'=== End of shell() ===')
 
+    # Remove Lost connections
     def remove_lost_connection(self, con: str, ip: str) -> bool:
         self.logIt_thread(self.log_path, msg=f'Running remove_lost_connection({con}, {ip})...')
         try:
@@ -996,12 +1050,12 @@ class App(tk.Tk):
             self.logIt_thread(self.log_path, msg=f'Runtime Error: {e}.')
             return False
 
+    # Manage Table & Controller LabelFrame Buttons
     def selectItem(self, event) -> bool:
         def make_buttons():
             # Screenshot Button
             self.screenshot_btn = Button(self.controller_btns, text="Screenshot", width=15, pady=5,
-                                         command=lambda: self.screenshot(clientConn, ip))
-
+                                         command=lambda: scThread())
             self.screenshot_btn.grid(row=0, sticky="w", pady=5, padx=2, ipadx=2)
 
             # Anydesk Button
@@ -1040,6 +1094,12 @@ class App(tk.Tk):
 
             self.anydesk_btn.grid(row=0, column=6, sticky="w", pady=5, padx=2, ipadx=2)
 
+        def scThread():
+            screenThread = Thread(target=self.screenshot,
+                                  args=(clientConn, clientIP),
+                                  name="Screenshot Thread")
+            screenThread.start()
+
         rowid = self.table.identify_row(event.y)
         row = self.table.item(rowid)['values']
         try:
@@ -1067,13 +1127,6 @@ class App(tk.Tk):
                                 self.temp.clear()
 
                                 return True
-
-
-def get_date() -> str:
-    d = datetime.now().replace(microsecond=0)
-    dt = str(d.strftime("%b %d %Y | %I-%M-%S"))
-
-    return dt
 
 
 def main(ip: str, port: int) -> None:
