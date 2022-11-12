@@ -12,6 +12,7 @@ import time
 import sys
 
 # GUI
+from tkinter import messagebox
 from tkinter import *
 from tkinter import ttk
 import tkinter as tk
@@ -24,104 +25,6 @@ from Modules import sysinfo
 from Modules import freestyle
 
 init()
-COLORS = ['snow', 'ghost white', 'white smoke', 'gainsboro', 'floral white', 'old lace',
-          'linen', 'antique white', 'papaya whip', 'blanched almond', 'bisque', 'peach puff',
-          'navajo white', 'lemon chiffon', 'mint cream', 'azure', 'alice blue', 'lavender',
-          'lavender blush', 'misty rose', 'dark slate gray', 'dim gray', 'slate gray',
-          'light slate gray', 'gray', 'light grey', 'midnight blue', 'navy', 'cornflower blue', 'dark slate blue',
-          'slate blue', 'medium slate blue', 'light slate blue', 'medium blue', 'royal blue', 'blue',
-          'dodger blue', 'deep sky blue', 'sky blue', 'light sky blue', 'steel blue', 'light steel blue',
-          'light blue', 'powder blue', 'pale turquoise', 'dark turquoise', 'medium turquoise', 'turquoise',
-          'cyan', 'light cyan', 'cadet blue', 'medium aquamarine', 'aquamarine', 'dark green', 'dark olive green',
-          'dark sea green', 'sea green', 'medium sea green', 'light sea green', 'pale green', 'spring green',
-          'lawn green', 'medium spring green', 'green yellow', 'lime green', 'yellow green',
-          'forest green', 'olive drab', 'dark khaki', 'khaki', 'pale goldenrod', 'light goldenrod yellow',
-          'light yellow', 'yellow', 'gold', 'light goldenrod', 'goldenrod', 'dark goldenrod', 'rosy brown',
-          'indian red', 'saddle brown', 'sandy brown',
-          'dark salmon', 'salmon', 'light salmon', 'orange', 'dark orange',
-          'coral', 'light coral', 'tomato', 'orange red', 'red', 'hot pink', 'deep pink', 'pink', 'light pink',
-          'pale violet red', 'maroon', 'medium violet red', 'violet red',
-          'medium orchid', 'dark orchid', 'dark violet', 'blue violet', 'purple', 'medium purple',
-          'thistle', 'snow2', 'snow3',
-          'snow4', 'seashell2', 'seashell3', 'seashell4', 'AntiqueWhite1', 'AntiqueWhite2',
-          'AntiqueWhite3', 'AntiqueWhite4', 'bisque2', 'bisque3', 'bisque4', 'PeachPuff2',
-          'PeachPuff3', 'PeachPuff4', 'NavajoWhite2', 'NavajoWhite3', 'NavajoWhite4',
-          'LemonChiffon2', 'LemonChiffon3', 'LemonChiffon4', 'cornsilk2', 'cornsilk3',
-          'cornsilk4', 'ivory2', 'ivory3', 'ivory4', 'honeydew2', 'honeydew3', 'honeydew4',
-          'LavenderBlush2', 'LavenderBlush3', 'LavenderBlush4', 'MistyRose2', 'MistyRose3',
-          'MistyRose4', 'azure2', 'azure3', 'azure4', 'SlateBlue1', 'SlateBlue2', 'SlateBlue3',
-          'SlateBlue4', 'RoyalBlue1', 'RoyalBlue2', 'RoyalBlue3', 'RoyalBlue4', 'blue2', 'blue4',
-          'DodgerBlue2', 'DodgerBlue3', 'DodgerBlue4', 'SteelBlue1', 'SteelBlue2',
-          'SteelBlue3', 'SteelBlue4', 'DeepSkyBlue2', 'DeepSkyBlue3', 'DeepSkyBlue4',
-          'SkyBlue1', 'SkyBlue2', 'SkyBlue3', 'SkyBlue4', 'LightSkyBlue1', 'LightSkyBlue2',
-          'LightSkyBlue3', 'LightSkyBlue4', 'SlateGray1', 'SlateGray2', 'SlateGray3',
-          'SlateGray4', 'LightSteelBlue1', 'LightSteelBlue2', 'LightSteelBlue3',
-          'LightSteelBlue4', 'LightBlue1', 'LightBlue2', 'LightBlue3', 'LightBlue4',
-          'LightCyan2', 'LightCyan3', 'LightCyan4', 'PaleTurquoise1', 'PaleTurquoise2',
-          'PaleTurquoise3', 'PaleTurquoise4', 'CadetBlue1', 'CadetBlue2', 'CadetBlue3',
-          'CadetBlue4', 'turquoise1', 'turquoise2', 'turquoise3', 'turquoise4', 'cyan2', 'cyan3',
-          'cyan4', 'DarkSlateGray1', 'DarkSlateGray2', 'DarkSlateGray3', 'DarkSlateGray4',
-          'aquamarine2', 'aquamarine4', 'DarkSeaGreen1', 'DarkSeaGreen2', 'DarkSeaGreen3',
-          'DarkSeaGreen4', 'SeaGreen1', 'SeaGreen2', 'SeaGreen3', 'PaleGreen1', 'PaleGreen2',
-          'PaleGreen3', 'PaleGreen4', 'SpringGreen2', 'SpringGreen3', 'SpringGreen4',
-          'green2', 'green3', 'green4', 'chartreuse2', 'chartreuse3', 'chartreuse4',
-          'OliveDrab1', 'OliveDrab2', 'OliveDrab4', 'DarkOliveGreen1', 'DarkOliveGreen2',
-          'DarkOliveGreen3', 'DarkOliveGreen4', 'khaki1', 'khaki2', 'khaki3', 'khaki4',
-          'LightGoldenrod1', 'LightGoldenrod2', 'LightGoldenrod3', 'LightGoldenrod4',
-          'LightYellow2', 'LightYellow3', 'LightYellow4', 'yellow2', 'yellow3', 'yellow4',
-          'gold2', 'gold3', 'gold4', 'goldenrod1', 'goldenrod2', 'goldenrod3', 'goldenrod4',
-          'DarkGoldenrod1', 'DarkGoldenrod2', 'DarkGoldenrod3', 'DarkGoldenrod4',
-          'RosyBrown1', 'RosyBrown2', 'RosyBrown3', 'RosyBrown4', 'IndianRed1', 'IndianRed2',
-          'IndianRed3', 'IndianRed4', 'sienna1', 'sienna2', 'sienna3', 'sienna4', 'burlywood1',
-          'burlywood2', 'burlywood3', 'burlywood4', 'wheat1', 'wheat2', 'wheat3', 'wheat4', 'tan1',
-          'tan2', 'tan4', 'chocolate1', 'chocolate2', 'chocolate3', 'firebrick1', 'firebrick2',
-          'firebrick3', 'firebrick4', 'brown1', 'brown2', 'brown3', 'brown4', 'salmon1', 'salmon2',
-          'salmon3', 'salmon4', 'LightSalmon2', 'LightSalmon3', 'LightSalmon4', 'orange2',
-          'orange3', 'orange4', 'DarkOrange1', 'DarkOrange2', 'DarkOrange3', 'DarkOrange4',
-          'coral1', 'coral2', 'coral3', 'coral4', 'tomato2', 'tomato3', 'tomato4', 'OrangeRed2',
-          'OrangeRed3', 'OrangeRed4', 'red2', 'red3', 'red4', 'DeepPink2', 'DeepPink3', 'DeepPink4',
-          'HotPink1', 'HotPink2', 'HotPink3', 'HotPink4', 'pink1', 'pink2', 'pink3', 'pink4',
-          'LightPink1', 'LightPink2', 'LightPink3', 'LightPink4', 'PaleVioletRed1',
-          'PaleVioletRed2', 'PaleVioletRed3', 'PaleVioletRed4', 'maroon1', 'maroon2',
-          'maroon3', 'maroon4', 'VioletRed1', 'VioletRed2', 'VioletRed3', 'VioletRed4',
-          'magenta2', 'magenta3', 'magenta4', 'orchid1', 'orchid2', 'orchid3', 'orchid4', 'plum1',
-          'plum2', 'plum3', 'plum4', 'MediumOrchid1', 'MediumOrchid2', 'MediumOrchid3',
-          'MediumOrchid4', 'DarkOrchid1', 'DarkOrchid2', 'DarkOrchid3', 'DarkOrchid4',
-          'purple1', 'purple2', 'purple3', 'purple4', 'MediumPurple1', 'MediumPurple2',
-          'MediumPurple3', 'MediumPurple4', 'thistle1', 'thistle2', 'thistle3', 'thistle4',
-          'gray1', 'gray2', 'gray3', 'gray4', 'gray5', 'gray6', 'gray7', 'gray8', 'gray9', 'gray10',
-          'gray11', 'gray12', 'gray13', 'gray14', 'gray15', 'gray16', 'gray17', 'gray18', 'gray19',
-          'gray20', 'gray21', 'gray22', 'gray23', 'gray24', 'gray25', 'gray26', 'gray27', 'gray28',
-          'gray29', 'gray30', 'gray31', 'gray32', 'gray33', 'gray34', 'gray35', 'gray36', 'gray37',
-          'gray38', 'gray39', 'gray40', 'gray42', 'gray43', 'gray44', 'gray45', 'gray46', 'gray47',
-          'gray48', 'gray49', 'gray50', 'gray51', 'gray52', 'gray53', 'gray54', 'gray55', 'gray56',
-          'gray57', 'gray58', 'gray59', 'gray60', 'gray61', 'gray62', 'gray63', 'gray64', 'gray65',
-          'gray66', 'gray67', 'gray68', 'gray69', 'gray70', 'gray71', 'gray72', 'gray73', 'gray74',
-          'gray75', 'gray76', 'gray77', 'gray78', 'gray79', 'gray80', 'gray81', 'gray82', 'gray83',
-          'gray84', 'gray85', 'gray86', 'gray87', 'gray88', 'gray89', 'gray90', 'gray91', 'gray92',
-          'gray93', 'gray94', 'gray95', 'gray97', 'gray98', 'gray99']
-
-
-class ColorChart(tk.Frame):
-    MAX_ROWS = 36
-    FONT_SIZE = 10
-
-    def __init__(self, root):
-        tk.Frame.__init__(self, root)
-        r = 0
-        c = 0
-
-        for color in COLORS:
-            label = tk.Label(self, text=color, bg=color,
-                             font=("Times", self.FONT_SIZE, "bold"))
-            label.grid(row=r, column=c, sticky="ew")
-            r += 1
-
-            if r > self.MAX_ROWS:
-                r = 0
-                c += 1
-
-        self.pack(expand=1, fill="both")
 
 
 class App(tk.Tk):
@@ -193,7 +96,7 @@ class App(tk.Tk):
 
         # Controller Buttons LabelFrame
         self.controller_btns = LabelFrame(self.main_frame, text="Controller", relief='solid', height=50)
-        self.controller_btns.grid(row=2, column=0, columnspan=2, sticky="ews", pady=5)
+        self.controller_btns.grid(row=2, column=0, columnspan=5, sticky="ews", pady=5)
 
         # =-=-=-=-=-=-= BUTTONS =-=-=-=-=-=-=-=
         # Sidebar Buttons
@@ -248,8 +151,10 @@ class App(tk.Tk):
         self.server_information()
         self.show_available_connections()
 
-    # Refresh server info & connected stations table
+    # Refresh server info & connected stations table with vital signs
     def refresh(self):
+        self.tmp_availables = []
+        self.vital_signs()
         self.server_information()
         self.show_available_connections()
 
@@ -260,6 +165,100 @@ class App(tk.Tk):
         infoThread = Thread(target=self.server_information, name="ServerInfo")
         infoThread.daemon = True
         infoThread.start()
+
+    # Display Server Information
+    def server_information(self):
+        self.logIt_thread(self.log_path, msg=f'Running show server information...')
+        last_reboot = psutil.boot_time()
+        data = {
+            'Server_IP': self.serverIP,
+            'Server_Port': self.port,
+            'Last_Boot': datetime.fromtimestamp(last_reboot).replace(microsecond=0),
+            'Connected_Stations': len(self.targets)
+        }
+
+        label = Label(self.top_bar_label, text=f"\t\t\t\t\tServer IP: {self.serverIP}\t\tServer Port: {self.port}\t\t"
+                                               f"Last Boot: {datetime.fromtimestamp(last_reboot).replace(microsecond=0)}\t\t"
+                                               f"Connected Stations: {len(self.targets)}", anchor=CENTER)
+        label.grid(row=0, sticky='w')
+
+        return data
+
+    # Show Available Connections Thread
+    def sac_thread(self):
+        self.sacThread = Thread(target=self.show_available_connections,
+                                name="Show Available Connections Thread")
+        self.sacThread.daemon = True
+        self.sacThread.start()
+
+    # Show Available Connections
+    def show_available_connections(self) -> None:
+        if len(self.ips) == 0 and len(self.targets) == 0:
+            self.logIt_thread(self.log_path, msg=f'No connected Stations')
+            print(f"[{colored('*', 'cyan')}]No connected stations.\n")
+
+        self.logIt_thread(self.log_path, msg=f'Running show_available_connections()...')
+
+        def make_tmp():
+            count = 0
+            for conKey, macValue in self.clients.items():
+                for macKey, ipValue in macValue.items():
+                    for ipKey, identValue in ipValue.items():
+                        for con in self.targets:
+                            if con == conKey:
+                                for identKey, userValue in identValue.items():
+                                    for userV, clientVer in userValue.items():
+                                        if (count, macKey, ipKey, identKey, userValue) in self.tmp_availables:
+                                            continue
+
+                                self.tmp_availables.append((count, macKey, ipKey, identKey, userV, clientVer))
+                count += 1
+
+            self.logIt_thread(self.log_path, msg=f'Available list created.')
+
+        def extract():
+            for item in self.tmp_availables:
+                for conKey, ipValue in self.clients.items():
+                    for macKey, ipVal in ipValue.items():
+                        for ipKey, identVal in ipVal.items():
+                            if item[2] == ipKey:
+                                session = item[0]
+                                stationMAC = item[1]
+                                stationIP = item[2]
+                                stationName = item[3]
+                                loggedUser = item[4]
+                                clientVersion = item[5]
+
+                                # Show results in GUI table
+                                self.table.insert('', 'end', values=(session, stationMAC, stationIP,
+                                                                     stationName, loggedUser, clientVersion))
+
+                                print(f"Session [{colored(f'{session}', 'cyan')}] | "
+                                      f"Station MAC: {colored(f'{stationMAC}', 'green')} | "
+                                      f"Station IP: {colored(f'{stationIP}', 'green')} | "
+                                      f"Station Name: {colored(f'{stationName}', 'green')} | "
+                                      f"Logged User: {colored(f'{loggedUser}', 'green')} | "
+                                      f"Client Version: {colored(clientVersion, 'green')}")
+
+            self.logIt_thread(self.log_path, msg=f'Extraction completed.')
+
+        # Cleaning availables list
+        self.logIt_thread(self.log_path, msg=f'Cleaning availables list...')
+        self.tmp_availables = []
+
+        # Clear previous entries in GUI table
+        self.table.delete(*self.table.get_children())
+
+        print(f"[{colored('*', 'cyan')}] {colored('Available Connections', 'green')} [{colored('*', 'cyan')}]")
+        print(f"{colored('=', 'yellow') * 29}")
+
+        self.logIt_thread(self.log_path, msg=f'Creating available list...')
+        make_tmp()
+
+        self.logIt_thread(self.log_path,
+                          msg=f'Extracting: Session | Station IP | Station Name | Logged User '
+                              f'from clients list...')
+        extract()
 
     # Close App Window
     def on_closing(self, event=0):
@@ -503,165 +502,66 @@ class App(tk.Tk):
 
     def vital_signs(self) -> bool:
         self.logIt_thread(self.log_path, msg=f'Running vital_signs()...')
+        if len(self.targets) == 0:
+            messagebox.showinfo("Refresh", "No Connected Stations.")
+            return
 
-        self.logIt_thread(self.log_path,
-                          msg=f'Init class: vitals({self.targets, self.ips, self.clients, self.connections, self.log_path})...')
-        vitals = vital_signs.Vitals(self.targets, self.ips, self.clients,
-                                    self.connections, self.log_path, self.ident)
-        if vitals.vitals_input():
-            vitals.vital_signs()
-            return True
+        sure = messagebox.askquestion("Start Vitals Check", "This will start the vitals check. Are you sure?")
+        if sure:
+            temp = self.clients
+            callback = 'yes'
+            i = 0
+
+            self.logIt_thread(self.log_path, msg=f'Iterating Through Temp Connected Sockets List...')
+            for t in self.targets:
+                try:
+                    self.logIt_thread(self.log_path, msg=f'Sending "alive" to {t}...')
+                    t.send('alive'.encode())
+                    self.logIt_thread(self.log_path, msg=f'Send completed.')
+
+                    self.logIt_thread(self.log_path, msg=f'Waiting for response from {t}...')
+                    ans = t.recv(1024).decode()
+                    self.logIt_thread(self.log_path, msg=f'Response from {t}: {ans}.')
+
+                    self.logIt_thread(self.log_path, msg=f'Waiting for client version from {t}...')
+                    ver = t.recv(1024).decode()
+                    self.logIt_thread(self.log_path, msg=f'Response from {t}: {ver}.')
+
+                except socket.error:
+                    self.remove_lost_connection(t, self.ips[i])
+                    break
+
+                if str(ans) == str(callback):
+                    try:
+                        for conKey, ipValue in self.clients.items():
+                            for ipKey, identValue in ipValue.items():
+                                if t == conKey:
+                                    for name, version in identValue.items():
+                                        for v, v1 in version.items():
+                                            for n, ver in v1.items():
+                                                print(
+                                                    f"[{colored('V', 'green')}]{self.ips[i]} | {v} | Version: {ver}")
+                                                i += 1
+                                                time.sleep(0.5)
+
+                    except (IndexError, RuntimeError):
+                        pass
+
+                else:
+                    for conKey, macValue in self.clients.items():
+                        if conKey == con:
+                            for macKey, ipVal in macValue.items():
+                                for ipKey, identValue in ipVal.items():
+                                    if ipKey == self.ips[i]:
+                                        print(ipKey)
+                                        self.remove_lost_connection(conKey, ipKey)
+
+            self.logIt_thread(self.log_path, msg=f'=== End of vital_signs() ===')
+            print(f"\n[{colored('*', 'green')}]Vital Signs Process completed.\n")
 
         else:
             self.logIt_thread(self.log_path, msg=f'Closing vital_signs()...')
             return False
-
-    def sac_thread(self):
-        self.sacThread = Thread(target=self.show_available_connections,
-                                name="Show Available Connections Thread")
-        self.sacThread.daemon = True
-        self.sacThread.start()
-
-    def selectItem(self, event):
-        rowid = self.table.identify_row(event.y)
-        row = self.table.item(rowid)['values']
-        print(f"row: {row}")
-        try:
-            if not row[2] in self.temp.values():
-                self.temp[row[0]] = row[2]
-
-        except IndexError:
-            pass
-
-        finally:
-            print(self.temp)
-
-        # Create a Controller Box
-        for id, ip in self.temp.items():
-            for clientConn, clientValues in self.clients.items():
-                # print(f"id: {id} ip: {ip} | clientConn: {clientConn} clientIP: {clientValues}")
-                for clientMac, clientIPv in clientValues.items():
-                    for clientIP, vals in clientIPv.items():
-                        if clientIP == ip:
-                            self.screenshot_btn = Button(self.controller_btns, text="Screenshot", width=15, pady=5,
-                                                         command=lambda: self.screenshot(clientConn, ip))
-
-                            self.screenshot_btn.grid(row=0, sticky="w", pady=5)
-
-                            shellThread = Thread(target=self.shell, args=(clientConn, clientIP), name="Shell Thread")
-                            shellThread.daemon = True
-                            shellThread.start()
-                            self.temp.clear()
-
-                            return
-
-    def show_available_connections(self) -> None:
-        if len(self.ips) == 0 and len(self.targets) == 0:
-            self.logIt_thread(self.log_path, msg=f'No connected Stations')
-            print(f"[{colored('*', 'cyan')}]No connected stations.\n")
-
-        self.logIt_thread(self.log_path, msg=f'Running show_available_connections()...')
-
-        def make_tmp():
-            count = 0
-            for conKey, macValue in self.clients.items():
-                # print(f"Mac Value: {macValue}")
-                for macKey, ipValue in macValue.items():
-                    # print(f"MAC: {macKey}, IP: {ipValue}")
-                    for ipKey, identValue in ipValue.items():
-                        # print(f"ipKey: {ipKey}, identValue: {identValue}")
-                        for con, ip in self.connections.items():
-                            # print(f"con: {con}, ip: {ip}")
-                            if ip == ipKey:
-                                for identKey, userValue in identValue.items():
-                                    # print(f"identKey: {identKey}, userValue: {userValue}")
-                                    for userV, clientVer in userValue.items():
-                                        # print(f"userV: {userV}, clientVer: {clientVer}")
-                                        if (count, macKey, ipKey, identKey, userValue) in self.tmp_availables:
-                                            continue
-
-                                self.tmp_availables.append((count, macKey, ipKey, identKey, userV, clientVer))
-                count += 1
-
-            self.logIt_thread(self.log_path, msg=f'Available list created.')
-
-        def extract():
-            for item in self.tmp_availables:
-                for conKey, ipValue in self.clients.items():
-                    for ipKey in ipValue.keys():
-                        if item[1] == ipKey:
-                            session = item[0]
-                            stationMAC = item[1]
-                            stationIP = item[2]
-                            stationName = item[3]
-                            loggedUser = item[4]
-                            clientVersion = item[5]
-
-                            # Show results in GUI table
-                            self.table.insert('', 'end', values=(session, stationMAC, stationIP,
-                                                                 stationName, loggedUser, clientVersion))
-
-                            print(f"Session [{colored(f'{session}', 'cyan')}] | "
-                                  f"Station MAC: {colored(f'{stationMAC}', 'green')} | "
-                                  f"Station IP: {colored(f'{stationIP}', 'green')} | "
-                                  f"Station Name: {colored(f'{stationName}', 'green')} | "
-                                  f"Logged User: {colored(f'{loggedUser}', 'green')} | "
-                                  f"Client Version: {colored(clientVersion, 'green')}")
-
-            self.logIt_thread(self.log_path, msg=f'Extraction completed.')
-
-        # Cleaning availables list
-        self.logIt_thread(self.log_path, msg=f'Cleaning availables list...')
-        self.tmp_availables = []
-
-        # Clear previous entries in GUI table
-        self.table.delete(*self.table.get_children())
-
-        print(f"[{colored('*', 'cyan')}] {colored('Available Connections', 'green')} [{colored('*', 'cyan')}]")
-        print(f"{colored('=', 'yellow') * 29}")
-
-        self.logIt_thread(self.log_path, msg=f'Creating available list...')
-        make_tmp()
-
-        self.logIt_thread(self.log_path,
-                          msg=f'Extracting: Session | Station IP | Station Name | Logged User '
-                              f'from clients list...')
-        extract()
-
-    def get_station_number(self) -> (int, int, int):
-        self.logIt_thread(self.log_path, msg=f'Running get_station_number()...')
-        if len(self.tmp_availables) == 0:
-            self.logIt_thread(self.log_path, msg=f'No available connections.')
-            print(f"[{colored('*', 'cyan')}]No available connections.\n")
-            return
-
-        tries = 1
-        while True:
-            self.logIt_thread(self.log_path, msg=f'Waiting for station number...')
-            station_num = input(f"\n@Session #>> ")
-            self.logIt_thread(self.log_path, msg=f'Station number: {station_num}')
-            if str(station_num).lower() == 'q':
-                self.logIt_thread(self.log_path, msg=f'Station number: {station_num} | moving back...')
-                return False
-
-            try:
-                self.logIt_thread(self.log_path, msg=f'Running input validation on {station_num}')
-                val = int(station_num)
-                if int(station_num) <= 0 or int(station_num) <= (len(self.tmp_availables)):
-                    tarnum = self.targets[int(station_num)]
-                    ipnum = self.ips[int(station_num)]
-                    self.logIt_thread(log_path, msg=f'=== End of get_station_number() ===')
-                    return int(station_num), tarnum, ipnum
-
-                else:
-                    self.logIt_thread(log_path, msg=f'Wrong input detected.')
-                    print(f"[{colored('*', 'red')}]Wrong Number. Choose between [1 - {len(self.tmp_availables)}].\n"
-                          f"[Try {colored(f'{tries}', 'yellow')}/{colored('3', 'yellow')}]")
-
-            except (TypeError, ValueError, IndexError):
-                self.logIt_thread(self.log_path, msg=f'Wrong input detected.')
-                print(f"[{colored('*', 'red')}]Numbers only. Choose between [1 - {len(self.tmp_availables)}].\n"
-                      f"[Try {colored(f'{tries}', 'yellow')}/{colored('3', 'yellow')}]")
 
     def show_shell_commands(self, ip: str) -> None:
         self.logIt_thread(self.log_path, msg=f'Running show_shell_commands()...')
@@ -705,86 +605,17 @@ class App(tk.Tk):
 
         self.logIt_thread(self.log_path, msg=f'=== End of show_shell_commands() ===')
 
-    def restart(self, con: str, ip: str) -> bool:
-        def confirm_restart(con) -> bool:
-            self.logIt_thread(self.log_path, msg=f'Running confirm_restart()...')
-            tries = 0
-            while True:
-                try:
-                    self.logIt_thread(self.log_path, msg=f'Running input validation on {self.sure}...')
-                    str(self.sure)
-
-                except TypeError:
-                    self.logIt_thread(self.log_path, msg=f'Wrong input detected.')
-                    print(f"[{colored('*', 'red')}]Wrong Input. [({colored('Y/y', 'yellow')}) | "
-                          f"({colored('N/n', 'yellow')})]")
-
-                    if tries == 3:
-                        self.logIt_thread(self.log_path, msg=f'Tries: 3')
-                        print("U obviously don't know what you're doing. goodbye.")
-                        if len(server.targets) > 0:
-                            self.logIt_thread(self.log_path, msg=f'Closing live connections...')
-                            for t in server.targets:
-                                t.send('exit'.encode())
-                                t.shutdown(socket.SHUT_RDWR)
-                                t.close()
-
-                            self.logIt_thread(self.log_path, msg=f'Live connections closed.')
-
-                        self.logIt_thread(self.log_path, msg=f'Exiting app with code 1...')
-                        sys.exit(1)
-
-                    tries += 1
-
-                if str(self.sure).lower() == "y":
-                    self.logIt_thread(self.log_path, msg=f'User input: {self.sure} | Returning TRUE...')
-                    return True
-
-                elif str(self.sure).lower() == "n":
-                    self.logIt_thread(self.log_path, msg=f'User input: {self.sure} | Returning FALSE...')
-                    con.send('n'.encode())
-                    break
-
-                else:
-                    self.logIt_thread(self.log_path, msg=f'Wrong input detected.')
-                    print(f"[{colored('*', 'red')}]Wrong Input. [({colored('Y/y', 'yellow')}) | "
-                          f"({colored('N/n', 'yellow')})]")
-
-                    if tries == 3:
-                        self.logIt_thread(self.log_path, msg=f'Tries: 3')
-                        print("U obviously don't know what you're doing. goodbye.")
-                        if len(server.targets) > 0:
-                            self.logIt_thread(self.log_path, msg=f'Closing live connections...')
-                            dt = get_date()
-                            for t in server.targets:
-                                t.send('exit'.encode())
-                                t.shutdown(socket.SHUT_RDWR)
-                                t.close()
-
-                            self.logIt_thread(self.log_path, msg=f'Live connections closed.')
-
-                        self.logIt_thread(self.log_path, msg=f'Exiting app with code 1...')
-                        sys.exit(1)
-
-                    tries += 1
-
-        self.logIt_thread(self.log_path, msg=f'Running restart({con}, {ip})...')
-        errCount = 3
-        self.sure = input("Are you sure you want to restart [Y/n]?")
-        if confirm_restart(con):
+    def restart(self, con: str, ip: str, sname: str) -> bool:
+        # Display MessageBox on screen
+        self.sure = messagebox.askyesno(f"Restart for: {ip} | {sname}", f"Are you sure you want to restart {sname}?\t")
+        if self.sure:
             try:
                 self.logIt_thread(self.log_path, msg=f'Sending restart command to client...')
                 con.send('restart'.encode())
-                try:
-                    self.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip})...')
-                    self.remove_lost_connection(con, ip)
-                    return True
+                self.remove_lost_connection(con, ip)
+                return True
 
-                except RuntimeError as e:
-                    self.logIt_thread(self.log_path, msg=f'Runtime Error: {e}')
-                    return False
-
-            except (WindowsError, socket.error) as e:
+            except (RuntimeError, WindowsError, socket.error) as e:
                 self.logIt_thread(self.log_path, msg=f'Connection Error: {e}')
                 print(f"[{colored('!', 'red')}]Client lost connection.")
 
@@ -794,6 +625,34 @@ class App(tk.Tk):
 
         else:
             return False
+
+    def last_restart(self, con: str, ip: str, sname: str) -> bool:
+        try:
+            self.logIt_thread(self.log_path, debug=False, msg=f'Sending lr command to client...')
+            con.send('lr'.encode())
+            self.logIt_thread(self.log_path, debug=False, msg=f'Send Completed.')
+
+            self.logIt_thread(self.log_path, debug=False, msg=f'Waiting for response from client...')
+            msg = con.recv(4096).decode()
+            self.logIt_thread(self.log_path, debug=False, msg=f'Client response: {msg}')
+
+            # Display MessageBox on screen
+            messagebox.showinfo(f"Last Restart for: {ip} | {sname}", f"\t{msg.split('|')[1][15:]}\t\t\t")
+
+            return True
+
+        except (WindowsError, socket.error, ConnectionResetError) as e:
+            self.logIt_thread(self.log_path, debug=False, msg=f'Connection Error: {e}.')
+            print(f"[{colored('!', 'red')}]Client lost connection.")
+            try:
+                self.logIt_thread(self.log_path, debug=False,
+                                  msg=f'Calling self.remove_lost_connection({con}, {ip})...')
+                self.remove_lost_connection(con, ip)
+                return False
+
+            except RuntimeError as e:
+                self.logIt_thread(self.log_path, debug=True, msg=f'Runtime Error: {e}.')
+                return False
 
     def anydesk(self, con: str, ip: str) -> bool:
         self.logIt_thread(self.log_path, msg=f'Running anydesk({con}, {ip})...')
@@ -811,13 +670,15 @@ class App(tk.Tk):
                 print(msg)
                 while True:
                     try:
-                        install_input = str(input("Install Anydesk [Y/n]? "))
+                        install_anydesk = messagebox.askquestion("Install Anydesk",
+                                                                 "Anydesk isn't installed on the remote machine. do you with to install?")
+                        # install_input = str(input("Install Anydesk [Y/n]? "))
 
                     except ValueError:
                         print(f"[{colored('!', 'red')}]Wrong input.")
                         continue
 
-                    if str(install_input).lower() == "y":
+                    if install_anydesk:
                         print("Installing anydesk...")
                         self.logIt_thread(self.log_path, msg=f'Sending install command to {con}...')
                         con.send('y'.encode())
@@ -838,14 +699,11 @@ class App(tk.Tk):
 
                         return True
 
-                    elif str(install_input).lower() == "n":
+                    else:
                         self.logIt_thread(self.log_path, msg=f'Sending cancel command to {con}...')
                         con.send('n'.encode())
                         self.logIt_thread(self.log_path, msg=f'Send Completed.')
                         break
-
-                    else:
-                        continue
 
         except (WindowsError, ConnectionError, socket.error) as e:
             self.logIt_thread(self.log_path, msg=f'Connection Error: {e}.')
@@ -882,6 +740,27 @@ class App(tk.Tk):
 
             self.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip}...)')
             self.remove_lost_connection(con, ip)
+
+    def sysinfo(self, con: str, ip: str):
+        try:
+            self.logIt_thread(self.log_path, msg=f'Initializing Module: sysinfo...')
+            sinfo = sysinfo.Sysinfo(con, self.ttl, self.path, self.tmp_availables, self.clients, self.log_path, ip)
+
+            print(f"[{colored('*', 'cyan')}]Fetching system information, please wait... ")
+            self.logIt_thread(self.log_path, msg=f'Calling sysinfo.run()...')
+            if sinfo.run(ip):
+                print(f"[{colored('V', 'green')}]OK!")
+
+        except (WindowsError, socket.error, ConnectionResetError) as e:
+            self.logIt_thread(self.log_path, debug=True, msg=f'Connection Error: {e}.')
+            # print(f"[{colored('!', 'red')}]Client lost connection.")
+            try:
+                self.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip})...')
+                self.remove_lost_connection(con, ip)
+                return
+
+            except RuntimeError:
+                return
 
     def shell(self, con: str, ip: str) -> None:
         self.logIt_thread(self.log_path, msg=f'Running shell({con}, {ip})...')
@@ -934,102 +813,6 @@ class App(tk.Tk):
 
                 continue
 
-            # Create INT Zone Condition
-            self.logIt_thread(self.log_path, msg=f'Creating user input zone from 1-8...')
-            if int(cmd) <= 0 or int(cmd) > 8:
-                errCount += 1
-                if errCount == 3:
-                    self.logIt_thread(self.log_path, msg=f'Tries: 3')
-                    print("U obviously don't know what you're doing. goodbye.")
-
-                    self.logIt_thread(self.log_path, msg=f'Sending exit command to {ip}...')
-                    con.send("exit".encode())
-                    self.logIt_thread(self.log_path, msg=f'Send Completed.')
-
-                    self.logIt_thread(self.log_path, msg=f'Closing connections...')
-                    con.close()
-                    self.logIt_thread(self.log_path, msg=f'Connections closed.')
-
-                    self.logIt_thread(self.log_path, msg=f'Exiting app with code 1...')
-                    sys.exit(1)
-
-                self.logIt_thread(self.log_path, msg=f'Wrong input detected.')
-                print(f"[{colored('*', 'red')}]{cmd} not in the menu."
-                      f"[try {colored(errCount, 'yellow')} of {colored('3', 'yellow')}]\n")
-
-            # Screenshot
-            if int(cmd) == 1:
-                self.screenshot(con, ip)
-
-            # System Information
-            elif int(cmd) == 2:
-                self.logIt_thread(self.log_path, msg=f'Running system information condition...')
-                errCount = 0
-                if len(self.targets) == 0:
-                    self.logIt_thread(self.log_path, msg=f'No available connections.')
-                    print(f"[{colored('*', 'red')}]No connected stations.")
-                    break
-
-                try:
-                    self.logIt_thread(self.log_path, msg=f'Initializing Module: sysinfo...')
-                    sinfo = sysinfo.Sysinfo(con, self.ttl, path, self.tmp_availables, self.clients, self.log_path)
-
-                    print(f"[{colored('*', 'cyan')}]Fetching system information, please wait... ")
-                    self.logIt_thread(self.log_path, msg=f'Calling sysinfo.run()...')
-                    if sinfo.run(ip):
-                        print(f"[{colored('V', 'green')}]OK!")
-
-                except (WindowsError, socket.error, ConnectionResetError) as e:
-                    self.logIt_thread(self.log_path, debug=True, msg=f'Connection Error: {e}.')
-                    # print(f"[{colored('!', 'red')}]Client lost connection.")
-                    try:
-                        self.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip})...')
-                        self.remove_lost_connection(con, ip)
-                        return
-
-                    except RuntimeError:
-                        return
-
-            # Last Restart Time
-            elif int(cmd) == 3:
-                self.logIt_thread(self.log_path, debug=False, msg=f'Running last restart condition...')
-                errCount = 0
-                if len(self.targets) == 0:
-                    self.logIt_thread(self.log_path, debug=False, msg=f'No available connections.')
-                    print(f"[{colored('*', 'red')}]No connected stations.")
-                    break
-
-                try:
-                    self.logIt_thread(self.log_path, debug=False, msg=f'Sending lr command to client...')
-                    con.send('lr'.encode())
-                    self.logIt_thread(self.log_path, debug=False, msg=f'Send Completed.')
-
-                    self.logIt_thread(self.log_path, debug=False, msg=f'Waiting for response from client...')
-                    msg = con.recv(4096).decode()
-                    self.logIt_thread(self.log_path, debug=False, msg=f'Client response: {msg}')
-                    print(f"[{colored('@', 'green')}]{msg}")
-
-                except (WindowsError, socket.error, ConnectionResetError) as e:
-                    self.logIt_thread(self.log_path, debug=False, msg=f'Connection Error: {e}.')
-                    print(f"[{colored('!', 'red')}]Client lost connection.")
-                    try:
-                        self.logIt_thread(self.log_path, debug=False,
-                                          msg=f'Calling self.remove_lost_connection({con}, {ip})...')
-                        self.remove_lost_connection(con, ip)
-                        break
-
-                    except RuntimeError as e:
-                        self.logIt_thread(self.log_path, debug=True, msg=f'Runtime Error: {e}.')
-                        return
-
-            # Anydesk
-            elif int(cmd) == 4:
-                self.logIt_thread(self.log_path, msg=f'Running anydesk condition...')
-                errCount = 0
-                print(f"[{colored('*', 'magenta')}]Starting AnyDesk...\n")
-                self.logIt_thread(self.log_path, msg=f'Calling self.anydesk({con}, {ip})...')
-                self.anydesk(con, ip)
-
             # Tasks
             elif int(cmd) == 5:
                 self.logIt_thread(self.log_path, debug=False, msg=f'Running tasks condition...')
@@ -1069,13 +852,6 @@ class App(tk.Tk):
                         self.logIt_thread(self.log_path, debug=False, msg=f'Runtime Error: {e}.')
                         return False
 
-            # Restart
-            elif int(cmd) == 6:
-                self.logIt_thread(self.log_path, debug=False, msg=f'Running restart condition...')
-                self.logIt_thread(self.log_path, debug=False, msg=f'Calling self.restart({con}, {ip})...')
-                if self.restart(con, ip):
-                    break
-
             # Clear Screen
             elif int(cmd) == 7:
                 self.logIt_thread(self.log_path, debug=False, msg=f'Running clear screen condition...')
@@ -1096,20 +872,22 @@ class App(tk.Tk):
         self.logIt_thread(self.log_path, msg=f'Running remove_lost_connection({con}, {ip})...')
         try:
             self.logIt_thread(self.log_path, msg=f'Removing connections...')
-            for conKey, ipValue in self.clients.items():
+            for conKey, macValue in self.clients.items():
                 if conKey == con:
-                    for ipKey, identValue in ipValue.items():
-                        if ipKey == ip:
-                            for identKey, userValue in identValue.items():
-                                self.targets.remove(con)
-                                self.ips.remove(ip)
+                    for macKey, ipVal in macValue.items():
+                        for ipKey, identValue in ipVal.items():
+                            if ipKey == ip:
+                                for identKey, userValue in identValue.items():
+                                    self.targets.remove(con)
+                                    self.ips.remove(ip)
 
-                                del self.connections[con]
-                                del self.clients[con]
-                                print(f"[{colored('*', 'red')}]{colored(f'{ip}', 'yellow')} | "
-                                      f"{colored(f'{identKey}', 'yellow')} | "
-                                      f"{colored(f'{userValue}', 'yellow')} "
-                                      f"Removed from Availables list.\n")
+                                    del self.connections[con]
+                                    del self.clients[con]
+
+                                    print(f"[{colored('*', 'red')}]{colored(f'{ip}', 'yellow')} | "
+                                          f"{colored(f'{identKey}', 'yellow')} | "
+                                          f"{colored(f'{userValue}', 'yellow')} "
+                                          f"Removed from Availables list.\n")
 
             self.logIt_thread(self.log_path, msg=f'Connections removed.')
             return True
@@ -1118,55 +896,67 @@ class App(tk.Tk):
             self.logIt_thread(self.log_path, msg=f'Runtime Error: {e}.')
             return False
 
-    def server_information(self):
-        self.logIt_thread(self.log_path, msg=f'Running show server information...')
-        last_reboot = psutil.boot_time()
-        # print(f"\n[{colored('*', 'cyan')}]Server running on IP: {self.serverIp} | Port: {self.serverPort}")
-        # print(f"[{colored('*', 'cyan')}]Server's last restart: "
-        #       f"{datetime.fromtimestamp(last_reboot).replace(microsecond=0)}")
-        # print(f"[{colored('*', 'cyan')}]Connected Stations: {len(self.targets)}\n")
-        data = {
-            'Server_IP': self.serverIP,
-            'Server_Port': self.port,
-            'Last_Boot': datetime.fromtimestamp(last_reboot).replace(microsecond=0),
-            'Connected_Stations': len(self.targets)
-        }
+    def selectItem(self, event):
+        def make_buttons():
+            # Screenshot Button
+            self.screenshot_btn = Button(self.controller_btns, text="Screenshot", width=15, pady=5,
+                                         command=lambda: self.screenshot(clientConn, ip))
 
-        label = Label(self.top_bar_label, text=f"\t\t\t\t\tServer IP: {self.serverIP}\t\tServer Port: {self.port}\t\t"
-                                               f"Last Boot: {datetime.fromtimestamp(last_reboot).replace(microsecond=0)}\t\t"
-                                               f"Connected Stations: {len(self.targets)}", anchor=CENTER)
-        label.grid(row=0, sticky='w')
+            self.screenshot_btn.grid(row=0, sticky="w", pady=5, padx=2, ipadx=2)
 
-        return data
+            # System Information Button
+            self.sysinfo_btn = Button(self.controller_btns, text="SysInfo", width=15, pady=5,
+                                      command=lambda: self.sysinfo(clientConn, ip))
 
-    def headline(self) -> None:
-        print("\n\t\t▄███████▄    ▄████████    ▄████████  ▄████████    ▄█    █▄")
-        print("\t\t███    ███   ███    ███   ███    ███ ███    ███   ███    ███")
-        print("\t\t███    ███   ███    █▀    ███    ███ ███    █▀    ███    ███")
-        print("\t\t███    ███  ▄███▄▄▄       ███    ███ ███         ▄███▄▄▄▄███▄▄")
-        print("\t\t▀█████████▀  ▀▀███▀▀▀     ▀███████████ ███        ▀▀███▀▀▀▀███▀")
-        print("\t\t███          ███    █▄    ███    ███ ███    █▄    ███    ███")
-        print("\t\t███          ███    ███   ███    ███ ███    ███   ███    ███")
-        print("\t\t▄████▀        ██████████   ███    █▀  ████████▀    ███    █▀")
-        print(f""
-              f"\t\t{colored('|| By Gil Shwartz', 'green')} {colored('@2022 ||', 'yellow')}\n")
+            self.sysinfo_btn.grid(row=0, column=1, sticky="w", pady=5, padx=2, ipadx=2)
 
-        print(f"\t\t({colored('1', 'yellow')})Remote Control          ---------------> "
-              f"Show Remote Commands")
-        print(f"\t\t({colored('2', 'yellow')})Connection History      ---------------> "
-              f"Show connection history.")
-        print(f"\t\t({colored('3', 'yellow')})Show Connected Stations ---------------> "
-              f"Display Current connected stations")
-        print(f"\t\t({colored('4', 'yellow')})CLS                     ---------------> "
-              f"Clear Local Screen")
-        print(f"\t\t({colored('5', 'yellow')})Server Info             ---------------> "
-              f"Show Server Information")
-        print(f"\t\t({colored('6', 'yellow')})Update clients          ---------------> "
-              f"Send an update command to connected clients")
-        print(f"\n\t\t({colored('7', 'red')})Exit                     ---------------> "
-              f"Close connections and exit program.\n")
+            # Last Restart Button
+            self.last_restart_btn = Button(self.controller_btns, text="Last Restart", width=15, pady=5,
+                                           command=lambda: self.last_restart(clientConn, ip, sname))
 
-        app.logIt_thread(log_path, debug=False, msg=f'=== End of headline() ===')
+            self.last_restart_btn.grid(row=0, column=2, sticky="w", pady=5, padx=2, ipadx=2)
+
+            # Anydesk Button
+            self.anydesk_btn = Button(self.controller_btns, text="Anydesk", width=15, pady=5,
+                                      command=lambda: self.anydesk(clientConn, ip))
+
+            self.anydesk_btn.grid(row=0, column=3, sticky="w", pady=5, padx=2, ipadx=2)
+
+            # Restart Button
+            self.anydesk_btn = Button(self.controller_btns, text="Restart", width=15, pady=5,
+                                      command=lambda: self.restart(clientConn, ip, sname))
+
+            self.anydesk_btn.grid(row=0, column=4, sticky="w", pady=5, padx=2, ipadx=2)
+
+        rowid = self.table.identify_row(event.y)
+        row = self.table.item(rowid)['values']
+        try:
+            if not row[2] in self.temp.values():
+                self.temp[row[0]] = row[2]
+
+        except IndexError:
+            pass
+
+        # finally:
+        #     print(self.temp)
+
+        # Create a Controller Box with Buttons and connect to TreeView Table
+        for id, ip in self.temp.items():
+            for clientConn, clientValues in self.clients.items():
+                for clientMac, clientIPv in clientValues.items():
+                    for clientIP, vals in clientIPv.items():
+                        if clientIP == ip:
+                            for sname in vals.keys():
+                                make_buttons()
+
+                                shellThread = Thread(target=self.shell, args=(clientConn, clientIP), name="Shell Thread")
+                                shellThread.daemon = True
+                                shellThread.start()
+
+                                # Reset temp dict
+                                self.temp.clear()
+
+                                return
 
 
 def get_date() -> str:
@@ -1254,16 +1044,6 @@ def main(ip: str, port: int) -> None:
             print(f"[{colored('*', 'red')}]Wrong Number. [{colored('1', 'yellow')} - {colored('7', 'yellow')}]!")
             return False
 
-        # Remote Shell Commands
-        if int(command) == 1:
-            app.logIt_thread(log_path, msg=f'Running remote shell condition...')
-            if len(app.ips) == 0 and len(app.targets) == 0:
-                app.logIt_thread(log_path, msg=f'No available connections.')
-                print(f"[{colored('*', 'cyan')}]No connected stations.")
-                return False
-
-            remote_shell()
-
         # Connection History
         elif int(command) == 2:
             app.logIt_thread(log_path, msg=f'Check if connection history list is empty...')
@@ -1275,44 +1055,6 @@ def main(ip: str, port: int) -> None:
             app.logIt_thread(log_path, msg=f'Calling server.connection_history()...')
             app.connection_history()
             return
-
-        # Vital Signs - Show Connected Stations
-        elif int(command) == 3:
-            app.logIt_thread(log_path, msg=f'Running show connected stations condition...')
-            if len(app.ips) == 0 and len(app.targets) == 0:
-                app.logIt_thread(log_path, msg=f'No available connections.')
-                print(f"[{colored('*', 'cyan')}]No connected stations.")
-                return False
-
-            print(f"{colored('=', 'blue')}=>{colored('Vital Signs', 'red')}<={colored('=', 'blue')}")
-            print(f"[{colored('1', 'green')}]Start | "
-                  f"[{colored('2', 'cyan')}]Back\n")
-
-            app.logIt_thread(log_path, msg=f'Calling server.vital_signs()...')
-            app.vital_signs()
-
-        # Clear Screen
-        elif int(command) == 4:
-            app.logIt_thread(log_path, msg=f'Running clear screen...')
-            app.logIt_thread(log_path, msg=f'Calling headline()...')
-            os.system('cls')
-
-        # Show Server's Information
-        elif int(command) == 5:
-            app.logIt_thread(log_path, msg=f'Running show server information...')
-            last_reboot = psutil.boot_time()
-            print(f"\n[{colored('*', 'cyan')}]Server running on IP: {app.serverIp} | Port: {app.serverPort}")
-            print(f"[{colored('*', 'cyan')}]Server's last restart: "
-                  f"{datetime.fromtimestamp(last_reboot).replace(microsecond=0)}")
-            print(f"[{colored('*', 'cyan')}]Connected Stations: {len(app.targets)}\n")
-            data = {
-                'Server_IP': serverIP,
-                'Server_Port': port,
-                'Last_Boot': datetime.fromtimestamp(last_reboot).replace(microsecond=0),
-                'Connected_Stations': len(app.targets)
-            }
-
-            return data
 
         # Send Update command
         elif int(command) == 6:
@@ -1375,7 +1117,3 @@ if __name__ == '__main__':
     # root = tk.Tk()
     # app = ColorChart(root)
     # root.mainloop()
-
-    # mainThread = Thread(target=app.run, name="Server Thread")
-    # mainThread.daemon = True
-    # mainThread.start()
