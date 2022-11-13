@@ -9,10 +9,9 @@ import os
 
 
 class Tasks:
-    def __init__(self, con, ip, ttl, clients, connections, targets, ips, tmp_availables, root, log_path):
+    def __init__(self, con, ip, clients, connections, targets, ips, tmp_availables, root, log_path):
         self.con = con
         self.ip = ip
-        self.ttl = ttl
         self.clients = clients
         self.connections = connections
         self.targets = targets
@@ -64,25 +63,25 @@ class Tasks:
         self.logIt_thread(self.log_path, msg=f'Running make_dir()...')
         self.logIt_thread(self.log_path, msg=f'Creating Directory...')
 
-        for conKey, ipValue in self.clients.items():
-            for ipKey, userValue in ipValue.items():
-                if ipKey == ip:
-                    for item in self.tmp_availables:
-                        if item[1] == ip:
-                            for identKey, timeValue in userValue.items():
-                                name = item[2]
-                                loggedUser = item[3]
-                                clientVersion = item[4]
-                                path = os.path.join(self.root, name)
+        for conKey, macValue in self.clients.items():
+            for macKey, ipVal in macValue.items():
+                for ipKey, userValue in ipVal.items():
+                    if ipKey == ip:
+                        for item in self.tmp_availables:
+                            if item[1] == ip:
+                                for identKey, timeValue in userValue.items():
+                                    name = item[2]
+                                    loggedUser = item[3]
+                                    clientVersion = item[4]
+                                    path = os.path.join(self.root, name)
 
-                                try:
-                                    os.makedirs(path)
+                                    try:
+                                        os.makedirs(path)
+                                        return path
 
-                                except FileExistsError:
-                                    self.logIt_thread(self.log_path, msg=f'Passing FileExistsError...')
-                                    pass
-
-        return name, loggedUser, path
+                                    except FileExistsError:
+                                        self.logIt_thread(self.log_path, msg=f'Passing FileExistsError...')
+                                        pass
 
     def tasks(self, ip):
         self.logIt_thread(self.log_path, msg=f'Running tasks({ip})...')
@@ -97,8 +96,8 @@ class Tasks:
             filenameRecv = self.con.recv(1024).decode()
             self.logIt_thread(self.log_path, msg=f'Filename: {filenameRecv}.')
 
-            self.logIt_thread(self.log_path, msg=f'Sleeping for {self.ttl} seconds...')
-            time.sleep(self.ttl)
+            self.logIt_thread(self.log_path, msg=f'Sleeping for {0.5} seconds...')
+            time.sleep(0.5)
 
             self.logIt_thread(self.log_path, msg=f'Waiting for file size from {ip}...')
             size = self.con.recv(4)
@@ -113,7 +112,7 @@ class Tasks:
             filenameRecv = str(filenameRecv).strip("b'")
 
             self.logIt_thread(self.log_path, msg=f'Calling self.make_dir({ip})...')
-            name, loggedUser, path = self.make_dir(ip)
+            path = self.make_dir(ip)
 
             self.logIt_thread(self.log_path, msg=f'Writing content to {filenameRecv}...')
             with open(filenameRecv, 'wb') as tsk_file:
