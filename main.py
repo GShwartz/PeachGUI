@@ -12,20 +12,20 @@ import time
 import sys
 
 # GUI
-import tkinter
 from tkinter import simpledialog
 from tkinter import messagebox
 from PyQt5 import QtGui
 from tkinter import ttk
 from tkinter import *
 import tkinter as tk
+import tkinter
 
 # Local Modules
-from Modules import screenshot
-from Modules import tasks
 from Modules import vital_signs
-from Modules import sysinfo
+from Modules import screenshot
 from Modules import freestyle
+from Modules import sysinfo
+from Modules import tasks
 
 init()
 
@@ -37,6 +37,7 @@ class App(tk.Tk):
     ips = []
     targets = []
     threads = []
+    buttons = []
 
     # Temp dict to hold connected station's ID# & IP
     temp = {}
@@ -49,7 +50,7 @@ class App(tk.Tk):
     log_path = fr'{path}\server_log.txt'
 
     WIDTH = 1335
-    HEIGHT = 960
+    HEIGHT = 860
 
     def __init__(self):
         super().__init__()
@@ -175,7 +176,7 @@ class App(tk.Tk):
         self.style.map("Treeview")
 
         # Details LabelFrame
-        self.details_labelFrame = LabelFrame(self.main_frame, height=500, text="Details", relief='ridge')
+        self.details_labelFrame = LabelFrame(self.main_frame, height=400, text="Details", relief='ridge')
         self.details_labelFrame.grid(row=3, sticky='news', columnspan=3)
 
         # Status LabelFrame
@@ -186,19 +187,19 @@ class App(tk.Tk):
         self.show_available_connections()
 
     # Refresh server info & connected stations table with vital signs
-    def refresh(self, sure=None):
+    def refresh(self):
         self.tmp_availables = []
-        if sure:
-            self.vital_signs(sure=True)
-
-        else:
-            self.vital_signs()
-
+        self.vital_signs_thread()
         self.server_information()
         self.show_available_connections()
 
+    # Vitals Thread
+    def vital_signs_thread(self):
+        vitalsThread = Thread(target=self.vital_signs, name="Vitals Thread")
+        vitalsThread.start()
+
     # Display Server Information Thread
-    def dsi_thread(self):
+    def display_server_information_thread(self):
         # Display Server Information
         infoThread = Thread(target=self.server_information, name="ServerInfo")
         # infoThread.daemon = True
@@ -566,82 +567,70 @@ class App(tk.Tk):
             return
 
     # Check if connected stations are still connected
-    def vital_signs(self, sure=None) -> bool:
-        def execute():
-            callback = 'yes'
-            i = 0
-
-            # Display Progress status in Status LabelFrame
-            runningLabel = Label(self.status_labelFrame, relief='flat', border=2, text="running vitals check...")
-            runningLabel.grid(row=0, column=0, sticky='news')
-
-            self.logIt_thread(self.log_path, msg=f'Iterating Through Temp Connected Sockets List...')
-            for t in self.targets:
-                try:
-                    self.logIt_thread(self.log_path, msg=f'Sending "alive" to {t}...')
-                    t.send('alive'.encode())
-                    self.logIt_thread(self.log_path, msg=f'Send completed.')
-
-                    self.logIt_thread(self.log_path, msg=f'Waiting for response from {t}...')
-                    ans = t.recv(1024).decode()
-                    self.logIt_thread(self.log_path, msg=f'Response from {t}: {ans}.')
-
-                    self.logIt_thread(self.log_path, msg=f'Waiting for client version from {t}...')
-                    ver = t.recv(1024).decode()
-                    self.logIt_thread(self.log_path, msg=f'Response from {t}: {ver}.')
-
-                except socket.error:
-                    self.remove_lost_connection(t, self.ips[i])
-                    break
-
-                if str(ans) == str(callback):
-                    try:
-                        for conKey, ipValue in self.clients.items():
-                            for ipKey, identValue in ipValue.items():
-                                if t == conKey:
-                                    for name, version in identValue.items():
-                                        for v, v1 in version.items():
-                                            for n, ver in v1.items():
-                                                print(
-                                                    f"[{colored('V', 'green')}]{self.ips[i]} | {v} | Version: {ver}")
-                                                i += 1
-                                                time.sleep(0.5)
-
-                    except (IndexError, RuntimeError):
-                        pass
-
-                else:
-                    for conKey, macValue in self.clients.items():
-                        if conKey == con:
-                            for macKey, ipVal in macValue.items():
-                                for ipKey, identValue in ipVal.items():
-                                    if ipKey == self.ips[i]:
-                                        self.remove_lost_connection(conKey, ipKey)
-
-            self.logIt_thread(self.log_path, msg=f'=== End of vital_signs() ===')
-            print(f"\n[{colored('*', 'green')}]Vital Signs Process completed.\n")
-
-            # Display Status message
-            runningLabel = Label(self.status_labelFrame, text="Vitals check completed.", background='white')
-            runningLabel.grid(row=0, sticky='news')
-
+    def vital_signs(self):
         self.logIt_thread(self.log_path, msg=f'Running vital_signs()...')
         if len(self.targets) == 0:
             messagebox.showinfo("Refresh", "No Connected Stations.")
             return
 
-        if sure is not None:
-            execute()
-            return True
+        callback = 'yes'
+        i = 0
 
-        sure = messagebox.askquestion("Start Vitals Check", "This will start the vitals check. Are you sure?")
-        if sure:
-            execute()
-            return True
+        # Display Progress status in Status LabelFrame
+        runningLabel = Label(self.status_labelFrame, relief='flat', border=2, text="running vitals check...")
+        runningLabel.grid(row=0, column=0, sticky='news')
 
-        else:
-            self.logIt_thread(self.log_path, msg=f'Closing vital_signs()...')
-            return False
+        self.logIt_thread(self.log_path, msg=f'Iterating Through Temp Connected Sockets List...')
+        for t in self.targets:
+            try:
+                self.logIt_thread(self.log_path, msg=f'Sending "alive" to {t}...')
+                t.send('alive'.encode())
+                self.logIt_thread(self.log_path, msg=f'Send completed.')
+
+                self.logIt_thread(self.log_path, msg=f'Waiting for response from {t}...')
+                ans = t.recv(1024).decode()
+                self.logIt_thread(self.log_path, msg=f'Response from {t}: {ans}.')
+
+                self.logIt_thread(self.log_path, msg=f'Waiting for client version from {t}...')
+                ver = t.recv(1024).decode()
+                self.logIt_thread(self.log_path, msg=f'Response from {t}: {ver}.')
+
+            except socket.error:
+                self.remove_lost_connection(t, self.ips[i])
+                break
+
+            if str(ans) == str(callback):
+                try:
+                    for conKey, ipValue in self.clients.items():
+                        for ipKey, identValue in ipValue.items():
+                            if t == conKey:
+                                for name, version in identValue.items():
+                                    for v, v1 in version.items():
+                                        for n, ver in v1.items():
+                                            print(
+                                                f"[{colored('V', 'green')}]{self.ips[i]} | {v} | Version: {ver}")
+                                            i += 1
+                                            time.sleep(0.5)
+
+                except (IndexError, RuntimeError):
+                    pass
+
+            else:
+                for conKey, macValue in self.clients.items():
+                    if conKey == con:
+                        for macKey, ipVal in macValue.items():
+                            for ipKey, identValue in ipVal.items():
+                                if ipKey == self.ips[i]:
+                                    self.remove_lost_connection(conKey, ipKey)
+
+        self.logIt_thread(self.log_path, msg=f'=== End of vital_signs() ===')
+        print(f"\n[{colored('*', 'green')}]Vital Signs Process completed.\n")
+
+        # Display Status message
+        runningLabel = Label(self.status_labelFrame, text="Vitals check completed.", background='white')
+        runningLabel.grid(row=0, sticky='news')
+
+        return True
 
     # Restart Client
     def restart(self, con: str, ip: str, sname: str) -> bool:
@@ -652,7 +641,7 @@ class App(tk.Tk):
                 self.logIt_thread(self.log_path, msg=f'Sending restart command to client...')
                 con.send('restart'.encode())
                 self.remove_lost_connection(con, ip)
-                self.refresh(sure=True)
+                self.refresh()
                 return True
 
             except (RuntimeError, WindowsError, socket.error) as e:
@@ -678,7 +667,8 @@ class App(tk.Tk):
             self.logIt_thread(self.log_path, debug=False, msg=f'Client response: {msg}')
 
             # Display Status Message
-            runningLabel = Label(self.status_labelFrame, relief='flat', border=2, text=f"Showing {sname}'s last restart...")
+            runningLabel = Label(self.status_labelFrame, relief='flat', border=2,
+                                 text=f"Showing {sname}'s last restart...")
             runningLabel.grid(row=0, column=0, sticky='news')
 
             # Display MessageBox on screen
@@ -728,7 +718,8 @@ class App(tk.Tk):
 
                 if install_anydesk:
                     # Display Status Message
-                    runningLabel = Label(self.status_labelFrame, relief='flat', text=f"Installing Anydesk on {sname}...")
+                    runningLabel = Label(self.status_labelFrame, relief='flat',
+                                         text=f"Installing Anydesk on {sname}...")
                     runningLabel.grid(row=0, column=0, sticky='news')
 
                     print("Installing anydesk...")
@@ -779,9 +770,9 @@ class App(tk.Tk):
 
     # Screenshot from Client
     def screenshot(self, con: str, ip: str) -> None:
-        # Disable Screenshot Button
-        self.screenshot_btn.config(state=DISABLED)
-        self.controller_btns.after(3000, lambda: self.screenshot_btn.config(state=NORMAL))
+        # Disable Buttons
+        disThread = Thread(target=self.disable_controller_buttons, name="Disable Controller Buttons Thread")
+        disThread.start()
 
         try:
             print(f"[{colored('*', 'cyan')}]Fetching screenshot...")
@@ -798,6 +789,9 @@ class App(tk.Tk):
             self.logIt_thread(self.log_path, msg=f'Calling screenshot.recv_file()...')
             scrnshot.recv_file(ip)
 
+            # Terminate disThread
+            disThread.join(1)
+
         except (WindowsError, socket.error, ConnectionResetError) as e:
             self.logIt_thread(self.log_path, msg=f'Connection Error: {e}')
             print(f"[{colored('!', 'red')}]Client lost connection.")
@@ -806,7 +800,11 @@ class App(tk.Tk):
             self.remove_lost_connection(con, ip)
 
     # Client System Information
-    def sysinfo(self, con: str, ip: str):
+    def sysinfo(self, con: str, ip: str, sname: str):
+        # Disable Buttons
+        disThread = Thread(target=self.disable_controller_buttons, name="Disable Controller Buttons Thread")
+        disThread.start()
+
         try:
             self.logIt_thread(self.log_path, msg=f'Initializing Module: sysinfo...')
             sinfo = sysinfo.Sysinfo(con, self.ttl, self.path, self.tmp_availables, self.clients, self.log_path, ip)
@@ -814,7 +812,11 @@ class App(tk.Tk):
             print(f"[{colored('*', 'cyan')}]Fetching system information, please wait... ")
             self.logIt_thread(self.log_path, msg=f'Calling sysinfo.run()...')
             if sinfo.run(ip):
-                print(f"[{colored('V', 'green')}]OK!")
+                messagebox.showinfo(f"From {ip} | {sname}", "OK!\t\t\t\t")
+                # print(f"[{colored('V', 'green')}]OK!")
+
+            # Terminate disThread
+            disThread.join(1)
 
         except (WindowsError, socket.error, ConnectionResetError) as e:
             self.logIt_thread(self.log_path, debug=True, msg=f'Connection Error: {e}.')
@@ -834,19 +836,25 @@ class App(tk.Tk):
             print(f"[{colored('*', 'red')}]No connected stations.")
             return False
 
+        # Disable Buttons
+        disThread = Thread(target=self.disable_controller_buttons, name="Disable Controller Buttons Thread")
+        disThread.start()
+
         self.logIt_thread(self.log_path, debug=False, msg=f'Initializing Module: tasks...')
         tsks = tasks.Tasks(con, ip, self.clients, self.connections,
-                           self.targets, self.ips, self.tmp_availables, self.path, self.log_path)
+                           self.targets, self.ips, self.tmp_availables,
+                           self.path, self.log_path, self.path, sname)
 
         self.logIt_thread(self.log_path, debug=False, msg=f'Calling tasks.tasks()...')
-        if not tsks.tasks(ip):
-            con.send('n'.encode())
-            return False
+        filepath = tsks.tasks(ip)
+        # if not tsks.tasks(ip):
+        #     con.send('n'.encode())
+        #     return False
 
         killTask = messagebox.askyesno(f"Tasks from {ip} | {sname}", "Kill Task?\t\t\t\t")
         if killTask:
             try:
-                task_to_kill = simpledialog.askstring(title='Task To Kill', prompt="Task to kill\t\t\t\t")
+                task_to_kill = simpledialog.askstring(parent=self, title='Task To Kill', prompt="Task to kill\t\t\t\t")
                 if task_to_kill is None:
                     con.send('n'.encode())
                     return False
@@ -889,6 +897,10 @@ class App(tk.Tk):
                     self.logIt_thread(self.log_path, msg=f'Sending pass command to {ip}.')
                     con.send('pass'.encode())
                     self.logIt_thread(self.log_path, msg=f'Send complete.')
+
+                    # Terminate disThread
+                    disThread.join(1)
+
                     return
 
                 return True
@@ -910,11 +922,15 @@ class App(tk.Tk):
         return subprocess.Popen(rf"explorer {self.path}\{sname}")
 
     # Shell Connection to Client
-    def shell(self, con: str, ip: str) -> None:
+    def shell(self, con: str, ip: str, sname: str) -> None:
         self.logIt_thread(self.log_path, msg=f'Running shell({con}, {ip})...')
 
+        # Clear Status message
+        runningLabel = Label(self.status_labelFrame, relief='flat', text=f"")
+        runningLabel.grid(row=0, sticky='w')
+
         # Display Status message
-        runningLabel = Label(self.status_labelFrame, relief='flat', border=1, text="")
+        runningLabel = Label(self.status_labelFrame, relief='flat', text=f"Shell connected to: {ip} | {sname}")
         runningLabel.grid(row=0, column=0, sticky='news')
 
         while True:
@@ -976,7 +992,8 @@ class App(tk.Tk):
 
                 self.logIt_thread(self.log_path, debug=False, msg=f'Initializing Module: tasks...')
                 tsks = tasks.Tasks(con, ip, self.clients, self.connections,
-                                   self.targets, self.ips, self.tmp_availables, path, self.log_path)
+                                   self.targets, self.ips, self.tmp_availables, path,
+                                   self.log_path, self.path, sname)
 
                 self.logIt_thread(self.log_path, debug=False, msg=f'Calling tasks.tasks()...')
                 if not tsks.tasks(ip):
@@ -1050,55 +1067,85 @@ class App(tk.Tk):
             self.logIt_thread(self.log_path, msg=f'Runtime Error: {e}.')
             return False
 
+    def disable_controller_buttons(self):
+        for button in list(self.buttons):
+            button.config(state=DISABLED)
+
+        time.sleep(3)
+
+        for button in list(self.buttons):
+            button.config(state=NORMAL)
+
     # Manage Table & Controller LabelFrame Buttons
     def selectItem(self, event) -> bool:
-        def make_buttons():
+        # Create Controller Buttons
+        def make_buttons(row):
             # Screenshot Button
             self.screenshot_btn = Button(self.controller_btns, text="Screenshot", width=15, pady=5,
                                          command=lambda: scThread())
             self.screenshot_btn.grid(row=0, sticky="w", pady=5, padx=2, ipadx=2)
+            self.buttons.append(self.screenshot_btn)
 
             # Anydesk Button
             self.anydesk_btn = Button(self.controller_btns, text="Anydesk", width=15, pady=5,
                                       command=lambda: self.anydesk(clientConn, ip, sname))
 
             self.anydesk_btn.grid(row=0, column=1, sticky="w", pady=5, padx=2, ipadx=2)
+            self.buttons.append(self.anydesk_btn)
 
             # Last Restart Button
             self.last_restart_btn = Button(self.controller_btns, text="Last Restart", width=15, pady=5,
                                            command=lambda: self.last_restart(clientConn, ip, sname))
 
             self.last_restart_btn.grid(row=0, column=2, sticky="w", pady=5, padx=2, ipadx=2)
+            self.buttons.append(self.last_restart_btn)
 
             # System Information Button
             self.sysinfo_btn = Button(self.controller_btns, text="SysInfo", width=15, pady=5,
-                                      command=lambda: self.sysinfo(clientConn, ip))
+                                      command=lambda: sysinfoThread())
 
             self.sysinfo_btn.grid(row=0, column=3, sticky="w", pady=5, padx=2, ipadx=2)
+            self.buttons.append(self.sysinfo_btn)
 
             # Tasks Button
             self.tasks_btn = Button(self.controller_btns, text="Tasks", width=15, pady=5,
-                                    command=lambda: self.tasks(clientConn, ip, sname))
+                                    command=lambda: tasksThread())
 
             self.tasks_btn.grid(row=0, column=4, sticky="w", pady=5, padx=2, ipadx=2)
+            self.buttons.append(self.tasks_btn)
 
             # Restart Button
-            self.anydesk_btn = Button(self.controller_btns, text="Restart", width=15, pady=5,
+            self.restart_btn = Button(self.controller_btns, text="Restart", width=15, pady=5,
                                       command=lambda: self.restart(clientConn, ip, sname))
 
-            self.anydesk_btn.grid(row=0, column=5, sticky="w", pady=5, padx=2, ipadx=2)
+            self.restart_btn.grid(row=0, column=5, sticky="w", pady=5, padx=2, ipadx=2)
+            self.buttons.append(self.restart_btn)
 
             # Browse Local Files Button
-            self.anydesk_btn = Button(self.controller_btns, text="Local Files", width=15, pady=5,
-                                      command=lambda: self.browse_local_files(sname))
+            self.browse_btn = Button(self.controller_btns, text="Local Files", width=15, pady=5,
+                                     command=lambda: self.browse_local_files(sname))
 
-            self.anydesk_btn.grid(row=0, column=6, sticky="w", pady=5, padx=2, ipadx=2)
+            self.browse_btn.grid(row=0, column=6, sticky="w", pady=5, padx=2, ipadx=2)
+            self.buttons.append(self.browse_btn)
 
+        # Screenshot Thread
         def scThread():
             screenThread = Thread(target=self.screenshot,
                                   args=(clientConn, clientIP),
                                   name="Screenshot Thread")
             screenThread.start()
+
+        # System Information Thread
+        def sysinfoThread():
+            sysThread = Thread(target=self.sysinfo,
+                               args=(clientConn, clientIP, sname),
+                               name="System Information Thread")
+            sysThread.start()
+
+        # Tasks Thread
+        def tasksThread():
+            tsksThread = Thread(target=self.tasks, args=(clientConn, clientIP, sname), name="Tasks Thread")
+            tsksThread.start()
 
         rowid = self.table.identify_row(event.y)
         row = self.table.item(rowid)['values']
@@ -1106,19 +1153,20 @@ class App(tk.Tk):
             if not row[2] in self.temp.values():
                 self.temp[row[0]] = row[2]
 
+        # Error can raise when clicking on empty space so the row is None or empty.
         except IndexError:
             pass
 
-        # Create a Controller Box with Buttons and connect to TreeView Table
+        # Create a Controller Box with Buttons and connect shell by TreeView Table selection
         for id, ip in self.temp.items():
             for clientConn, clientValues in self.clients.items():
                 for clientMac, clientIPv in clientValues.items():
                     for clientIP, vals in clientIPv.items():
                         if clientIP == ip:
                             for sname in vals.keys():
-                                make_buttons()
+                                make_buttons(row)
 
-                                shellThread = Thread(target=self.shell, args=(clientConn, clientIP),
+                                shellThread = Thread(target=self.shell, args=(clientConn, clientIP, sname),
                                                      name="Shell Thread")
                                 shellThread.daemon = True
                                 shellThread.start()
