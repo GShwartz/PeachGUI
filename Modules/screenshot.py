@@ -64,10 +64,8 @@ class Screenshot:
             for conKey, ipValue in self.clients.items():
                 for macKey, ipVal in ipValue.items():
                     for ipKey, userValue in ipVal.items():
-                        print(ipKey, userValue)
                         if ipKey == ip:
                             for item in self.tmp_availables:
-                                print(item)
                                 if item[2] == ip:
                                     for identKey, timeValue in userValue.items():
                                         name = item[3]
@@ -167,9 +165,6 @@ class Screenshot:
                 self.logIt_thread(self.log_path, debug=False, msg=f'Waiting for answer from client...')
                 ans = self.con.recv(1024).decode()
                 self.logIt_thread(self.log_path, debug=False, msg=f'Client answer: {ans}')
-
-                self.logIt_thread(self.log_path, debug=False, msg=f'Printing confirmation to screen...')
-                print(f"[{colored('V', 'green')}]{ans}")
 
             except (WindowsError, socket.error) as e:
                 self.logIt_thread(self.log_path, debug=False, msg=f'Error: {e}')
