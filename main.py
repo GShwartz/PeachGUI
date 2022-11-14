@@ -58,10 +58,8 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         # ======== Server Config ==========
-        self.server = socket.socket()
-        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.server.bind((self.serverIP, self.port))
-        self.server.listen()
+        # Listener
+        self.listener()
 
         # Create local app DIR
         if not os.path.exists(self.path):
@@ -79,6 +77,8 @@ class App(tk.Tk):
 
         # Update screen geometry variables
         self.update_idletasks()
+
+        # Get current screen width & height
         self.width = self.winfo_screenwidth()
         self.height = self.winfo_screenheight()
 
@@ -97,13 +97,33 @@ class App(tk.Tk):
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
+        # =-=-=-=-=-=-= MAIN FRAME GUI =-=-=-=-=-=-=-=
+        # Build and display
+        self.build_main_window_frames()
+        self.build_connected_table()
+
+        # =-=-=-=-=-=-= SIDEBAR BUTTONS =-=-=-=-=-=-=-=
+        # Build and display
+        self.create_sidebar_buttons()
+
+        # Display Server info & connected stations
+        self.server_information()
+        self.show_available_connections()
+        self.connection_history()
+
+    # Server listener
+    def listener(self):
+        self.server = socket.socket()
+        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.server.bind((self.serverIP, self.port))
+        self.server.listen()
+
+    # Build initial main frame GUI
+    def build_main_window_frames(self):
         # Sidebar Frame
         self.sidebar_frame = Frame(self, width=150, background="RoyalBlue4")
         self.sidebar_frame.grid(row=0, column=0, sticky="nswe")
         self.sidebar_frame.rowconfigure(5, weight=10)
-
-        # =-=-=-=-=-=-= SIDEBAR BUTTONS =-=-=-=-=-=-=-=
-        self.create_sidebar_buttons()
 
         # Main Frame
         self.main_frame = Frame(self, background="ghost white", relief="solid")
@@ -142,14 +162,6 @@ class App(tk.Tk):
         self.status_labelFrame = LabelFrame(self.main_frame, height=5, text='Status', relief='solid', pady=5)
         self.status_labelFrame.grid(row=4, column=1, sticky='news')
 
-        # Display Connected Table
-        self.create_connected_table()
-
-        # Display Server info & connected stations
-        self.server_information()
-        self.show_available_connections()
-        self.connection_history()
-
     # Create Sidebar Buttons
     def create_sidebar_buttons(self):
         # Refresh Button
@@ -177,7 +189,7 @@ class App(tk.Tk):
         self.btn_exit.grid(row=3, sticky="nwes")
 
     # Create Treeview Table for connected stations
-    def create_connected_table(self) -> None:
+    def build_connected_table(self) -> None:
         # Create a Table for connected stations
         self.connected_table = ttk.Treeview(self.table_frame,
                                             columns=("ID", "MAC Address",
@@ -465,7 +477,6 @@ class App(tk.Tk):
         self.update_statusbar_messages_thread(msg=f'Status: fetching screenshot from {ip} | {sname}...')
 
         try:
-            print(f"[{colored('*', 'cyan')}]Fetching screenshot...")
             self.logIt_thread(self.log_path, msg=f'Sending screen command to client...')
             con.send('screen'.encode())
             self.logIt_thread(self.log_path, msg=f'Send Completed.')
@@ -744,8 +755,8 @@ class App(tk.Tk):
 
         self.logIt_thread(self.log_path, debug=False, msg=f'Calling tasks.tasks()...')
         filepath = tsks.tasks(ip)
-        print(filepath)
 
+        # Display kill task question pop-up
         killTask = messagebox.askyesno(f"Tasks from {ip} | {sname}", "Kill Task?\t\t\t\t\t\t\t\t")
         if killTask:
             task_to_kill = what_task()
@@ -766,11 +777,14 @@ class App(tk.Tk):
                 return False
 
         else:
+            self.logIt_thread(self.log_path, msg=f'Sending "n" to {ip}.')
             try:
                 con.send('n'.encode())
 
             except (WindowsError, socket.error) as e:
+                self.logIt_thread(self.log_path, msg=f'Error: {e}.')
                 self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+                self.remove_lost_connection(con, ip)
                 return False
 
             # Update statusbar message
@@ -816,7 +830,6 @@ class App(tk.Tk):
     # Browse local files by Clients Station Names
     def browse_local_files(self, sname: str) -> subprocess:
         return subprocess.Popen(rf"explorer {self.path}\{sname}")
-
     # ==++==++==++== END Controller Buttons ==++==++==++==
 
     # # ==++==++==++== Server Processes ==++==++==++==
