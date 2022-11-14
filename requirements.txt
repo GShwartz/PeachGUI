@@ -1,0 +1,8 @@
+future
+psutil
+Pillow
+termcolor
+colorama
+pyftpdlib
+pwinput
+PyQt5

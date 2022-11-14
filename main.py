@@ -53,7 +53,7 @@ class App(tk.Tk):
     log_path = fr'{path}\server_log.txt'
 
     WIDTH = 1350
-    HEIGHT = 880
+    HEIGHT = 855
 
     def __init__(self):
         super().__init__()
@@ -102,6 +102,9 @@ class App(tk.Tk):
         self.sidebar_frame.grid(row=0, column=0, sticky="nswe")
         self.sidebar_frame.rowconfigure(5, weight=10)
 
+        # =-=-=-=-=-=-= SIDEBAR BUTTONS =-=-=-=-=-=-=-=
+        self.create_sidebar_buttons()
+
         # Main Frame
         self.main_frame = Frame(self, background="ghost white", relief="solid")
         self.main_frame.grid(row=0, column=1, columnspan=5, sticky="nswe", padx=5)
@@ -127,12 +130,28 @@ class App(tk.Tk):
         self.table_frame = ttk.LabelFrame(self.main_frame_table, text="Connected Stations")
         self.table_frame.grid(row=0, sticky="new", pady=5)
 
+        # Details Frame
+        self.details_frame = Frame(self.main_frame, relief='flat')
+        self.details_frame.grid(row=3, column=0, sticky='news')
+
+        # Statusbar Frame
+        self.statusbar_frame = Frame(self.main_frame, relief='solid', pady=5)
+        self.statusbar_frame.grid(row=4, column=1, sticky='news')
+
         # Status LabelFrame
         self.status_labelFrame = LabelFrame(self.main_frame, height=5, text='Status', relief='solid', pady=5)
-        self.status_labelFrame.grid(row=5, column=1, sticky='news')
+        self.status_labelFrame.grid(row=4, column=1, sticky='news')
 
-        # =-=-=-=-=-=-= BUTTONS =-=-=-=-=-=-=-=
-        # Sidebar Buttons
+        # Display Connected Table
+        self.create_connected_table()
+
+        # Display Server info & connected stations
+        self.server_information()
+        self.show_available_connections()
+        self.connection_history()
+
+    # Define Sidebar Buttons
+    def create_sidebar_buttons(self):
         # Refresh Button
         self.refresh_bt = tk.Button(self.sidebar_frame,
                                     text="Refresh", width=15, pady=10,
@@ -156,20 +175,8 @@ class App(tk.Tk):
                                   text="Exit", width=15, pady=10,
                                   command=lambda: self.exit())
         self.btn_exit.grid(row=3, sticky="nwes")
-        # =-=-=-=-=-=-= END BUTTONS =-=-=-=-=-=-=-=
 
-        # Display Connected Table
-        self.create_connected_table()
-
-        # Display Server info & connected stations
-        self.server_information()
-        self.show_available_connections()
-        self.connection_history()
-
-        # Display Status Message
-        self.status_message = Label(self.status_labelFrame, relief='flat', text=f"Status: Welcome to Peach!\t\t\t\t")
-        self.status_message.grid(row=0, sticky='w')
-
+    # Define Treeview Table for connected stations
     def create_connected_table(self) -> None:
         # Create a Table for connected stations
         self.connected_table = ttk.Treeview(self.table_frame,
@@ -203,7 +210,17 @@ class App(tk.Tk):
         self.connected_table_style.configure("Treeview", rowheight=20)
         self.connected_table_style.map("Treeview")
 
+    # Disable Controller Buttons Thread
+    def disable_controller_buttons_thread(self):
+        disable = Thread(target=self.disable_controller_buttons,
+                         daemon=True,
+                         name="Disable Controller Buttons Thread")
+        disable.start()
+
+    # Broadcast update command to all connected stations
     def update_all_clients(self) -> bool:
+        self.disable_controller_buttons_thread()
+
         for client, ip in zip(self.targets, self.ips):
             self.logIt_thread(self.log_path, msg=f'Sending update command to {ip}...')
             try:
@@ -234,6 +251,8 @@ class App(tk.Tk):
 
     # Refresh server info & connected stations table with vital signs
     def refresh(self) -> None:
+        self.disable_controller_buttons_thread()
+
         self.tmp_availables = []
         self.vital_signs_thread()
         self.server_information()
@@ -344,6 +363,20 @@ class App(tk.Tk):
                               f'from clients list...')
         extract()
 
+    # Update status bar messages Thread
+    def update_statusbar_messages_thread(self, msg=''):
+        statusbarThread = Thread(target=self.update_statusbar_messages,
+                                 args=(msg,),
+                                 name="Update Statusbar Thread")
+        statusbarThread.daemon = True
+        statusbarThread.start()
+
+    # Update status bar messages
+    def update_statusbar_messages(self, msg=''):
+        status_label = Label(self.status_labelFrame, relief='flat',
+                             text=f"{msg}\t\t\t\t\t\t\t\t")
+        status_label.grid(row=0, column=0, sticky='w')
+
     # Close App
     def on_closing(self, event=0) -> None:
         self.destroy()
@@ -388,7 +421,7 @@ class App(tk.Tk):
 
         return dt
 
-    # Log Debugger
+    # Log & Debugger
     def logIt(self, logfile=None, debug=None, msg='') -> bool:
         dt = self.get_date()
         if debug:
@@ -583,8 +616,11 @@ class App(tk.Tk):
                 return False
 
     # Display Connection History
-    def connection_history(self) -> None:
+    def connection_history(self) -> bool:
         self.logIt_thread(self.log_path, msg=f'Running connection_history()...')
+
+        # Update statusbar message
+        self.update_statusbar_messages_thread(msg=f'Status: displaying connection history...')
 
         # History LabelFrame
         self.history_labelFrame = LabelFrame(self.main_frame, height=400, text="Connection History",
@@ -601,26 +637,22 @@ class App(tk.Tk):
                         for ipKey, identValue in ipVal.items():
                             for identKey, userValue in identValue.items():
                                 for userKey, timeValue in userValue.items():
-                                    print(
-                                        f"[{colored(str(c), 'green')}]{colored('IP', 'cyan')}: {ipKey} | "
-                                        f"{colored('Station MAC', 'cyan')}: {macKey} | "
-                                        f"{colored('Station Name', 'cyan')}: {identKey} | "
-                                        f"{colored('User', 'cyan')}: {userKey} | "
-                                        f"{colored('Time', 'cyan')}: {str(timeValue).replace('|', ':')}")
-
                                     histLabel = tk.Label(self.history_labelFrame,
-                                                         text=f"[{str(c)}]IP: {ipKey} | "
+                                                         text=f"[{str(c)}]Station IP: {ipKey} | "
                                                               f"Station MAC: {macKey} | "
                                                               f"Station Name: {identKey} | "
-                                                              f"User: {userKey} | "
-                                                              f"Time: {str(timeValue).replace('|', ':')}")
+                                                              f"Logged User: {userKey} | "
+                                                              f"Connection Time: {str(timeValue).replace('|', ':')}")
                                     histLabel.grid(row=c - 1, column=0, sticky='w')
                         c += 1
 
+            return True
+
         # Break If Client Lost Connection
         except (KeyError, socket.error, ConnectionResetError) as e:
-            self.logIt_thread(self.log_path, msg=f'Iteration Error: {e}')
-            return
+            # Update statusbar message
+            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+            return False
 
     # Check if connected stations are still connected
     def vital_signs(self) -> bool:
@@ -632,9 +664,8 @@ class App(tk.Tk):
         callback = 'yes'
         i = 0
 
-        # Display Progress status in Status LabelFrame
-        runningLabel = Label(self.status_labelFrame, relief='flat', text="Status: running vitals check...\t\t\t\t\t\t\t\t")
-        runningLabel.grid(row=0, column=0, sticky='w')
+        # Update statusbar message
+        self.update_statusbar_messages_thread(msg=f'Status: running vitals check...')
 
         self.logIt_thread(self.log_path, msg=f'Iterating Through Temp Connected Sockets List...')
         for t in self.targets:
@@ -663,8 +694,9 @@ class App(tk.Tk):
                                 for name, version in identValue.items():
                                     for v, v1 in version.items():
                                         for n, ver in v1.items():
-                                            print(
-                                                f"[{colored('V', 'green')}]{self.ips[i]} | {v} | Version: {ver}")
+                                            # Update statusbar message
+                                            self.update_statusbar_messages_thread(
+                                                msg=f'Status: Station IP: {self.ips[i]} | Station Name: {v} | Client Version: {ver} - ALIVE!')
                                             i += 1
                                             time.sleep(0.5)
 
@@ -682,14 +714,16 @@ class App(tk.Tk):
         self.logIt_thread(self.log_path, msg=f'=== End of vital_signs() ===')
         print(f"\n[{colored('*', 'green')}]Vital Signs Process completed.\n")
 
-        # Display Status message
-        runningLabel = Label(self.status_labelFrame, text="Status: Vitals check completed.\t\t\t\t\t\t\t\t")
-        runningLabel.grid(row=0, sticky='w')
+        # Update statusbar message
+        self.update_statusbar_messages_thread(msg=f'Status: Vitals check completed.')
 
         return True
 
     # Restart Client
     def restart(self, con: str, ip: str, sname: str) -> bool:
+        # Update statusbar message
+        self.update_statusbar_messages_thread(msg=f'Status: waiting for restart confirmation...')
+
         # Display MessageBox on screen
         self.sure = messagebox.askyesno(f"Restart for: {ip} | {sname}", f"Are you sure you want to restart {sname}?\t")
         if self.sure:
@@ -698,17 +732,26 @@ class App(tk.Tk):
                 con.send('restart'.encode())
                 self.remove_lost_connection(con, ip)
                 self.refresh()
+
+                # Update statusbar message
+                self.update_statusbar_messages_thread(msg=f'Status: restart command sent to {ip} | {sname}.')
+
                 return True
 
             except (RuntimeError, WindowsError, socket.error) as e:
                 self.logIt_thread(self.log_path, msg=f'Connection Error: {e}')
-                print(f"[{colored('!', 'red')}]Client lost connection.")
+
+                # Update statusbar message
+                self.update_statusbar_messages_thread(msg=f'Status: {e}')
 
                 self.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip})...')
                 self.remove_lost_connection(con, ip)
+
                 return False
 
         else:
+            # Update statusbar message
+            self.update_statusbar_messages_thread(msg=f'Status: restart canceled.')
             return False
 
     # Display Clients Last Restart
@@ -722,10 +765,8 @@ class App(tk.Tk):
             msg = con.recv(4096).decode()
             self.logIt_thread(self.log_path, debug=False, msg=f'Client response: {msg}')
 
-            # Display Status Message
-            runningLabel = Label(self.status_labelFrame, relief='flat',
-                                 text=f"Status: last restart: {msg}\t\t\t\t\t\t\t\t")
-            runningLabel.grid(row=0, column=0, sticky='w')
+            # Update statusbar message
+            self.update_statusbar_messages_thread(msg=f'Status: restart for {sname}: {msg.split("|")[1][15:]}')
 
             # Display MessageBox on screen
             messagebox.showinfo(f"Last Restart for: {ip} | {sname}", f"\t{msg.split('|')[1][15:]}\t\t\t")
@@ -734,7 +775,9 @@ class App(tk.Tk):
 
         except (WindowsError, socket.error, ConnectionResetError) as e:
             self.logIt_thread(self.log_path, debug=False, msg=f'Connection Error: {e}.')
-            print(f"[{colored('!', 'red')}]Client lost connection.")
+            # Update statusbar message
+            self.update_statusbar_messages_thread(msg=f'Status: {e}')
+
             try:
                 self.logIt_thread(self.log_path, debug=False,
                                   msg=f'Calling self.remove_lost_connection({con}, {ip})...')
@@ -749,9 +792,8 @@ class App(tk.Tk):
     def anydesk(self, con: str, ip: str, sname: str) -> bool:
         self.logIt_thread(self.log_path, msg=f'Running anydesk({con}, {ip})...')
 
-        # Display Status Message
-        runningLabel = Label(self.status_labelFrame, relief='flat', text=f"Status: running anydesk on {ip} | {sname}...\t\t\t\t\t\t\t\t")
-        runningLabel.grid(row=0, column=0, sticky='w')
+        # Update statusbar message
+        self.update_statusbar_messages_thread(msg=f'Status: running anydesk on {ip} | {sname}...')
 
         try:
             self.logIt_thread(self.log_path, msg=f'Sending anydesk command to {con}...')
@@ -764,14 +806,16 @@ class App(tk.Tk):
 
             if "OK" not in msg:
                 self.logIt_thread(self.log_path, msg=f'Printing msg from client...')
+
+                # Update statusbar message
+                self.update_statusbar_messages_thread(msg=f'Status: {ip} | {sname}: Anydesk not installed.')
+
                 install_anydesk = messagebox.askyesno("Install Anydesk",
                                                       "Anydesk isn't installed on the remote machine. do you with to install?")
 
                 if install_anydesk:
-                    # Display Status Message
-                    runningLabel = Label(self.status_labelFrame, relief='flat',
-                                         text=f"Status: Installing Anydesk on {sname}...\t\t\t\t\t\t\t\t")
-                    runningLabel.grid(row=0, column=0, sticky='w')
+                    # Update statusbar message
+                    self.update_statusbar_messages_thread(msg=f'Status: installing anydesk on {ip} | {sname}...')
 
                     self.logIt_thread(self.log_path, msg=f'Sending install command to {con}...')
                     con.send('y'.encode())
@@ -785,27 +829,19 @@ class App(tk.Tk):
                         textVar.set(msg)
 
                         if "OK" not in str(msg):
-                            # Display Status Message
-                            runningLabel = Label(self.status_labelFrame, relief='flat',
-                                                 text=f"Status: {msg}...\t\t\t\t\t\t\t\t")
-                            runningLabel.grid(row=0, column=0, sticky='w')
-                            # print(msg)
+                            # Update statusbar message
+                            self.update_statusbar_messages_thread(msg=f'Status: {msg}')
 
                         else:
-                            # Display Status Message
-                            runningLabel = Label(self.status_labelFrame, relief='flat',
-                                                 textvariable=f"{textVar}\t\t\t\t\t\t\t\t")
-                            runningLabel.grid(row=0, column=0, sticky='w')
+                            # Update statusbar message
+                            self.update_statusbar_messages_thread(msg=f'Status: {textVar}')
 
-                            time.sleep(0.5)
                             msgBox = messagebox.showinfo(f"From {ip} | {sname}", f"Anydesk Running.\t\t\t\t")
 
-                            # Display Status Message
-                            runningLabel = Label(self.status_labelFrame, relief='flat',
-                                                 text=f"Status: anydesk running on {ip} | {sname}.\t\t\t\t\t\t\t\t")
-                            runningLabel.grid(row=0, column=0, sticky='w')
+                            # Update statusbar message
+                            self.update_statusbar_messages_thread(msg=f'Status: anydesk running on {ip} | {sname}.')
 
-                            return
+                            return True
 
                 else:
                     self.logIt_thread(self.log_path, msg=f'Sending cancel command to {con}...')
@@ -814,23 +850,17 @@ class App(tk.Tk):
                     return
 
             else:
-                # Display Status Message
-                runningLabel = Label(self.status_labelFrame, relief='flat',
-                                     text=f"Status: anydesk running on {ip} | {sname}.\t\t\t\t\t\t\t\t")
-                runningLabel.grid(row=0, column=0, sticky='w')
+                # Update statusbar message
+                self.update_statusbar_messages_thread(msg=f'Status: anydesk running on {ip} | {sname}.')
 
-                time.sleep(0.5)
                 msgBox = messagebox.showinfo(f"From {ip} | {sname}", f"Anydesk Running.\t\t\t\t")
-
                 return True
 
         except (WindowsError, ConnectionError, socket.error) as e:
             self.logIt_thread(self.log_path, msg=f'Connection Error: {e}.')
 
-            # Display Status Message
-            runningLabel = Label(self.status_labelFrame, relief='flat',
-                                 text=f"{ip} | {sname} ERROR: {e}.\t\t\t\t")
-            runningLabel.grid(row=0, column=0, sticky='w')
+            # Update statusbar message
+            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
 
             print(f"[{colored('!', 'red')}]Client lost connection.")
             try:
@@ -846,8 +876,13 @@ class App(tk.Tk):
     # Screenshot from Client
     def screenshot(self, con: str, ip: str, sname: str) -> None:
         # Disable Controller Buttons
-        disThread = Thread(target=self.disable_controller_buttons, name="Disable Controller Buttons Thread")
+        disThread = Thread(target=self.disable_controller_buttons,
+                           daemon=True,
+                           name="Disable Controller Buttons Thread")
         disThread.start()
+
+        # Update statusbar message
+        self.update_statusbar_messages_thread(msg=f'Status: fetching screenshot from {ip} | {sname}...')
 
         try:
             print(f"[{colored('*', 'cyan')}]Fetching screenshot...")
@@ -864,17 +899,14 @@ class App(tk.Tk):
             self.logIt_thread(self.log_path, msg=f'Calling screenshot.recv_file()...')
             scrnshot.recv_file(ip)
 
-            # Display Status Message
-            runningLabel = Label(self.status_labelFrame, relief='flat',
-                                 text=f"Status: screenshot from {ip} | {sname} received.\t\t\t\t\t\t\t\t")
-            runningLabel.grid(row=0, column=0, sticky='w')
-
-            # Terminate disThread
-            disThread.join(1)
+            # Update statusbar message
+            self.update_statusbar_messages_thread(msg=f'Status: screenshot received from  {ip} | {sname}.')
 
         except (WindowsError, socket.error, ConnectionResetError) as e:
             self.logIt_thread(self.log_path, msg=f'Connection Error: {e}')
-            print(f"[{colored('!', 'red')}]Client lost connection.")
+
+            # Update statusbar message
+            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
 
             self.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip}...)')
             self.remove_lost_connection(con, ip)
@@ -885,10 +917,8 @@ class App(tk.Tk):
         disThread = Thread(target=self.disable_controller_buttons, name="Disable Controller Buttons Thread")
         disThread.start()
 
-        # Display Status Message
-        runningLabel = Label(self.status_labelFrame, relief='flat',
-                             text=f"Status: waiting for system information from {ip} | {sname}...\t\t\t\t\t\t\t\t")
-        runningLabel.grid(row=0, column=0, sticky='w')
+        # Update statusbar message
+        self.update_statusbar_messages_thread(msg=f'Status: waiting for system information from {ip} | {sname}...')
 
         try:
             self.logIt_thread(self.log_path, msg=f'Initializing Module: sysinfo...')
@@ -897,19 +927,18 @@ class App(tk.Tk):
             print(f"[{colored('*', 'cyan')}]Fetching system information, please wait... ")
             self.logIt_thread(self.log_path, msg=f'Calling sysinfo.run()...')
             if sinfo.run(ip):
+                # Update statusbar message
+                self.update_statusbar_messages_thread(
+                    msg=f'Status: system information file received from {ip} | {sname}.')
+
                 messagebox.showinfo(f"From {ip} | {sname}", "System information file received.\t\t\t\t\t\t\t\t")
-
-                # Display Status Message
-                runningLabel = Label(self.status_labelFrame, relief='flat',
-                                     text=f"Status: sysinfo file received from {ip} | {sname}.\t\t\t\t\t\t\t\t")
-                runningLabel.grid(row=0, column=0, sticky='w')
-
-            # Terminate disThread
-            disThread.join(1)
 
         except (WindowsError, socket.error, ConnectionResetError) as e:
             self.logIt_thread(self.log_path, debug=True, msg=f'Connection Error: {e}.')
-            # print(f"[{colored('!', 'red')}]Client lost connection.")
+
+            # Update statusbar message
+            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+
             try:
                 self.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip})...')
                 self.remove_lost_connection(con, ip)
@@ -920,19 +949,12 @@ class App(tk.Tk):
 
     # Display/Kill Tasks on Client
     def tasks(self, con: str, ip: str, sname: str) -> bool:
-        if len(self.targets) == 0:
-            self.logIt_thread(self.log_path, debug=False, msg=f'No available connections.')
-            print(f"[{colored('*', 'red')}]No connected stations.")
-            return False
-
         # Disable Buttons
         disThread = Thread(target=self.disable_controller_buttons, name="Disable Controller Buttons Thread")
         disThread.start()
 
-        # Display Status Message
-        runningLabel = Label(self.status_labelFrame, relief='flat',
-                             text=f"Status: running tasks on {ip} | {sname}...\t\t\t\t\t\t\t\t")
-        runningLabel.grid(row=0, column=0, sticky='w')
+        # Update statusbar message
+        self.update_statusbar_messages_thread(msg=f'Status: running tasks command on {ip} | {sname}.')
 
         self.logIt_thread(self.log_path, debug=False, msg=f'Initializing Module: tasks...')
         tsks = tasks.Tasks(con, ip, self.clients, self.connections,
@@ -977,44 +999,51 @@ class App(tk.Tk):
 
                         messagebox.showinfo(f'Kill {task_to_kill}', f'Task {task_to_kill} killed.')
 
-                        # Display Status Message
-                        runningLabel = Label(self.status_labelFrame, relief='flat',
-                                             text=f"Status: killed {task_to_kill} on {ip} | {sname}...\t\t\t\t\t\t\t\t")
-                        runningLabel.grid(row=0, column=0, sticky='w')
+                        # Update statusbar message
+                        self.update_statusbar_messages_thread(msg=f'Status: killed task {task_to_kill} on {ip} | {sname}.')
 
                         return True
 
                     except (WindowsError, socket.error) as e:
                         self.logIt_thread(self.log_path, msg=f'Error: {e}.')
-                        print(f"[{colored('!', 'red')}]Client lost connection.")
+
+                        # Update statusbar message
+                        self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+
                         self.remove_lost_connection(con, ip)
                         return False
 
                 else:
                     self.logIt_thread(self.log_path, msg=f'Sending pass command to {ip}.')
-                    con.send('pass'.encode())
+                    try:
+                        con.send('pass'.encode())
+
+                    except socket.error as e:
+                        # Update statusbar message
+                        self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+                        return False
+
                     self.logIt_thread(self.log_path, msg=f'Send complete.')
-
-                    # Terminate disThread
-                    disThread.join(1)
-
                     return False
 
             except (WindowsError, socket.error, ConnectionResetError, ConnectionError) as e:
-                print(f"[{colored('!', 'red')}]Client lost connection.")
-                try:
-                    self.remove_lost_connection(con, ip)
+                # Update statusbar message
+                self.update_statusbar_messages_thread(msg=f'Status: {e}.')
 
-                except RuntimeError as e:
-                    return False
+                self.remove_lost_connection(con, ip)
 
         else:
-            con.send('n'.encode())
+            try:
+                con.send('n'.encode())
 
-            # Display Status Message
-            runningLabel = Label(self.status_labelFrame, relief='flat',
-                                 text=f"Status: received tasks from {ip} | {sname}.\t\t\t\t\t\t\t\t")
-            runningLabel.grid(row=0, column=0, sticky='news')
+            except socket.error as e:
+                # Update statusbar message
+                self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+
+                return False
+
+            # Update statusbar message
+            self.update_statusbar_messages_thread(msg=f'Status: tasks file received from {ip} | {sname}.')
 
             return True
 
@@ -1026,27 +1055,15 @@ class App(tk.Tk):
     def shell(self, con: str, ip: str, sname: str) -> None:
         self.logIt_thread(self.log_path, msg=f'Running shell({con}, {ip})...')
 
-        # Display Status message
-        runningLabel = Label(self.status_labelFrame, relief='flat', text=f"Status: shell connected to: {ip} | {sname}\t\t\t\t\t\t\t\t")
-        runningLabel.grid(row=0, column=0, sticky='w')
+        # Update statusbar message
+        self.update_statusbar_messages_thread(msg=f'Status: shell connected to {ip} | {sname}.')
 
         while True:
             self.logIt_thread(self.log_path, msg=f'Calling self.show_shell_commands({ip})...')
-            # self.show_shell_commands(ip)
 
-            # Wait for User Input
+            # Wait for User Input & hide print
             self.logIt_thread(self.log_path, msg=f'Waiting for user input...')
             cmd = input(f"")
-
-            # Input Validation
-            try:
-                self.logIt_thread(self.log_path, msg=f'Performing input validation on user input: {cmd}...')
-                val = int(cmd)
-
-            except (TypeError, ValueError):
-                self.logIt_thread(self.log_path, msg=f'Wrong input detected.')
-                print(f"[{colored('*', 'red')}]Numbers Only [{colored('1', 'yellow')} - {colored('8', 'yellow')}]!")
-                continue
 
             # Run Custom Command
             if int(cmd) == 100:
@@ -1076,8 +1093,6 @@ class App(tk.Tk):
                 self.logIt_thread(self.log_path, msg=f'Calling freestyle module...')
                 free.freestyle(ip)
 
-                continue
-
     # Remove Lost connections
     def remove_lost_connection(self, con: str, ip: str) -> bool:
         self.logIt_thread(self.log_path, msg=f'Running remove_lost_connection({con}, {ip})...')
@@ -1100,13 +1115,11 @@ class App(tk.Tk):
                                           f"{colored(f'{userValue}', 'yellow')} "
                                           f"Removed from Availables list.\n")
 
-                                    # Display Status Message
-                                    runningLabel = Label(self.status_labelFrame, relief='flat',
-                                                         text=f"Status: {ip} | {identValue} | {userValue} removed from connected list.\t\t\t\t\t\t\t\t")
-                                    runningLabel.grid(row=0, column=0, sticky='w')
+                                    # Update statusbar message
+                                    self.update_statusbar_messages_thread(
+                                        msg=f'Status: {ip} | {identValue} | {userValue} removed from connected list.')
 
             self.logIt_thread(self.log_path, msg=f'Connections removed.')
-
             return True
 
         except RuntimeError as e:
@@ -1129,7 +1142,7 @@ class App(tk.Tk):
         def make_buttons():
             # Screenshot Button
             self.screenshot_btn = Button(self.controller_btns, text="Screenshot", width=15, pady=5,
-                                         command=lambda: self.screenshot(clientConn, clientIP, sname))
+                                         command=lambda: screenshot_thread(clientConn, clientIP, sname))
             self.screenshot_btn.grid(row=0, sticky="w", pady=5, padx=2, ipadx=2)
             self.buttons.append(self.screenshot_btn)
 
@@ -1149,7 +1162,7 @@ class App(tk.Tk):
 
             # System Information Button
             self.sysinfo_btn = Button(self.controller_btns, text="SysInfo", width=15, pady=5,
-                                      command=lambda: self.sysinfo(clientConn, clientIP, sname))
+                                      command=lambda: client_system_information_thread(clientConn, clientIP, sname))
 
             self.sysinfo_btn.grid(row=0, column=3, sticky="w", pady=5, padx=2, ipadx=2)
             self.buttons.append(self.sysinfo_btn)
@@ -1175,6 +1188,16 @@ class App(tk.Tk):
             self.browse_btn.grid(row=0, column=6, sticky="w", pady=5, padx=2, ipadx=2)
             self.buttons.append(self.browse_btn)
 
+        def client_system_information_thread(con: str, ip: str, sname: str):
+            clientSystemInformationThread = Thread(target=self.sysinfo, args=(con, ip, sname), name="Client System Information Thread")
+            clientSystemInformationThread.daemon = True
+            clientSystemInformationThread.start()
+
+        def screenshot_thread(con: str, ip: str, sname: str):
+            screenThread = Thread(target=self.screenshot, args=(con, ip, sname), name='Screenshot Thread')
+            screenThread.daemon = True
+            screenThread.start()
+
         # Respond to mouse clicks on connected table
         rowid = self.connected_table.identify_row(event.y)
         row = self.connected_table.item(rowid)['values']
@@ -1186,11 +1209,11 @@ class App(tk.Tk):
         except IndexError:
             pass
 
-        # Details LabelFrame
+        # Display Details LabelFrame
         self.details_labelFrame = LabelFrame(self.main_frame, text="Details", relief='ridge', height=400)
         self.details_labelFrame.grid(row=3, sticky='news', columnspan=3)
 
-        # Create a Controller Box with Buttons and connect shell by TreeView Table selection
+        # Create a Controller LabelFrame with Buttons and connect shell by TreeView Table selection
         for id, ip in self.temp.items():
             for clientConn, clientValues in self.clients.items():
                 for clientMac, clientIPv in clientValues.items():
