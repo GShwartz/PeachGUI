@@ -67,7 +67,8 @@ class App(tk.Tk):
         listenerThread.start()
 
         # ======== GUI Config ===========
-        # Set Window Title
+        # Set main window preferences
+
         self.title("Peach")
         self.iconbitmap('peach.ico')
 
@@ -84,6 +85,8 @@ class App(tk.Tk):
 
         # Set Window Size & Location & Center Window
         self.geometry(f'{self.WIDTH}x{self.HEIGHT}+{int(x)}+{int(y)}')
+        self.maxsize(f'{self.WIDTH}', f'{self.HEIGHT}')
+        self.minsize(f'{self.WIDTH}', f'{self.HEIGHT}')
 
         # Set Closing protocol
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
@@ -129,6 +132,13 @@ class App(tk.Tk):
     def vital_signs_thread(self) -> None:
         vitalsThread = Thread(target=self.vital_signs, name="Vitals Thread")
         vitalsThread.start()
+
+    # Update Client Thread
+    def update_all_clients_thread(self):
+        update = Thread(target=self.update_all_clients,
+                        daemon=True,
+                        name="Update All Clients Thread")
+        update.start()
 
     # Display Available Connections Thread
     def sac_thread(self) -> None:
@@ -228,7 +238,7 @@ class App(tk.Tk):
         # Update Clients Button
         self.btn_update_clients = tk.Button(self.sidebar_frame,
                                             text="Update All Clients", width=15, pady=10,
-                                            command=lambda: self.update_all_clients())
+                                            command=lambda: self.update_all_clients_thread())
 
         self.btn_update_clients.grid(row=2, sticky="nwes")
         self.sidebar_buttons.append(self.btn_update_clients)
@@ -420,35 +430,19 @@ class App(tk.Tk):
 
     # Broadcast update command to all connected stations
     def update_all_clients(self) -> bool:
-        self.disable_buttons_thread(sidebar=True)
+        self.disable_buttons_thread(sidebar=False)
+        messagebox.showinfo("Update All Clients", "Updating clients, click refresh to view progress.")
 
-        for client, ip in zip(self.targets, self.ips):
-            self.logIt_thread(self.log_path, msg=f'Sending update command to {ip}...')
-            try:
-                client.send('update'.encode())
+        try:
+            for t in self.targets:
+                t.send('update'.encode())
+                t.recv(1024).decode()
 
-            except socket.error:
-                return False
-
-            self.logIt_thread(self.log_path, msg=f'Update command sent.')
-            self.logIt_thread(self.log_path, msg=f'Waiting for response from {ip}...')
-            try:
-                msg = client.recv(1024).decode()
-
-            except socket.error:
-                return False
-
-            self.logIt_thread(self.log_path, msg=f'Response from {ip}: {msg}')
-
-            # Display Progress status in Status LabelFrame
-            runningLabel = Label(self.status_labelFrame, relief='flat', text=f"From {ip}: {msg}\t\t\t\t")
-            runningLabel.grid(row=0, column=0, sticky='news')
-
-            messagebox.showinfo(f"From {ip}", f"{msg}\t\t\t")
-            self.remove_lost_connection(client, ip)
+        except RuntimeError:
+            pass
 
         self.refresh()
-        return True
+        return
 
     # EXIT
     def exit(self) -> None:
@@ -1359,6 +1353,7 @@ class App(tk.Tk):
         # Respond to mouse clicks on connected table
         rowid = self.connected_table.identify_row(event.y)
         row = self.connected_table.item(rowid)['values']
+
         try:
             if not row[2] in self.temp.values():
                 self.temp[row[0]] = row[2]
