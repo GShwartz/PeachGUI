@@ -11,20 +11,15 @@ import os
 class Vitals:
     threads = []
 
-    def __init__(self, targets, ips, clients, connections, log_path, ident):
+    def __init__(self, targets, ips, clients, connections, log_path):
         self.targets = targets
         self.ips = ips
         self.clients = clients
         self.connections = connections
         self.log_path = log_path
-        self.ident = ident
 
         # Capture Current Connected Sockets
         self.tmpconns = self.targets
-
-        # Create Temp Lists For Socket Connections and IPs
-        self.templist = []
-        self.tempips = []
 
     def get_date(self):
         d = datetime.now().replace(microsecond=0)
@@ -69,53 +64,23 @@ class Vitals:
                     for ipKey, identValue in ipValue.items():
                         if ipKey == ip:
                             for identKey, userValue in identValue.items():
-                                self.targets.remove(con)
+                                self.targets.remove({con})
                                 self.ips.remove(ip)
 
-                                del self.connections[con]
-                                del self.clients[con]
+                                del self.connections[f'{con}']
+                                del self.clients[f'{con}']
+
                                 print(f"[{colored('*', 'red')}]{colored(f'{ip}', 'yellow')} | "
                                       f"{colored(f'{identKey}', 'yellow')} | "
                                       f"{colored(f'{userValue}', 'yellow')} "
                                       f"Removed from Availables list.\n")
 
             self.logIt_thread(self.log_path, msg=f'Connections removed.')
-            return True
+            return conKey, ipKey
 
         except RuntimeError as e:
             self.logIt_thread(self.log_path, msg=f'Runtime Error: {e}.')
             return False
-
-    def vitals_input(self):
-        self.logIt_thread(self.log_path, msg=f'Running vitals_input()...')
-        while True:
-            self.logIt_thread(self.log_path, msg=f'Waiting for user input...')
-            pick = input("CONTROL@> ")
-            self.logIt_thread(self.log_path, msg=f'User input: {pick}.')
-
-            self.logIt_thread(self.log_path, msg=f'Performing input validation on {pick}.')
-            try:
-                float(pick)
-
-            except ValueError as e:
-                self.logIt_thread(self.log_path, msg=f'Value Error: {e}.')
-                print(f"[{colored('*', 'red')}]Value Error.")
-                continue
-
-            # Start
-            if int(pick) == 1:
-                self.logIt_thread(self.log_path, msg=f'Returning True...')
-                return True
-
-            # Back
-            elif int(pick) == 2:
-                self.logIt_thread(self.log_path, msg=f'Returning False...')
-                return False
-
-            else:
-                self.logIt_thread(self.log_path, msg=f'Wrong input detected.')
-                print(f"[{colored('*', 'red')}]Wrong Number! "
-                      f"[{colored('1', 'yellow')} - {colored('3', 'yellow')}]")
 
     def vital_signs(self):
         if len(self.targets) == 0:
@@ -130,7 +95,7 @@ class Vitals:
         i = 0
 
         self.logIt_thread(self.log_path, msg=f'Iterating Through Temp Connected Sockets List...')
-        for t in self.tmpconns:
+        for t in self.targets:
             try:
                 self.logIt_thread(self.log_path, msg=f'Sending "alive" to {t}...')
                 t.send('alive'.encode())
@@ -144,41 +109,38 @@ class Vitals:
                 ver = t.recv(1024).decode()
                 self.logIt_thread(self.log_path, msg=f'Response from {t}: {ver}.')
 
-                self.logIt_thread(self.log_path, msg=f'Comparing response to callback...')
                 if str(ans) == str(callback):
                     try:
                         for conKey, ipValue in self.clients.items():
                             for ipKey, identValue in ipValue.items():
-                                for con, ip in self.connections.items():
+                                for con in self.targets:
                                     if t == con:
                                         for name, version in identValue.items():
                                             for v, v1 in version.items():
-                                                print(f"[{colored('V', 'green')}]{self.ips[i]} | {name} | Version: {v1}")
-                                                self.logIt_thread(self.log_path, msg=f'Appending {self.targets[i]} to self.templist...')
-                                                self.templist.append(self.targets[i])
-                                                self.logIt_thread(self.log_path, msg=f'self.templist updated.')
+                                                for n, ver in v1.items():
+                                                    print(
+                                                        f"[{colored('V', 'green')}]{self.ips[i]} | {v} | Version: {ver}")
+                                                    i += 1
+                                                    time.sleep(1)
 
-                                                self.logIt_thread(self.log_path, msg=f'Appending {self.ips[i]} to self.ips...')
-                                                self.tempips.append(self.ips[i])
-                                                self.logIt_thread(self.log_path, msg=f'self.ips updated.')
-
-                                                i += 1
-                                                time.sleep(1)
-
-                    except IndexError:
+                    except (IndexError, RuntimeError):
                         pass
 
-            except ConnectionResetError as e:
+                else:
+                    # Reset Temp Lists
+                    self.tmpconns = []
+                    self.remove_lost_connection(con, ip)
+
+            except (WindowsError, socket.error) as e:
                 self.logIt_thread(self.log_path, msg=f'Connection Error: {e}.')
-                print(f"[{colored('*', 'red')}]{self.ips[i]} does not respond.")
-                self.remove_lost_connection(t, self.ips[i])
+                try:
+                    self.remove_lost_connection(t, self.ips[i])
+
+                except IndexError:
+                    pass
 
         # Reset Temp Lists
-        self.logIt_thread(self.log_path, msg=f'Resetting {self.tmpconns} | {self.tempips} | {self.templist}...')
         self.tmpconns = []
-        self.tempips = []
-        self.templist = []
-        self.logIt_thread(self.log_path, msg=f'{self.tmpconns} | {self.tempips} | {self.templist}...')
 
         self.logIt_thread(self.log_path, msg=f'=== End of vital_signs() ===')
         print(f"\n[{colored('*', 'green')}]Vital Signs Process completed.\n")
