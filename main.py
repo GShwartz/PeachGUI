@@ -185,11 +185,11 @@ class App(tk.Tk):
 
         # Table Frame in Main Frame
         self.main_frame_table = Frame(self.main_frame, relief='flat')
-        self.main_frame_table.grid(row=1, column=0, sticky="news", pady=5)
+        self.main_frame_table.grid(row=1, column=0, sticky="news", pady=2)
 
         # Controller Buttons LabelFrame in Main Frame
         self.controller_btns = LabelFrame(self.main_frame, text="Controller", relief='solid', height=60)
-        self.controller_btns.grid(row=2, column=0, columnspan=5, sticky="ews", pady=5)
+        self.controller_btns.grid(row=2, column=0, columnspan=5, sticky="news", pady=2)
 
         # Create Connected Table inside Main Frame when show connected btn pressed
         self.table_frame = LabelFrame(self.main_frame_table, text="Connected Stations")
