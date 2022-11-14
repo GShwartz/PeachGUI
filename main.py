@@ -155,13 +155,6 @@ class App(tk.Tk):
         enable.start()
     # ==++==++==++== END THREADED FUNCS ==++==++==++== #
 
-    # Server listener
-    def listener(self):
-        self.server = socket.socket()
-        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.server.bind((self.serverIP, self.port))
-        self.server.listen()
-
     # Build initial main frame GUI
     def build_main_window_frames(self):
         # Sidebar Frame
@@ -195,7 +188,7 @@ class App(tk.Tk):
         self.table_frame = LabelFrame(self.main_frame_table, text="Connected Stations")
         self.table_frame.grid(row=0, sticky="new", pady=5)
 
-        # Details Frame
+        # # Details Frame
         self.details_frame = Frame(self.main_frame, relief='flat')
         self.details_frame.grid(row=3, column=0, sticky='news')
 
@@ -240,17 +233,21 @@ class App(tk.Tk):
 
     # Create Treeview Table for connected stations
     def build_connected_table(self) -> None:
+        # Create Scrollbar
+        self.table_sb = Scrollbar(self.table_frame, orient=VERTICAL)
+        # self.table_sb.grid(row=0, sticky="wns")
+        self.table_sb.pack(side=LEFT, fill=Y)
+
         # Create a Table for connected stations
         self.connected_table = ttk.Treeview(self.table_frame,
                                             columns=("ID", "MAC Address",
                                                      "IP Address", "Station Name",
                                                      "Logged User", "Client Version"),
-                                            show="headings", height=10, selectmode='browse')
-        self.connected_table.grid(row=0, column=1, pady=10)
-
-        # Create Scrollbar
-        self.table_sb = Scrollbar(self.table_frame, orient=VERTICAL)
-        self.table_sb.grid(row=0, sticky="wns")
+                                            show="headings", height=10,
+                                            selectmode='browse', yscrollcommand=self.table_sb.set)
+        # self.connected_table.grid(row=0, column=1, pady=10)
+        self.connected_table.pack(fill=BOTH)
+        self.table_sb.config(command=self.connected_table.yview)
 
         # Columns & Headings config
         self.connected_table.column("#1", anchor=CENTER)
@@ -271,6 +268,13 @@ class App(tk.Tk):
         self.connected_table_style = ttk.Style()
         self.connected_table_style.configure("Treeview", rowheight=20)
         self.connected_table_style.map("Treeview")
+
+    # Server listener
+    def listener(self):
+        self.server = socket.socket()
+        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.server.bind((self.serverIP, self.port))
+        self.server.listen()
 
     # Display Server Information
     def server_information(self) -> dict:
@@ -306,10 +310,6 @@ class App(tk.Tk):
         self.disable_controller_buttons_thread()
         self.tmp_availables = []
 
-        # Controller Buttons LabelFrame in Main Frame
-        self.controller_btns = LabelFrame(self.main_frame, text="Controller", relief='solid', height=60)
-        self.controller_btns.grid(row=2, column=0, columnspan=5, sticky="ews", pady=5)
-
         self.vital_signs_thread()
         self.server_information()
         self.show_available_connections()
@@ -326,14 +326,23 @@ class App(tk.Tk):
         self.history_labelFrame = LabelFrame(self.main_frame, text="Connection History",
                                              relief='ridge')
         self.history_labelFrame.grid(row=3, column=0, sticky='news')
+        # self.history_labelFrame.pack()
 
+        # Create Scrollbar
+        self.history_table_scrollbar = Scrollbar(self.history_labelFrame, orient=VERTICAL)
+        self.history_table_scrollbar.pack(side=LEFT, fill=Y)
+
+        # Create Tree
         self.history_table = ttk.Treeview(self.history_labelFrame,
                                           columns=("ID", "MAC Address",
                                                    "IP Address", "Station Name",
                                                    "Logged User", "Time"),
-                                          show="headings", selectmode='browse')
+                                          show="headings", selectmode='none',
+                                          yscrollcommand=self.history_table_scrollbar.set)
+
         self.history_table.config(height=17)
         self.history_table.pack()
+        self.history_table_scrollbar.config(command=self.history_table.yview)
 
         # Columns & Headings config
         self.history_table.column("#1", anchor=CENTER)
@@ -348,15 +357,6 @@ class App(tk.Tk):
         self.history_table.heading("#5", text="Logged User")
         self.history_table.column("#6", anchor=CENTER)
         self.history_table.heading("#6", text="Time")
-
-        # Clear previous entries in GUI table
-        # self.history_table.delete(*self.history_table.get_children())
-
-        # Create Scrollbar
-        self.history_sb = ttk.Scrollbar(self.history_labelFrame, orient=VERTICAL, command=self.history_table.yview())
-        self.history_table.configure(xscrollcommand=self.history_sb.set)
-        # self.history_sb.grid(row=0, column=0, sticky="w")
-        # self.history_sb.pack()
 
     # Display Connection History
     def connection_history(self) -> bool:
