@@ -1,10 +1,6 @@
-import concurrent.futures
-
 from PIL import Image, ImageTk
 from datetime import datetime
-from termcolor import colored
 from threading import Thread
-from colorama import init
 import subprocess
 import threading
 import os.path
@@ -13,16 +9,13 @@ import psutil
 import time
 import sys
 
-# Threadpool Executor
-from concurrent.futures import ThreadPoolExecutor
-
 # GUI
 from tkinter import simpledialog
 from tkinter import messagebox
 from tkinter import ttk
 from tkinter import *
 import tkinter as tk
-import tkinter
+# import tkinter
 
 # Local Modules
 from Modules import vital_signs
@@ -31,11 +24,8 @@ from Modules import freestyle
 from Modules import sysinfo
 from Modules import tasks
 
-# TODO: Disable controller buttons if shell is connected when clicking on History
 # TODO: Create tools Class
 # TODO: Add Menubar
-
-init()
 
 
 class App(tk.Tk):
@@ -314,8 +304,12 @@ class App(tk.Tk):
     # Refresh server info & connected stations table with vital signs
     def refresh(self) -> None:
         self.disable_controller_buttons_thread()
-
         self.tmp_availables = []
+
+        # Controller Buttons LabelFrame in Main Frame
+        self.controller_btns = LabelFrame(self.main_frame, text="Controller", relief='solid', height=60)
+        self.controller_btns.grid(row=2, column=0, columnspan=5, sticky="ews", pady=5)
+
         self.vital_signs_thread()
         self.server_information()
         self.show_available_connections()
@@ -447,8 +441,6 @@ class App(tk.Tk):
 
             except ConnectionResetError as e:
                 self.logIt_thread(self.log_path, debug=True, msg=f'Connection Error: {e}.')
-                # print(f"[{colored('X', 'red')}]Connection Reset by client.")
-
                 self.logIt_thread(self.log_path, debug=True, msg=f'Exiting app with code 1...')
                 sys.exit(1)
 
@@ -562,22 +554,15 @@ class App(tk.Tk):
                 msgBox = messagebox.showinfo(f"From {ip} | {sname}", f"Anydesk Running.\t\t\t\t")
                 return True
 
-        except (WindowsError, ConnectionError, socket.error) as e:
+        except (WindowsError, ConnectionError, socket.error, RuntimeError) as e:
             self.logIt_thread(self.log_path, msg=f'Connection Error: {e}.')
 
             # Update statusbar message
             self.update_statusbar_messages_thread(msg=f'Status: {e}.')
-
-            print(f"[{colored('!', 'red')}]Client lost connection.")
-            try:
-                self.logIt_thread(self.log_path, debug=True,
-                                  msg=f'Calling self.remove_lost_connection({con}, {ip})...')
-                self.remove_lost_connection(con, ip)
-                return False
-
-            except RuntimeError as e:
-                self.logIt_thread(self.log_path, debug=True, msg=f'Runtime Error: {e}.')
-                return False
+            self.logIt_thread(self.log_path, debug=True,
+                              msg=f'Calling self.remove_lost_connection({con}, {ip})...')
+            self.remove_lost_connection(con, ip)
+            return False
 
     # Display Clients Last Restart
     def last_restart(self, con: str, ip: str, sname: str) -> bool:
@@ -625,7 +610,6 @@ class App(tk.Tk):
             self.logIt_thread(self.log_path, msg=f'Initializing Module: sysinfo...')
             sinfo = sysinfo.Sysinfo(con, self.ttl, self.path, self.tmp_availables, self.clients, self.log_path, ip)
 
-            print(f"[{colored('*', 'cyan')}]Fetching system information, please wait... ")
             self.logIt_thread(self.log_path, msg=f'Calling sysinfo.run()...')
             if sinfo.run(ip):
                 # Update statusbar message
@@ -766,9 +750,9 @@ class App(tk.Tk):
         killTask = messagebox.askyesno(f"Tasks from {ip} | {sname}", "Kill Task?\t\t\t\t\t\t\t\t")
         if killTask:
             task_to_kill = what_task()
-            if len(task_to_kill) < 2:
+            if str(task_to_kill) == '' or str(task_to_kill).startswith(' '):
                 self.enable_controller_buttons_thread()
-                return False
+                return Falseq
 
             if not task_to_kill:
                 self.enable_controller_buttons_thread()
@@ -1109,11 +1093,12 @@ class App(tk.Tk):
 
             else:
                 for conKey, macValue in self.clients.items():
-                    if conKey == con:
-                        for macKey, ipVal in macValue.items():
-                            for ipKey, identValue in ipVal.items():
-                                if ipKey == self.ips[i]:
-                                    self.remove_lost_connection(conKey, ipKey)
+                    for con in self.targets:
+                        if conKey == con:
+                            for macKey, ipVal in macValue.items():
+                                for ipKey, identValue in ipVal.items():
+                                    if ipKey == self.ips[i]:
+                                        self.remove_lost_connection(conKey, ipKey)
 
         self.logIt_thread(self.log_path, msg=f'=== End of vital_signs() ===')
 
@@ -1238,11 +1223,6 @@ class App(tk.Tk):
 
                                     del self.connections[con]
                                     del self.clients[con]
-
-                                    print(f"[{colored('*', 'red')}]{colored(f'{ip}', 'yellow')} | "
-                                          f"{colored(f'{identKey}', 'yellow')} | "
-                                          f"{colored(f'{userValue}', 'yellow')} "
-                                          f"Removed from Availables list.\n")
 
                                     # Update statusbar message
                                     self.update_statusbar_messages_thread(
