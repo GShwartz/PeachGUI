@@ -31,6 +31,10 @@ from Modules import freestyle
 from Modules import sysinfo
 from Modules import tasks
 
+# TODO: Disable controller buttons if shell is connected when clicking on History
+# TODO: Create tools Class
+# TODO: Add Menubar
+
 init()
 
 
@@ -53,7 +57,7 @@ class App(tk.Tk):
     log_path = fr'{path}\server_log.txt'
 
     WIDTH = 1350
-    HEIGHT = 895
+    HEIGHT = 860
 
     def __init__(self):
         super().__init__()
@@ -153,6 +157,12 @@ class App(tk.Tk):
                          name="Disable Controller Buttons Thread")
         disable.start()
 
+    # Enable Controller Buttons Thread
+    def enable_controller_buttons_thread(self):
+        enable = Thread(target=self.enable_controller_buttons,
+                        daemon=True,
+                        name="Enable Controller Buttons Thread")
+        enable.start()
     # ==++==++==++== END THREADED FUNCS ==++==++==++== #
 
     # Server listener
@@ -167,11 +177,10 @@ class App(tk.Tk):
         # Sidebar Frame
         self.sidebar_frame = Frame(self, width=150, background="RoyalBlue4")
         self.sidebar_frame.grid(row=0, column=0, sticky="nswe")
-        # self.sidebar_frame.rowconfigure(5, weight=1)
 
         # Main Frame
         self.main_frame = Frame(self, background="ghost white", relief="sunken")
-        self.main_frame.configure(borderwidth=2)
+        self.main_frame.configure(border=1)
         self.main_frame.grid(row=0, column=1, sticky="nswe", padx=10)
         self.main_frame.rowconfigure(5, weight=1)
         self.main_frame.columnconfigure(0, weight=1)
@@ -212,15 +221,17 @@ class App(tk.Tk):
     # Create Sidebar Buttons
     def create_sidebar_buttons(self):
         # Refresh Button
-        self.refresh_bt = tk.Button(self.sidebar_frame,
-                                    text="Refresh", width=15, pady=10,
-                                    command=lambda: self.refresh())
-        self.refresh_bt.grid(row=0, sticky="nwes")
+        self.btn_refresh = tk.Button(self.sidebar_frame,
+                                     text="Refresh", width=15, pady=10,
+                                     command=lambda: self.refresh())
+        self.btn_refresh.grid(row=0, sticky="nwes")
+        self.buttons.append(self.btn_refresh)
 
         # Connection History
-        self.connection_history_btn = tk.Button(self.sidebar_frame, text="History", width=15, pady=10,
+        self.btn_connection_history = tk.Button(self.sidebar_frame, text="History", width=15, pady=10,
                                                 command=lambda: self.connection_history_thread())
-        self.connection_history_btn.grid(row=1, sticky='news')
+        self.btn_connection_history.grid(row=1, sticky='news')
+        self.buttons.append(self.btn_connection_history)
 
         # Update Clients Button
         self.btn_update_clients = tk.Button(self.sidebar_frame,
@@ -228,12 +239,14 @@ class App(tk.Tk):
                                             command=lambda: self.update_all_clients())
 
         self.btn_update_clients.grid(row=2, sticky="nwes")
+        self.buttons.append(self.btn_update_clients)
 
         # EXIT Button
         self.btn_exit = tk.Button(self.sidebar_frame,
                                   text="Exit", width=15, pady=10,
                                   command=lambda: self.exit())
         self.btn_exit.grid(row=3, sticky="nwes")
+        self.buttons.append(self.btn_exit)
 
     # Create Treeview Table for connected stations
     def build_connected_table(self) -> None:
@@ -309,9 +322,10 @@ class App(tk.Tk):
         self.connection_history_thread()
 
         # Display Status Message
-        self.status_message = Label(self.status_labelFrame, relief='flat',
-                                    text=f"Status: refresh complete.\t\t\t\t")
-        self.status_message.grid(row=0, sticky='w')
+        self.update_statusbar_messages_thread(msg='Status: refresh complete.')
+
+        # Enable Controller Buttons
+        self.enable_controller_buttons_thread()
 
     def create_connection_history_table(self):
         # History LabelFrame
@@ -348,12 +362,13 @@ class App(tk.Tk):
         self.history_sb = ttk.Scrollbar(self.history_labelFrame, orient=VERTICAL, command=self.history_table.yview())
         self.history_table.configure(xscrollcommand=self.history_sb.set)
         # self.history_sb.grid(row=0, column=0, sticky="w")
-        self.history_sb.pack()
+        # self.history_sb.pack()
 
     # Display Connection History
     def connection_history(self) -> bool:
         self.logIt_thread(self.log_path, msg=f'Running connection_history()...')
 
+        self.disable_controller_buttons_thread()
         self.create_connection_history_table()
 
         # Update statusbar message
@@ -375,6 +390,8 @@ class App(tk.Tk):
                                                                                  timeValue))
                         c += 1
 
+            # Enable Controller Buttons
+            self.enable_controller_buttons_thread()
             return True
 
         # Break If Client Lost Connection
@@ -443,10 +460,7 @@ class App(tk.Tk):
     # Screenshot from Client
     def screenshot(self, con: str, ip: str, sname: str) -> None:
         # Disable Controller Buttons
-        disThread = Thread(target=self.disable_controller_buttons,
-                           daemon=True,
-                           name="Disable Controller Buttons Thread")
-        disThread.start()
+        self.disable_controller_buttons_thread()
 
         # Update statusbar message
         self.update_statusbar_messages_thread(msg=f'Status: fetching screenshot from {ip} | {sname}...')
@@ -467,6 +481,9 @@ class App(tk.Tk):
 
             # Update statusbar message
             self.update_statusbar_messages_thread(msg=f'Status: screenshot received from  {ip} | {sname}.')
+
+            # Enable Controller Buttons
+            self.enable_controller_buttons_thread()
 
         except (WindowsError, socket.error, ConnectionResetError) as e:
             self.logIt_thread(self.log_path, msg=f'Connection Error: {e}')
@@ -598,9 +615,8 @@ class App(tk.Tk):
 
     # Client System Information
     def sysinfo(self, con: str, ip: str, sname: str):
-        # Disable Buttons
-        disThread = Thread(target=self.disable_controller_buttons, name="Disable Controller Buttons Thread")
-        disThread.start()
+        # Disable Controller Button
+        self.disable_controller_buttons_thread()
 
         # Update statusbar message
         self.update_statusbar_messages_thread(msg=f'Status: waiting for system information from {ip} | {sname}...')
@@ -618,6 +634,9 @@ class App(tk.Tk):
 
                 messagebox.showinfo(f"From {ip} | {sname}", "System information file received.\t\t\t\t\t\t\t\t")
 
+                # Enable Controller Buttons
+                self.enable_controller_buttons_thread()
+
         except (WindowsError, socket.error, ConnectionResetError) as e:
             self.logIt_thread(self.log_path, debug=True, msg=f'Connection Error: {e}.')
 
@@ -627,9 +646,14 @@ class App(tk.Tk):
             try:
                 self.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip})...')
                 self.remove_lost_connection(con, ip)
+
+                # Enable Controller Buttons
+                self.enable_controller_buttons_thread()
                 return
 
             except RuntimeError:
+                # Enable Controller Buttons
+                self.enable_controller_buttons_thread()
                 return
 
     # Display/Kill Tasks on Client
@@ -639,32 +663,35 @@ class App(tk.Tk):
             if task_to_kill is None:
                 try:
                     con.send('n'.encode())
+                    self.enable_controller_buttons_thread()
+                    messagebox.showwarning(f"From {ip} | {sname}", "Task Kill canceled.\t\t\t\t\t\t\t\t")
+                    return False
 
                 except (WindowsError, socket.error) as e:
                     self.logIt_thread(self.log_path, msg=f'Error: {e}.')
                     self.update_statusbar_messages_thread(msg=f"Status: {e}")
                     self.remove_lost_connection(con, ip)
+                    self.enable_controller_buttons_thread()
                     return False
 
-                messagebox.showwarning(f"From {ip} | {sname}", "Task Kill canceled.\t\t\t\t\t\t\t\t")
-                return False
-
-            if len(task_to_kill) < 1:
+            if len(task_to_kill) == 0:
                 try:
                     con.send('n'.encode())
+                    self.enable_controller_buttons_thread()
+                    messagebox.showwarning(f"From {ip} | {sname}", "Task Kill canceled.\t\t\t\t\t\t\t\t")
+                    return False
 
                 except (WindowsError, socket.error) as e:
                     self.logIt_thread(self.log_path, msg=f'Error: {e}.')
                     self.update_statusbar_messages_thread(msg=f"Status: {e}")
                     self.remove_lost_connection(con, ip)
+                    self.enable_controller_buttons_thread()
                     return False
-
-                messagebox.showwarning(f"From {ip} | {sname}", "Task Kill canceled.\t\t\t\t\t\t\t\t")
-                return False
 
             if not str(task_to_kill).endswith('exe'):
                 try:
                     con.send('n'.encode())
+                    self.enable_controller_buttons_thread()
                     messagebox.showwarning(f"From {ip} | {sname}", "Task Kill canceled.\t\t\t\t\t\t\t\t")
                     return False
 
@@ -674,6 +701,7 @@ class App(tk.Tk):
                     self.remove_lost_connection(con, ip)
                     return False
 
+            self.enable_controller_buttons_thread()
             return task_to_kill
 
         def kill_task(task_to_kill):
@@ -715,6 +743,9 @@ class App(tk.Tk):
             # Update statusbar message
             self.update_statusbar_messages_thread(msg=f'Status: killed task {task_to_kill} on {ip} | {sname}.')
 
+            # Enable Controller Buttons
+            self.enable_controller_buttons_thread()
+
             return True
 
         # Disable controller buttons
@@ -735,6 +766,14 @@ class App(tk.Tk):
         killTask = messagebox.askyesno(f"Tasks from {ip} | {sname}", "Kill Task?\t\t\t\t\t\t\t\t")
         if killTask:
             task_to_kill = what_task()
+            if len(task_to_kill) < 2:
+                self.enable_controller_buttons_thread()
+                return False
+
+            if not task_to_kill:
+                self.enable_controller_buttons_thread()
+                return False
+
             confirmKill = messagebox.askyesno(f'Kill task: {task_to_kill} on {sname}',
                                               f'Are you sure you want to kill {task_to_kill}?')
             if confirmKill:
@@ -755,6 +794,7 @@ class App(tk.Tk):
             self.logIt_thread(self.log_path, msg=f'Sending "n" to {ip}.')
             try:
                 con.send('n'.encode())
+                self.enable_controller_buttons_thread()
 
             except (WindowsError, socket.error) as e:
                 self.logIt_thread(self.log_path, msg=f'Error: {e}.')
@@ -764,7 +804,11 @@ class App(tk.Tk):
 
             # Update statusbar message
             self.update_statusbar_messages_thread(msg=f'Status: tasks file received from {ip} | {sname}.')
-            return True
+
+        # Enable Controller Buttons
+        self.enable_controller_buttons_thread()
+
+        return True
 
     # Restart Client
     def restart(self, con: str, ip: str, sname: str) -> bool:
@@ -1080,11 +1124,9 @@ class App(tk.Tk):
 
     # Display Available Connections
     def show_available_connections(self) -> None:
+        self.logIt_thread(self.log_path, msg=f'Running show_available_connections()...')
         if len(self.ips) == 0 and len(self.targets) == 0:
             self.logIt_thread(self.log_path, msg=f'No connected Stations')
-            # print(f"[{colored('*', 'cyan')}]No connected stations.\n")
-
-        self.logIt_thread(self.log_path, msg=f'Running show_available_connections()...')
 
         def make_tmp():
             count = 0
@@ -1213,15 +1255,13 @@ class App(tk.Tk):
             self.logIt_thread(self.log_path, msg=f'Runtime Error: {e}.')
             return False
 
+    # Enable Controller Buttons
+    def enable_controller_buttons(self):
+        return [button.config(state=NORMAL) for button in list(self.buttons)]
+
     # Disable Controller Buttons
-    def disable_controller_buttons(self, duration=None):
-        for button in list(self.buttons):
-            button.config(state=DISABLED)
-
-        time.sleep(3)
-
-        for button in list(self.buttons):
-            button.config(state=NORMAL)
+    def disable_controller_buttons(self):
+        return [button.config(state=DISABLED) for button in list(self.buttons)]
 
     # Manage Connected Table & Controller LabelFrame Buttons
     def selectItem(self, event) -> bool:
