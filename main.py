@@ -53,7 +53,7 @@ class App(tk.Tk):
     log_path = fr'{path}\server_log.txt'
 
     WIDTH = 1350
-    HEIGHT = 855
+    HEIGHT = 895
 
     def __init__(self):
         super().__init__()
@@ -92,7 +92,6 @@ class App(tk.Tk):
         # Set Closing protocol
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
-        # =-=-=-=-=-=-= FRAMES =-=-=-=-=-=-=-=
         # Main Window Frames
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
@@ -101,9 +100,6 @@ class App(tk.Tk):
         # Build and display
         self.build_main_window_frames()
         self.build_connected_table()
-
-        # =-=-=-=-=-=-= SIDEBAR BUTTONS =-=-=-=-=-=-=-=
-        # Build and display
         self.create_sidebar_buttons()
 
         # Display Server info & connected stations
@@ -111,7 +107,7 @@ class App(tk.Tk):
         self.show_available_connections()
         self.connection_history()
 
-    # ==++==++==++== THREADED FUNCS ==++==++==++==
+    # ==++==++==++== THREADED FUNCS ==++==++==++== #
     # Run log func in new Thread
     def logIt_thread(self, log_path=None, debug=False, msg='') -> None:
         self.logit_thread = Thread(target=self.logIt, args=(log_path, debug, msg), name="Log Thread")
@@ -156,7 +152,8 @@ class App(tk.Tk):
                          daemon=True,
                          name="Disable Controller Buttons Thread")
         disable.start()
-    # ==++==++==++== END THREADED FUNCS ==++==++==++==
+
+    # ==++==++==++== END THREADED FUNCS ==++==++==++== #
 
     # Server listener
     def listener(self):
@@ -170,31 +167,33 @@ class App(tk.Tk):
         # Sidebar Frame
         self.sidebar_frame = Frame(self, width=150, background="RoyalBlue4")
         self.sidebar_frame.grid(row=0, column=0, sticky="nswe")
-        self.sidebar_frame.rowconfigure(5, weight=10)
+        # self.sidebar_frame.rowconfigure(5, weight=1)
 
         # Main Frame
-        self.main_frame = Frame(self, background="ghost white", relief="solid")
-        self.main_frame.grid(row=0, column=1, columnspan=5, sticky="nswe", padx=5)
+        self.main_frame = Frame(self, background="ghost white", relief="sunken")
+        self.main_frame.configure(borderwidth=2)
+        self.main_frame.grid(row=0, column=1, sticky="nswe", padx=10)
         self.main_frame.rowconfigure(5, weight=1)
+        self.main_frame.columnconfigure(0, weight=1)
 
         # Main Frame top bar - shows server information
         self.main_frame_top = Frame(self.main_frame, relief='flat', height=30)
-        self.main_frame_top.grid(row=0, column=1, sticky="nwes")
+        self.main_frame_top.grid(row=0, column=0, sticky="nwes")
 
         # Main frame top bar LabelFrame
         self.top_bar_label = LabelFrame(self.main_frame, text="Server Information", relief='solid')
-        self.top_bar_label.grid(row=0, column=1, sticky='news')
+        self.top_bar_label.grid(row=0, column=0, sticky='news')
 
         # Table Frame in Main Frame
         self.main_frame_table = Frame(self.main_frame, relief='flat')
-        self.main_frame_table.grid(row=1, column=1, sticky="news", pady=5)
+        self.main_frame_table.grid(row=1, column=0, sticky="news", pady=5)
 
         # Controller Buttons LabelFrame in Main Frame
         self.controller_btns = LabelFrame(self.main_frame, text="Controller", relief='solid', height=60)
         self.controller_btns.grid(row=2, column=0, columnspan=5, sticky="ews", pady=5)
 
         # Create Connected Table inside Main Frame when show connected btn pressed
-        self.table_frame = ttk.LabelFrame(self.main_frame_table, text="Connected Stations")
+        self.table_frame = LabelFrame(self.main_frame_table, text="Connected Stations")
         self.table_frame.grid(row=0, sticky="new", pady=5)
 
         # Details Frame
@@ -203,11 +202,12 @@ class App(tk.Tk):
 
         # Statusbar Frame
         self.statusbar_frame = Frame(self.main_frame, relief='solid', pady=5)
-        self.statusbar_frame.grid(row=4, column=1, sticky='news')
+        self.statusbar_frame.grid(row=4, column=0, sticky='news')
 
         # Status LabelFrame
-        self.status_labelFrame = LabelFrame(self.main_frame, height=5, text='Status', relief='solid', pady=5)
-        self.status_labelFrame.grid(row=4, column=1, sticky='news')
+        self.status_labelFrame = LabelFrame(self.statusbar_frame, height=5, width=900, text='Status', relief='solid',
+                                            pady=5)
+        self.status_labelFrame.grid(row=5, column=0, sticky='news')
 
     # Create Sidebar Buttons
     def create_sidebar_buttons(self):
@@ -313,17 +313,51 @@ class App(tk.Tk):
                                     text=f"Status: refresh complete.\t\t\t\t")
         self.status_message.grid(row=0, sticky='w')
 
+    def create_connection_history_table(self):
+        # History LabelFrame
+        self.history_labelFrame = LabelFrame(self.main_frame, text="Connection History",
+                                             relief='ridge')
+        self.history_labelFrame.grid(row=3, column=0, sticky='news')
+
+        self.history_table = ttk.Treeview(self.history_labelFrame,
+                                          columns=("ID", "MAC Address",
+                                                   "IP Address", "Station Name",
+                                                   "Logged User", "Time"),
+                                          show="headings", selectmode='browse')
+        self.history_table.config(height=17)
+        self.history_table.pack()
+
+        # Columns & Headings config
+        self.history_table.column("#1", anchor=CENTER)
+        self.history_table.heading("#1", text="ID")
+        self.history_table.column("#2", anchor=CENTER)
+        self.history_table.heading("#2", text="MAC")
+        self.history_table.column("#3", anchor=CENTER)
+        self.history_table.heading("#3", text="IP")
+        self.history_table.column("#4", anchor=CENTER)
+        self.history_table.heading("#4", text="Station Name")
+        self.history_table.column("#5", anchor=CENTER)
+        self.history_table.heading("#5", text="Logged User")
+        self.history_table.column("#6", anchor=CENTER)
+        self.history_table.heading("#6", text="Time")
+
+        # Clear previous entries in GUI table
+        # self.history_table.delete(*self.history_table.get_children())
+
+        # Create Scrollbar
+        self.history_sb = ttk.Scrollbar(self.history_labelFrame, orient=VERTICAL, command=self.history_table.yview())
+        self.history_table.configure(xscrollcommand=self.history_sb.set)
+        # self.history_sb.grid(row=0, column=0, sticky="w")
+        self.history_sb.pack()
+
     # Display Connection History
     def connection_history(self) -> bool:
         self.logIt_thread(self.log_path, msg=f'Running connection_history()...')
 
-        # Update statusbar message
-        self.update_statusbar_messages_thread(msg=f'Status: displaying connection history...')
+        self.create_connection_history_table()
 
-        # History LabelFrame
-        self.history_labelFrame = LabelFrame(self.main_frame, height=400, text="Connection History",
-                                             relief='ridge')
-        self.history_labelFrame.grid(row=3, sticky='news', columnspan=3)
+        # Update statusbar message
+        self.update_statusbar_messages_thread(msg=f'Status: displaying connection history.\t\t\t\t\t\t\t\t\t\t\t\t\t')
 
         c = 1  # Initiate Counter for Connection Number
         try:
@@ -335,13 +369,10 @@ class App(tk.Tk):
                         for ipKey, identValue in ipVal.items():
                             for identKey, userValue in identValue.items():
                                 for userKey, timeValue in userValue.items():
-                                    histLabel = tk.Label(self.history_labelFrame,
-                                                         text=f"[{str(c)}] Station IP: {ipKey} | "
-                                                              f"Station MAC: {macKey} | "
-                                                              f"Station Name: {identKey} | "
-                                                              f"Logged User: {userKey} | "
-                                                              f"Connection Time: {str(timeValue).replace('|', ':')}")
-                                    histLabel.grid(row=c - 1, column=0, sticky='w')
+                                    # Show results in GUI table
+                                    self.history_table.insert('', 'end', values=(c, macKey, ipKey,
+                                                                                 identKey, userKey,
+                                                                                 timeValue))
                         c += 1
 
             return True
@@ -774,6 +805,7 @@ class App(tk.Tk):
     # Browse local files by Clients Station Names
     def browse_local_files(self, sname: str) -> subprocess:
         return subprocess.Popen(rf"explorer {self.path}\{sname}")
+
     # ==++==++==++== END Controller Buttons ==++==++==++==
 
     # # ==++==++==++== Server Processes ==++==++==++==
@@ -1191,7 +1223,7 @@ class App(tk.Tk):
         for button in list(self.buttons):
             button.config(state=NORMAL)
 
-    # Manage Table & Controller LabelFrame Buttons
+    # Manage Connected Table & Controller LabelFrame Buttons
     def selectItem(self, event) -> bool:
         # Create Controller Buttons
         def make_buttons():
@@ -1244,7 +1276,8 @@ class App(tk.Tk):
             self.buttons.append(self.browse_btn)
 
         def client_system_information_thread(con: str, ip: str, sname: str):
-            clientSystemInformationThread = Thread(target=self.sysinfo, args=(con, ip, sname), name="Client System Information Thread")
+            clientSystemInformationThread = Thread(target=self.sysinfo, args=(con, ip, sname),
+                                                   name="Client System Information Thread")
             clientSystemInformationThread.daemon = True
             clientSystemInformationThread.start()
 
