@@ -99,7 +99,7 @@ class App(tk.Tk):
         # Build and display
         self.build_main_window_frames()
         self.build_connected_table()
-        self.create_sidebar_buttons()
+        self.build_sidebar_buttons()
 
         # Display Server info & connected stations
         self.server_information()
@@ -183,7 +183,7 @@ class App(tk.Tk):
         self.main_frame.columnconfigure(0, weight=1)
 
         # Main Frame top bar - shows server information
-        self.main_frame_top = Frame(self.main_frame, relief='flat', height=30)
+        self.main_frame_top = Frame(self.main_frame, relief='flat')
         self.main_frame_top.grid(row=0, column=0, sticky="nwes")
 
         # Main frame top bar LabelFrame
@@ -221,7 +221,7 @@ class App(tk.Tk):
         # self.status_labelFrame.grid(row=5, column=0, sticky='news')
 
     # Create Sidebar Buttons
-    def create_sidebar_buttons(self):
+    def build_sidebar_buttons(self):
         # Refresh Button
         self.btn_refresh = tk.Button(self.sidebar_frame,
                                      text="Refresh", width=15, pady=10,
@@ -254,7 +254,6 @@ class App(tk.Tk):
     def build_connected_table(self) -> None:
         # Create Scrollbar
         self.table_sb = Scrollbar(self.table_frame, orient=VERTICAL)
-        # self.table_sb.grid(row=0, sticky="wns")
         self.table_sb.pack(side=LEFT, fill=Y)
 
         # Create a Table for connected stations
@@ -372,7 +371,7 @@ class App(tk.Tk):
         self.vital_signs_thread()
         self.server_information()
         self.show_available_connections()
-        self.connection_history_thread()
+        self.connection_history()
 
         # Display Status Message
         self.update_statusbar_messages_thread(msg='Status: refresh complete.')
@@ -431,7 +430,7 @@ class App(tk.Tk):
     # Broadcast update command to all connected stations
     def update_all_clients(self) -> bool:
         self.disable_buttons_thread(sidebar=False)
-        messagebox.showinfo("Update All Clients", "Updating clients, click refresh to view progress.")
+        # messagebox.showinfo("Update All Clients", "Updating clients, click refresh to view progress.")
 
         try:
             for t in self.targets:
@@ -442,7 +441,7 @@ class App(tk.Tk):
             pass
 
         self.refresh()
-        return
+        messagebox.showinfo("Update All Clients", "Update command sent.\nClick refresh to update the connected table.")
 
     # EXIT
     def exit(self) -> None:
@@ -1287,6 +1286,38 @@ class App(tk.Tk):
 
             return
 
+    # Build Notebook
+    def create_notebook(self):
+        # Create Notebook
+        notebook = ttk.Notebook(self.details_labelFrame, height=350)
+        notebook.pack(expand=True, pady=5, fill=X)
+
+        # Create Tabs
+        screenshot_tab = Frame(notebook, height=350)
+        system_information_tab = Frame(notebook, height=350)
+        tasks_tab = Frame(notebook, height=350)
+
+        # Create System Information Scrollbar
+        system_scrollbar = Scrollbar(system_information_tab, orient=VERTICAL)
+        system_scrollbar.pack(side=LEFT, fill=Y)
+
+        # Create System Information Textbox
+        system_information_textbox = Text(system_information_tab, yscrollcommand=system_scrollbar.set)
+        system_information_textbox.pack(fill=BOTH)
+
+        # Create Tasks Scrollbar
+        tasks_scrollbar = Scrollbar(tasks_tab, orient=VERTICAL)
+        tasks_scrollbar.pack(side=LEFT, fill=Y)
+
+        # Create Tasks Textbox
+        tasks_tab_textbox = Text(tasks_tab, yscrollcommand=tasks_scrollbar.set)
+        tasks_tab_textbox.pack(fill=BOTH)
+
+        # Add tabs to notebook
+        notebook.add(screenshot_tab, text="Screenshot")
+        notebook.add(system_information_tab, text="System Information")
+        notebook.add(tasks_tab, text="Tasks")
+
     # Manage Connected Table & Controller LabelFrame Buttons
     def selectItem(self, event) -> bool:
         # Create Controller Buttons
@@ -1365,6 +1396,8 @@ class App(tk.Tk):
         # Display Details LabelFrame
         self.details_labelFrame = LabelFrame(self.main_frame, text="Details", relief='ridge', height=400)
         self.details_labelFrame.grid(row=3, sticky='news', columnspan=3)
+
+        self.create_notebook()
 
         # Create a Controller LabelFrame with Buttons and connect shell by TreeView Table selection
         for id, ip in self.temp.items():
