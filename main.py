@@ -111,6 +111,53 @@ class App(tk.Tk):
         self.show_available_connections()
         self.connection_history()
 
+    # ==++==++==++== THREADED FUNCS ==++==++==++==
+    # Run log func in new Thread
+    def logIt_thread(self, log_path=None, debug=False, msg='') -> None:
+        self.logit_thread = Thread(target=self.logIt, args=(log_path, debug, msg), name="Log Thread")
+        self.logit_thread.daemon = True
+        self.logit_thread.start()
+
+    # Update status bar messages Thread
+    def update_statusbar_messages_thread(self, msg=''):
+        statusbarThread = Thread(target=self.update_statusbar_messages,
+                                 args=(msg,),
+                                 name="Update Statusbar Thread")
+        statusbarThread.daemon = True
+        statusbarThread.start()
+
+    # Display Server Information Thread
+    def display_server_information_thread(self) -> None:
+        # Display Server Information
+        infoThread = Thread(target=self.server_information, name="ServerInfo")
+        # infoThread.daemon = True
+        infoThread.start()
+
+    # Vitals Thread
+    def vital_signs_thread(self) -> None:
+        vitalsThread = Thread(target=self.vital_signs, name="Vitals Thread")
+        vitalsThread.start()
+
+    # Display Available Connections Thread
+    def sac_thread(self) -> None:
+        self.sacThread = Thread(target=self.show_available_connections,
+                                name="Show Available Connections Thread")
+        # self.sacThread.daemon = True
+        self.sacThread.start()
+
+    # Connection History Thread
+    def connection_history_thread(self) -> None:
+        connhistThread = Thread(target=self.connection_history, name="Connection History Thread")
+        connhistThread.start()
+
+    # Disable Controller Buttons Thread
+    def disable_controller_buttons_thread(self):
+        disable = Thread(target=self.disable_controller_buttons,
+                         daemon=True,
+                         name="Disable Controller Buttons Thread")
+        disable.start()
+    # ==++==++==++== END THREADED FUNCS ==++==++==++==
+
     # Server listener
     def listener(self):
         self.server = socket.socket()
@@ -222,12 +269,88 @@ class App(tk.Tk):
         self.connected_table_style.configure("Treeview", rowheight=20)
         self.connected_table_style.map("Treeview")
 
-    # Disable Controller Buttons Thread
-    def disable_controller_buttons_thread(self):
-        disable = Thread(target=self.disable_controller_buttons,
-                         daemon=True,
-                         name="Disable Controller Buttons Thread")
-        disable.start()
+    # Display Server Information
+    def server_information(self) -> dict:
+        self.logIt_thread(self.log_path, msg=f'Running show server information...')
+        last_reboot = psutil.boot_time()
+        data = {
+            'Server_IP': self.serverIP,
+            'Server_Port': self.port,
+            'Last_Boot': datetime.fromtimestamp(last_reboot).replace(microsecond=0),
+            'Connected_Stations': len(self.targets)
+        }
+
+        label = Label(self.top_bar_label, text=f"\t\t\t\t\tServer IP: {self.serverIP}\t\tServer Port: {self.port}\t\t"
+                                               f"Last Boot: {datetime.fromtimestamp(last_reboot).replace(microsecond=0)}\t\t"
+                                               f"Connected Stations: {len(self.targets)}", anchor=CENTER)
+        label.grid(row=0, sticky='w')
+
+        return data
+
+    # Update status bar messages
+    def update_statusbar_messages(self, msg=''):
+        status_label = Label(self.status_labelFrame, relief='flat',
+                             text=f"{msg}\t\t\t\t\t\t\t\t")
+        status_label.grid(row=0, column=0, sticky='w')
+
+    # Close App
+    def on_closing(self, event=0) -> None:
+        self.destroy()
+
+    # ==++==++==++== SIDEBAR BUTTONS ==++==++==++==
+    # Refresh server info & connected stations table with vital signs
+    def refresh(self) -> None:
+        self.disable_controller_buttons_thread()
+
+        self.tmp_availables = []
+        self.vital_signs_thread()
+        self.server_information()
+        self.show_available_connections()
+        self.connection_history_thread()
+
+        # Display Status Message
+        self.status_message = Label(self.status_labelFrame, relief='flat',
+                                    text=f"Status: refresh complete.\t\t\t\t")
+        self.status_message.grid(row=0, sticky='w')
+
+    # Display Connection History
+    def connection_history(self) -> bool:
+        self.logIt_thread(self.log_path, msg=f'Running connection_history()...')
+
+        # Update statusbar message
+        self.update_statusbar_messages_thread(msg=f'Status: displaying connection history...')
+
+        # History LabelFrame
+        self.history_labelFrame = LabelFrame(self.main_frame, height=400, text="Connection History",
+                                             relief='ridge')
+        self.history_labelFrame.grid(row=3, sticky='news', columnspan=3)
+
+        c = 1  # Initiate Counter for Connection Number
+        try:
+            # Iterate Through Connection History List Items
+            self.logIt_thread(self.log_path, msg=f'Iterating self.connHistory...')
+            for connection in self.connHistory:
+                for conKey, macValue in connection.items():
+                    for macKey, ipVal in macValue.items():
+                        for ipKey, identValue in ipVal.items():
+                            for identKey, userValue in identValue.items():
+                                for userKey, timeValue in userValue.items():
+                                    histLabel = tk.Label(self.history_labelFrame,
+                                                         text=f"[{str(c)}] Station IP: {ipKey} | "
+                                                              f"Station MAC: {macKey} | "
+                                                              f"Station Name: {identKey} | "
+                                                              f"Logged User: {userKey} | "
+                                                              f"Connection Time: {str(timeValue).replace('|', ':')}")
+                                    histLabel.grid(row=c - 1, column=0, sticky='w')
+                        c += 1
+
+            return True
+
+        # Break If Client Lost Connection
+        except (KeyError, socket.error, ConnectionResetError) as e:
+            # Update statusbar message
+            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+            return False
 
     # Broadcast update command to all connected stations
     def update_all_clients(self) -> bool:
@@ -261,139 +384,6 @@ class App(tk.Tk):
         self.refresh()
         return True
 
-    # Refresh server info & connected stations table with vital signs
-    def refresh(self) -> None:
-        self.disable_controller_buttons_thread()
-
-        self.tmp_availables = []
-        self.vital_signs_thread()
-        self.server_information()
-        self.show_available_connections()
-        self.connection_history_thread()
-
-        # Display Status Message
-        self.status_message = Label(self.status_labelFrame, relief='flat', text=f"Status: refresh complete.\t\t\t\t")
-        self.status_message.grid(row=0, sticky='w')
-
-    # Connection History Thread
-    def connection_history_thread(self) -> None:
-        connhistThread = Thread(target=self.connection_history, name="Connection History Thread")
-        connhistThread.start()
-
-    # Vitals Thread
-    def vital_signs_thread(self) -> None:
-        vitalsThread = Thread(target=self.vital_signs, name="Vitals Thread")
-        vitalsThread.start()
-
-    # Display Server Information Thread
-    def display_server_information_thread(self) -> None:
-        # Display Server Information
-        infoThread = Thread(target=self.server_information, name="ServerInfo")
-        # infoThread.daemon = True
-        infoThread.start()
-
-    # Display Server Information
-    def server_information(self) -> dict:
-        self.logIt_thread(self.log_path, msg=f'Running show server information...')
-        last_reboot = psutil.boot_time()
-        data = {
-            'Server_IP': self.serverIP,
-            'Server_Port': self.port,
-            'Last_Boot': datetime.fromtimestamp(last_reboot).replace(microsecond=0),
-            'Connected_Stations': len(self.targets)
-        }
-
-        label = Label(self.top_bar_label, text=f"\t\t\t\t\tServer IP: {self.serverIP}\t\tServer Port: {self.port}\t\t"
-                                               f"Last Boot: {datetime.fromtimestamp(last_reboot).replace(microsecond=0)}\t\t"
-                                               f"Connected Stations: {len(self.targets)}", anchor=CENTER)
-        label.grid(row=0, sticky='w')
-
-        return data
-
-    # Show Available Connections Thread
-    def sac_thread(self) -> None:
-        self.sacThread = Thread(target=self.show_available_connections,
-                                name="Show Available Connections Thread")
-        # self.sacThread.daemon = True
-        self.sacThread.start()
-
-    # Show Available Connections
-    def show_available_connections(self) -> None:
-        if len(self.ips) == 0 and len(self.targets) == 0:
-            self.logIt_thread(self.log_path, msg=f'No connected Stations')
-            # print(f"[{colored('*', 'cyan')}]No connected stations.\n")
-
-        self.logIt_thread(self.log_path, msg=f'Running show_available_connections()...')
-
-        def make_tmp():
-            count = 0
-            for conKey, macValue in self.clients.items():
-                for macKey, ipValue in macValue.items():
-                    for ipKey, identValue in ipValue.items():
-                        for con in self.targets:
-                            if con == conKey:
-                                for identKey, userValue in identValue.items():
-                                    for userV, clientVer in userValue.items():
-                                        if (count, macKey, ipKey, identKey, userValue) in self.tmp_availables:
-                                            continue
-
-                                self.tmp_availables.append((count, macKey, ipKey, identKey, userV, clientVer))
-                count += 1
-
-            self.logIt_thread(self.log_path, msg=f'Available list created.')
-
-        def extract():
-            for item in self.tmp_availables:
-                for conKey, ipValue in self.clients.items():
-                    for macKey, ipVal in ipValue.items():
-                        for ipKey, identVal in ipVal.items():
-                            if item[2] == ipKey:
-                                session = item[0]
-                                stationMAC = item[1]
-                                stationIP = item[2]
-                                stationName = item[3]
-                                loggedUser = item[4]
-                                clientVersion = item[5]
-
-                                # Show results in GUI table
-                                self.connected_table.insert('', 'end', values=(session, stationMAC, stationIP,
-                                                                               stationName, loggedUser, clientVersion))
-
-            self.logIt_thread(self.log_path, msg=f'Extraction completed.')
-
-        # Cleaning availables list
-        self.logIt_thread(self.log_path, msg=f'Cleaning availables list...')
-        self.tmp_availables = []
-
-        # Clear previous entries in GUI table
-        self.connected_table.delete(*self.connected_table.get_children())
-
-        self.logIt_thread(self.log_path, msg=f'Creating available list...')
-        make_tmp()
-
-        self.logIt_thread(self.log_path,
-                          msg=f'Extracting: Session | Station IP | Station Name | Logged User '
-                              f'from clients list...')
-        extract()
-
-    # Update status bar messages Thread
-    def update_statusbar_messages_thread(self, msg=''):
-        statusbarThread = Thread(target=self.update_statusbar_messages,
-                                 args=(msg,),
-                                 name="Update Statusbar Thread")
-        statusbarThread.daemon = True
-        statusbarThread.start()
-
-    # Update status bar messages
-    def update_statusbar_messages(self, msg=''):
-        status_label = Label(self.status_labelFrame, relief='flat',
-                             text=f"{msg}\t\t\t\t\t\t\t\t")
-        status_label.grid(row=0, column=0, sticky='w')
-
-    # Close App
-    def on_closing(self, event=0) -> None:
-        self.destroy()
-
     # EXIT
     def exit(self) -> None:
         if len(self.targets) > 0:
@@ -418,53 +408,7 @@ class App(tk.Tk):
         self.destroy()
         sys.exit(0)
 
-    # ================ Utilities ================
-    def bytes_to_number(self, b: int) -> int:
-        self.logIt_thread(self.log_path, msg=f'Running bytes_to_number({b})...')
-        dt = self.get_date()
-        res = 0
-        for i in range(4):
-            res += b[i] << (i * 8)
-        return res
-
-    # Get current date & time
-    def get_date(self) -> str:
-        d = datetime.now().replace(microsecond=0)
-        dt = str(d.strftime("%m/%d/%Y %H:%M:%S"))
-
-        return dt
-
-    # Log & Debugger
-    def logIt(self, logfile=None, debug=None, msg='') -> bool:
-        dt = self.get_date()
-        if debug:
-            print(f"{dt}: {msg}")
-
-        if logfile is not None:
-            try:
-                if not os.path.exists(logfile):
-                    with open(logfile, 'w') as lf:
-                        lf.write(f"{dt}: {msg}\n")
-
-                    return True
-
-                else:
-                    with open(logfile, 'a') as lf:
-                        lf.write(f"{dt}: {msg}\n")
-
-                    return True
-
-            except FileExistsError:
-                pass
-
-    # Run log func in new Thread
-    def logIt_thread(self, log_path=None, debug=False, msg='') -> None:
-        self.logit_thread = Thread(target=self.logIt, args=(log_path, debug, msg), name="Log Thread")
-        self.logit_thread.daemon = True
-        self.logit_thread.start()
-
-    # ==++==++==++== Controller Buttons ==++==++==++==
-
+    # ==++==++==++== CONTROLLER BUTTONS ==++==++==++==
     # Screenshot from Client
     def screenshot(self, con: str, ip: str, sname: str) -> None:
         # Disable Controller Buttons
@@ -999,6 +943,45 @@ class App(tk.Tk):
 
                 return False
 
+    # Convert bytes to numbers for file transfers
+    def bytes_to_number(self, b: int) -> int:
+        self.logIt_thread(self.log_path, msg=f'Running bytes_to_number({b})...')
+        dt = self.get_date()
+        res = 0
+        for i in range(4):
+            res += b[i] << (i * 8)
+        return res
+
+    # Get current date & time
+    def get_date(self) -> str:
+        d = datetime.now().replace(microsecond=0)
+        dt = str(d.strftime("%m/%d/%Y %H:%M:%S"))
+
+        return dt
+
+    # Log & Debugger
+    def logIt(self, logfile=None, debug=None, msg='') -> bool:
+        dt = self.get_date()
+        if debug:
+            print(f"{dt}: {msg}")
+
+        if logfile is not None:
+            try:
+                if not os.path.exists(logfile):
+                    with open(logfile, 'w') as lf:
+                        lf.write(f"{dt}: {msg}\n")
+
+                    return True
+
+                else:
+                    with open(logfile, 'a') as lf:
+                        lf.write(f"{dt}: {msg}\n")
+
+                    return True
+
+            except FileExistsError:
+                pass
+
     # Check if connected stations are still connected
     def vital_signs(self) -> bool:
         self.logIt_thread(self.log_path, msg=f'Running vital_signs()...')
@@ -1063,44 +1046,65 @@ class App(tk.Tk):
 
         return True
 
-    # Display Connection History
-    def connection_history(self) -> bool:
-        self.logIt_thread(self.log_path, msg=f'Running connection_history()...')
+    # Display Available Connections
+    def show_available_connections(self) -> None:
+        if len(self.ips) == 0 and len(self.targets) == 0:
+            self.logIt_thread(self.log_path, msg=f'No connected Stations')
+            # print(f"[{colored('*', 'cyan')}]No connected stations.\n")
 
-        # Update statusbar message
-        self.update_statusbar_messages_thread(msg=f'Status: displaying connection history...')
+        self.logIt_thread(self.log_path, msg=f'Running show_available_connections()...')
 
-        # History LabelFrame
-        self.history_labelFrame = LabelFrame(self.main_frame, height=400, text="Connection History",
-                                             relief='ridge')
-        self.history_labelFrame.grid(row=3, sticky='news', columnspan=3)
+        def make_tmp():
+            count = 0
+            for conKey, macValue in self.clients.items():
+                for macKey, ipValue in macValue.items():
+                    for ipKey, identValue in ipValue.items():
+                        for con in self.targets:
+                            if con == conKey:
+                                for identKey, userValue in identValue.items():
+                                    for userV, clientVer in userValue.items():
+                                        if (count, macKey, ipKey, identKey, userValue) in self.tmp_availables:
+                                            continue
 
-        c = 1  # Initiate Counter for Connection Number
-        try:
-            # Iterate Through Connection History List Items
-            self.logIt_thread(self.log_path, msg=f'Iterating self.connHistory...')
-            for connection in self.connHistory:
-                for conKey, macValue in connection.items():
-                    for macKey, ipVal in macValue.items():
-                        for ipKey, identValue in ipVal.items():
-                            for identKey, userValue in identValue.items():
-                                for userKey, timeValue in userValue.items():
-                                    histLabel = tk.Label(self.history_labelFrame,
-                                                         text=f"[{str(c)}] Station IP: {ipKey} | "
-                                                              f"Station MAC: {macKey} | "
-                                                              f"Station Name: {identKey} | "
-                                                              f"Logged User: {userKey} | "
-                                                              f"Connection Time: {str(timeValue).replace('|', ':')}")
-                                    histLabel.grid(row=c - 1, column=0, sticky='w')
-                        c += 1
+                                self.tmp_availables.append((count, macKey, ipKey, identKey, userV, clientVer))
+                count += 1
 
-            return True
+            self.logIt_thread(self.log_path, msg=f'Available list created.')
 
-        # Break If Client Lost Connection
-        except (KeyError, socket.error, ConnectionResetError) as e:
-            # Update statusbar message
-            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
-            return False
+        def extract():
+            for item in self.tmp_availables:
+                for conKey, ipValue in self.clients.items():
+                    for macKey, ipVal in ipValue.items():
+                        for ipKey, identVal in ipVal.items():
+                            if item[2] == ipKey:
+                                session = item[0]
+                                stationMAC = item[1]
+                                stationIP = item[2]
+                                stationName = item[3]
+                                loggedUser = item[4]
+                                clientVersion = item[5]
+
+                                # Show results in GUI table
+                                self.connected_table.insert('', 'end', values=(session, stationMAC, stationIP,
+                                                                               stationName, loggedUser,
+                                                                               clientVersion))
+
+            self.logIt_thread(self.log_path, msg=f'Extraction completed.')
+
+        # Cleaning availables list
+        self.logIt_thread(self.log_path, msg=f'Cleaning availables list...')
+        self.tmp_availables = []
+
+        # Clear previous entries in GUI table
+        self.connected_table.delete(*self.connected_table.get_children())
+
+        self.logIt_thread(self.log_path, msg=f'Creating available list...')
+        make_tmp()
+
+        self.logIt_thread(self.log_path,
+                          msg=f'Extracting: Session | Station IP | Station Name | Logged User '
+                              f'from clients list...')
+        extract()
 
     # Shell Connection to Client
     def shell(self, con: str, ip: str, sname: str) -> None:
