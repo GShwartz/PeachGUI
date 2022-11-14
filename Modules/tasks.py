@@ -9,7 +9,7 @@ import os
 
 
 class Tasks:
-    def __init__(self, con, ip, clients, connections, targets, ips, tmp_availables, root, log_path):
+    def __init__(self, con, ip, clients, connections, targets, ips, tmp_availables, root, log_path, path, sname):
         self.con = con
         self.ip = ip
         self.clients = clients
@@ -19,6 +19,8 @@ class Tasks:
         self.tmp_availables = tmp_availables
         self.root = root
         self.log_path = log_path
+        self.path = path
+        self.sname = sname
 
     def get_date(self):
         d = datetime.now().replace(microsecond=0)
@@ -83,7 +85,7 @@ class Tasks:
                                         self.logIt_thread(self.log_path, msg=f'Passing FileExistsError...')
                                         pass
 
-    def tasks(self, ip):
+    def tasks(self, ip) -> str:
         self.logIt_thread(self.log_path, msg=f'Running tasks({ip})...')
         print(f"[{colored('*', 'cyan')}]Retrieving remote station's task list\n"
               f"[{colored('*', 'cyan')}]Please wait...")
@@ -148,12 +150,16 @@ class Tasks:
 
             # Move screenshot file to directory
             src = os.path.abspath(filenameRecv)
-            dst = fr"{path}"
+            dst = fr"{self.path}\{self.sname}"
 
             self.logIt_thread(self.log_path, msg=f'Moving {src} to {dst}...')
-            shutil.move(src, dst)
+            try:
+                shutil.move(src, dst)
 
-            return True
+            except FileExistsError:
+                pass
+
+            return dst + filenameRecv[8:]
 
         except (WindowsError, socket.error) as e:
             self.logIt_thread(self.log_path, msg=f'Error: {e}')
