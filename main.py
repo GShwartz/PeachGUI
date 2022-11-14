@@ -86,7 +86,7 @@ class App(tk.Tk):
         x = (self.width / 2) - (self.WIDTH / 2)
         y = (self.height / 2) - (self.HEIGHT / 2)
 
-        # Set Window Size & Location
+        # Set Window Size & Location & Center Window
         self.geometry(f'{self.WIDTH}x{self.HEIGHT}+{int(x)}+{int(y)}')
 
         # Set Closing protocol
@@ -150,7 +150,7 @@ class App(tk.Tk):
         self.show_available_connections()
         self.connection_history()
 
-    # Define Sidebar Buttons
+    # Create Sidebar Buttons
     def create_sidebar_buttons(self):
         # Refresh Button
         self.refresh_bt = tk.Button(self.sidebar_frame,
@@ -176,7 +176,7 @@ class App(tk.Tk):
                                   command=lambda: self.exit())
         self.btn_exit.grid(row=3, sticky="nwes")
 
-    # Define Treeview Table for connected stations
+    # Create Treeview Table for connected stations
     def create_connected_table(self) -> None:
         # Create a Table for connected stations
         self.connected_table = ttk.Treeview(self.table_frame,
@@ -257,6 +257,7 @@ class App(tk.Tk):
         self.vital_signs_thread()
         self.server_information()
         self.show_available_connections()
+        self.connection_history_thread()
 
         # Display Status Message
         self.status_message = Label(self.status_labelFrame, relief='flat', text=f"Status: refresh complete.\t\t\t\t")
@@ -450,6 +451,375 @@ class App(tk.Tk):
         self.logit_thread.daemon = True
         self.logit_thread.start()
 
+    # ==++==++==++== Controller Buttons ==++==++==++==
+
+    # Screenshot from Client
+    def screenshot(self, con: str, ip: str, sname: str) -> None:
+        # Disable Controller Buttons
+        disThread = Thread(target=self.disable_controller_buttons,
+                           daemon=True,
+                           name="Disable Controller Buttons Thread")
+        disThread.start()
+
+        # Update statusbar message
+        self.update_statusbar_messages_thread(msg=f'Status: fetching screenshot from {ip} | {sname}...')
+
+        try:
+            print(f"[{colored('*', 'cyan')}]Fetching screenshot...")
+            self.logIt_thread(self.log_path, msg=f'Sending screen command to client...')
+            con.send('screen'.encode())
+            self.logIt_thread(self.log_path, msg=f'Send Completed.')
+
+            self.logIt_thread(self.log_path, msg=f'Calling Module: '
+                                                 f'screenshot({con, self.path, self.tmp_availables, self.clients})...')
+
+            scrnshot = screenshot.Screenshot(con, self.path, self.tmp_availables,
+                                             self.clients, self.log_path, self.targets)
+
+            self.logIt_thread(self.log_path, msg=f'Calling screenshot.recv_file()...')
+            scrnshot.recv_file(ip)
+
+            # Update statusbar message
+            self.update_statusbar_messages_thread(msg=f'Status: screenshot received from  {ip} | {sname}.')
+
+        except (WindowsError, socket.error, ConnectionResetError) as e:
+            self.logIt_thread(self.log_path, msg=f'Connection Error: {e}')
+
+            # Update statusbar message
+            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+
+            self.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip}...)')
+            self.remove_lost_connection(con, ip)
+
+    # Run Anydesk on Client
+    def anydesk(self, con: str, ip: str, sname: str) -> bool:
+        self.logIt_thread(self.log_path, msg=f'Running anydesk({con}, {ip})...')
+
+        # Update statusbar message
+        self.update_statusbar_messages_thread(msg=f'Status: running anydesk on {ip} | {sname}...')
+
+        try:
+            self.logIt_thread(self.log_path, msg=f'Sending anydesk command to {con}...')
+            con.send('anydesk'.encode())
+            self.logIt_thread(self.log_path, msg=f'Send Completed.')
+
+            self.logIt_thread(self.log_path, msg=f'Waiting for response from client...')
+            msg = con.recv(1024).decode()
+            self.logIt_thread(self.log_path, msg=f'Client response: {msg}.')
+
+            if "OK" not in msg:
+                self.logIt_thread(self.log_path, msg=f'Printing msg from client...')
+
+                # Update statusbar message
+                self.update_statusbar_messages_thread(msg=f'Status: {ip} | {sname}: Anydesk not installed.')
+
+                install_anydesk = messagebox.askyesno("Install Anydesk",
+                                                      "Anydesk isn't installed on the remote machine. do you with to install?")
+
+                if install_anydesk:
+                    # Update statusbar message
+                    self.update_statusbar_messages_thread(msg=f'Status: installing anydesk on {ip} | {sname}...')
+
+                    self.logIt_thread(self.log_path, msg=f'Sending install command to {con}...')
+                    con.send('y'.encode())
+                    self.logIt_thread(self.log_path, msg=f'Send Completed.')
+
+                    textVar = StringVar()
+                    while True:
+                        self.logIt_thread(self.log_path, msg=f'Waiting for response from client...')
+                        msg = con.recv(1024).decode()
+                        self.logIt_thread(self.log_path, msg=f'Client response: {msg}.')
+                        textVar.set(msg)
+
+                        if "OK" not in str(msg):
+                            # Update statusbar message
+                            self.update_statusbar_messages_thread(msg=f'Status: {msg}')
+
+                        else:
+                            # Update statusbar message
+                            self.update_statusbar_messages_thread(msg=f'Status: {textVar}')
+
+                            msgBox = messagebox.showinfo(f"From {ip} | {sname}", f"Anydesk Running.\t\t\t\t")
+
+                            # Update statusbar message
+                            self.update_statusbar_messages_thread(msg=f'Status: anydesk running on {ip} | {sname}.')
+
+                            return True
+
+                else:
+                    self.logIt_thread(self.log_path, msg=f'Sending cancel command to {con}...')
+                    con.send('n'.encode())
+                    self.logIt_thread(self.log_path, msg=f'Send Completed.')
+                    return
+
+            else:
+                # Update statusbar message
+                self.update_statusbar_messages_thread(msg=f'Status: anydesk running on {ip} | {sname}.')
+
+                msgBox = messagebox.showinfo(f"From {ip} | {sname}", f"Anydesk Running.\t\t\t\t")
+                return True
+
+        except (WindowsError, ConnectionError, socket.error) as e:
+            self.logIt_thread(self.log_path, msg=f'Connection Error: {e}.')
+
+            # Update statusbar message
+            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+
+            print(f"[{colored('!', 'red')}]Client lost connection.")
+            try:
+                self.logIt_thread(self.log_path, debug=True,
+                                  msg=f'Calling self.remove_lost_connection({con}, {ip})...')
+                self.remove_lost_connection(con, ip)
+                return False
+
+            except RuntimeError as e:
+                self.logIt_thread(self.log_path, debug=True, msg=f'Runtime Error: {e}.')
+                return False
+
+    # Display Clients Last Restart
+    def last_restart(self, con: str, ip: str, sname: str) -> bool:
+        try:
+            self.logIt_thread(self.log_path, debug=False, msg=f'Sending lr command to client...')
+            con.send('lr'.encode())
+            self.logIt_thread(self.log_path, debug=False, msg=f'Send Completed.')
+
+            self.logIt_thread(self.log_path, debug=False, msg=f'Waiting for response from client...')
+            msg = con.recv(4096).decode()
+            self.logIt_thread(self.log_path, debug=False, msg=f'Client response: {msg}')
+
+            # Update statusbar message
+            self.update_statusbar_messages_thread(msg=f'Status: restart for {sname}: {msg.split("|")[1][15:]}')
+
+            # Display MessageBox on screen
+            messagebox.showinfo(f"Last Restart for: {ip} | {sname}", f"\t{msg.split('|')[1][15:]}\t\t\t")
+
+            return True
+
+        except (WindowsError, socket.error, ConnectionResetError) as e:
+            self.logIt_thread(self.log_path, debug=False, msg=f'Connection Error: {e}.')
+            # Update statusbar message
+            self.update_statusbar_messages_thread(msg=f'Status: {e}')
+
+            try:
+                self.logIt_thread(self.log_path, debug=False,
+                                  msg=f'Calling self.remove_lost_connection({con}, {ip})...')
+                self.remove_lost_connection(con, ip)
+                return False
+
+            except RuntimeError as e:
+                self.logIt_thread(self.log_path, debug=True, msg=f'Runtime Error: {e}.')
+                return False
+
+    # Client System Information
+    def sysinfo(self, con: str, ip: str, sname: str):
+        # Disable Buttons
+        disThread = Thread(target=self.disable_controller_buttons, name="Disable Controller Buttons Thread")
+        disThread.start()
+
+        # Update statusbar message
+        self.update_statusbar_messages_thread(msg=f'Status: waiting for system information from {ip} | {sname}...')
+
+        try:
+            self.logIt_thread(self.log_path, msg=f'Initializing Module: sysinfo...')
+            sinfo = sysinfo.Sysinfo(con, self.ttl, self.path, self.tmp_availables, self.clients, self.log_path, ip)
+
+            print(f"[{colored('*', 'cyan')}]Fetching system information, please wait... ")
+            self.logIt_thread(self.log_path, msg=f'Calling sysinfo.run()...')
+            if sinfo.run(ip):
+                # Update statusbar message
+                self.update_statusbar_messages_thread(
+                    msg=f'Status: system information file received from {ip} | {sname}.')
+
+                messagebox.showinfo(f"From {ip} | {sname}", "System information file received.\t\t\t\t\t\t\t\t")
+
+        except (WindowsError, socket.error, ConnectionResetError) as e:
+            self.logIt_thread(self.log_path, debug=True, msg=f'Connection Error: {e}.')
+
+            # Update statusbar message
+            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+
+            try:
+                self.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip})...')
+                self.remove_lost_connection(con, ip)
+                return
+
+            except RuntimeError:
+                return
+
+    # Display/Kill Tasks on Client
+    def tasks(self, con: str, ip: str, sname: str) -> bool:
+        def what_task() -> str:
+            task_to_kill = simpledialog.askstring(parent=self, title='Task To Kill', prompt="Task to kill\t\t\t\t")
+            if task_to_kill is None:
+                try:
+                    con.send('n'.encode())
+
+                except (WindowsError, socket.error) as e:
+                    self.logIt_thread(self.log_path, msg=f'Error: {e}.')
+                    self.update_statusbar_messages_thread(msg=f"Status: {e}")
+                    self.remove_lost_connection(con, ip)
+                    return False
+
+                messagebox.showwarning(f"From {ip} | {sname}", "Task Kill canceled.\t\t\t\t\t\t\t\t")
+                return False
+
+            if len(task_to_kill) < 1:
+                try:
+                    con.send('n'.encode())
+
+                except (WindowsError, socket.error) as e:
+                    self.logIt_thread(self.log_path, msg=f'Error: {e}.')
+                    self.update_statusbar_messages_thread(msg=f"Status: {e}")
+                    self.remove_lost_connection(con, ip)
+                    return False
+
+                messagebox.showwarning(f"From {ip} | {sname}", "Task Kill canceled.\t\t\t\t\t\t\t\t")
+                return False
+
+            if not str(task_to_kill).endswith('exe'):
+                try:
+                    con.send('n'.encode())
+                    messagebox.showwarning(f"From {ip} | {sname}", "Task Kill canceled.\t\t\t\t\t\t\t\t")
+                    return False
+
+                except (WindowsError, socket.error) as e:
+                    self.logIt_thread(self.log_path, msg=f'Error: {e}.')
+                    self.update_statusbar_messages_thread(msg=f"Status: {e}")
+                    self.remove_lost_connection(con, ip)
+                    return False
+
+            return task_to_kill
+
+        def kill_task(task_to_kill):
+            try:
+                self.logIt_thread(self.log_path, msg=f'Sending kill command to {ip}.')
+                con.send('kill'.encode())
+                self.logIt_thread(self.log_path, msg=f'Send complete.')
+
+            except (WindowsError, socket.error) as e:
+                self.logIt_thread(self.log_path, msg=f'Error: {e}.')
+                self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+                self.remove_lost_connection(con, ip)
+                return False
+
+            try:
+                self.logIt_thread(self.log_path, msg=f'Sending task name to {ip}...')
+                con.send(task_to_kill.encode())
+                self.logIt_thread(self.log_path, msg=f'Send complete.')
+
+            except (WindowsError, socket.error) as e:
+                self.logIt_thread(self.log_path, msg=f'Error: {e}.')
+                self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+                self.remove_lost_connection(con, ip)
+                return False
+
+            try:
+                self.logIt_thread(self.log_path, msg=f'Waiting for confirmation from {ip}...')
+                msg = con.recv(1024).decode()
+                self.logIt_thread(self.log_path, msg=f'{ip}: {msg}')
+
+            except (WindowsError, socket.error) as e:
+                self.logIt_thread(self.log_path, msg=f'Error: {e}.')
+                self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+                self.remove_lost_connection(con, ip)
+                return False
+
+            messagebox.showinfo(f"From {ip} | {sname}", f"{msg}.\t\t\t\t\t\t\t\t")
+
+            # Update statusbar message
+            self.update_statusbar_messages_thread(msg=f'Status: killed task {task_to_kill} on {ip} | {sname}.')
+
+            return True
+
+        # Disable controller buttons
+        self.disable_controller_buttons_thread()
+
+        # Update statusbar message
+        self.update_statusbar_messages_thread(msg=f'Status: running tasks command on {ip} | {sname}.')
+
+        self.logIt_thread(self.log_path, debug=False, msg=f'Initializing Module: tasks...')
+        tsks = tasks.Tasks(con, ip, self.clients, self.connections,
+                           self.targets, self.ips, self.tmp_availables,
+                           self.path, self.log_path, self.path, sname)
+
+        self.logIt_thread(self.log_path, debug=False, msg=f'Calling tasks.tasks()...')
+        filepath = tsks.tasks(ip)
+        print(filepath)
+
+        killTask = messagebox.askyesno(f"Tasks from {ip} | {sname}", "Kill Task?\t\t\t\t\t\t\t\t")
+        if killTask:
+            task_to_kill = what_task()
+            confirmKill = messagebox.askyesno(f'Kill task: {task_to_kill} on {sname}',
+                                              f'Are you sure you want to kill {task_to_kill}?')
+            if confirmKill:
+                kill_task(task_to_kill)
+
+            else:
+                self.logIt_thread(self.log_path, msg=f'Sending pass command to {ip}.')
+                try:
+                    con.send('pass'.encode())
+
+                except (WindowsError, socket.error) as e:
+                    self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+                    return False
+
+                return False
+
+        else:
+            try:
+                con.send('n'.encode())
+
+            except (WindowsError, socket.error) as e:
+                self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+                return False
+
+            # Update statusbar message
+            self.update_statusbar_messages_thread(msg=f'Status: tasks file received from {ip} | {sname}.')
+            return True
+
+    # Restart Client
+    def restart(self, con: str, ip: str, sname: str) -> bool:
+        # Update statusbar message
+        self.update_statusbar_messages_thread(msg=f'Status: waiting for restart confirmation...')
+
+        # Display MessageBox on screen
+        self.sure = messagebox.askyesno(f"Restart for: {ip} | {sname}",
+                                        f"Are you sure you want to restart {sname}?\t")
+        if self.sure:
+            try:
+                self.logIt_thread(self.log_path, msg=f'Sending restart command to client...')
+                con.send('restart'.encode())
+                self.remove_lost_connection(con, ip)
+                self.refresh()
+
+                # Update statusbar message
+                self.update_statusbar_messages_thread(msg=f'Status: restart command sent to {ip} | {sname}.')
+
+                return True
+
+            except (RuntimeError, WindowsError, socket.error) as e:
+                self.logIt_thread(self.log_path, msg=f'Connection Error: {e}')
+
+                # Update statusbar message
+                self.update_statusbar_messages_thread(msg=f'Status: {e}')
+
+                self.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip})...')
+                self.remove_lost_connection(con, ip)
+
+                return False
+
+        else:
+            # Update statusbar message
+            self.update_statusbar_messages_thread(msg=f'Status: restart canceled.')
+            return False
+
+    # Browse local files by Clients Station Names
+    def browse_local_files(self, sname: str) -> subprocess:
+        return subprocess.Popen(rf"explorer {self.path}\{sname}")
+
+    # ==++==++==++== END Controller Buttons ==++==++==++==
+
+    # # ==++==++==++== Server Processes ==++==++==++==
     # Run Connect func in a new Thread
     def run(self) -> None:
         self.logIt_thread(self.log_path, msg=f'Running run()...')
@@ -544,7 +914,8 @@ class App(tk.Tk):
                 self.logIt_thread(self.log_path, msg=f'ips list updated.')
 
                 # Set Temp Dict To Update Live Connections List
-                self.logIt_thread(self.log_path, msg=f'Adding {self.conn} | {self.ip} to temp live connections dict...')
+                self.logIt_thread(self.log_path,
+                                  msg=f'Adding {self.conn} | {self.ip} to temp live connections dict...')
                 self.temp_connection = {self.conn: self.ip}
                 self.logIt_thread(self.log_path, msg=f'Temp connections dict updated.')
 
@@ -615,45 +986,6 @@ class App(tk.Tk):
 
                 return False
 
-    # Display Connection History
-    def connection_history(self) -> bool:
-        self.logIt_thread(self.log_path, msg=f'Running connection_history()...')
-
-        # Update statusbar message
-        self.update_statusbar_messages_thread(msg=f'Status: displaying connection history...')
-
-        # History LabelFrame
-        self.history_labelFrame = LabelFrame(self.main_frame, height=400, text="Connection History",
-                                             relief='ridge')
-        self.history_labelFrame.grid(row=3, sticky='news', columnspan=3)
-
-        c = 1  # Initiate Counter for Connection Number
-        try:
-            # Iterate Through Connection History List Items
-            self.logIt_thread(self.log_path, msg=f'Iterating self.connHistory...')
-            for connection in self.connHistory:
-                for conKey, macValue in connection.items():
-                    for macKey, ipVal in macValue.items():
-                        for ipKey, identValue in ipVal.items():
-                            for identKey, userValue in identValue.items():
-                                for userKey, timeValue in userValue.items():
-                                    histLabel = tk.Label(self.history_labelFrame,
-                                                         text=f"[{str(c)}]Station IP: {ipKey} | "
-                                                              f"Station MAC: {macKey} | "
-                                                              f"Station Name: {identKey} | "
-                                                              f"Logged User: {userKey} | "
-                                                              f"Connection Time: {str(timeValue).replace('|', ':')}")
-                                    histLabel.grid(row=c - 1, column=0, sticky='w')
-                        c += 1
-
-            return True
-
-        # Break If Client Lost Connection
-        except (KeyError, socket.error, ConnectionResetError) as e:
-            # Update statusbar message
-            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
-            return False
-
     # Check if connected stations are still connected
     def vital_signs(self) -> bool:
         self.logIt_thread(self.log_path, msg=f'Running vital_signs()...')
@@ -712,344 +1044,50 @@ class App(tk.Tk):
                                     self.remove_lost_connection(conKey, ipKey)
 
         self.logIt_thread(self.log_path, msg=f'=== End of vital_signs() ===')
-        print(f"\n[{colored('*', 'green')}]Vital Signs Process completed.\n")
 
         # Update statusbar message
         self.update_statusbar_messages_thread(msg=f'Status: Vitals check completed.')
 
         return True
 
-    # Restart Client
-    def restart(self, con: str, ip: str, sname: str) -> bool:
+    # Display Connection History
+    def connection_history(self) -> bool:
+        self.logIt_thread(self.log_path, msg=f'Running connection_history()...')
+
         # Update statusbar message
-        self.update_statusbar_messages_thread(msg=f'Status: waiting for restart confirmation...')
+        self.update_statusbar_messages_thread(msg=f'Status: displaying connection history...')
 
-        # Display MessageBox on screen
-        self.sure = messagebox.askyesno(f"Restart for: {ip} | {sname}", f"Are you sure you want to restart {sname}?\t")
-        if self.sure:
-            try:
-                self.logIt_thread(self.log_path, msg=f'Sending restart command to client...')
-                con.send('restart'.encode())
-                self.remove_lost_connection(con, ip)
-                self.refresh()
+        # History LabelFrame
+        self.history_labelFrame = LabelFrame(self.main_frame, height=400, text="Connection History",
+                                             relief='ridge')
+        self.history_labelFrame.grid(row=3, sticky='news', columnspan=3)
 
-                # Update statusbar message
-                self.update_statusbar_messages_thread(msg=f'Status: restart command sent to {ip} | {sname}.')
+        c = 1  # Initiate Counter for Connection Number
+        try:
+            # Iterate Through Connection History List Items
+            self.logIt_thread(self.log_path, msg=f'Iterating self.connHistory...')
+            for connection in self.connHistory:
+                for conKey, macValue in connection.items():
+                    for macKey, ipVal in macValue.items():
+                        for ipKey, identValue in ipVal.items():
+                            for identKey, userValue in identValue.items():
+                                for userKey, timeValue in userValue.items():
+                                    histLabel = tk.Label(self.history_labelFrame,
+                                                         text=f"[{str(c)}] Station IP: {ipKey} | "
+                                                              f"Station MAC: {macKey} | "
+                                                              f"Station Name: {identKey} | "
+                                                              f"Logged User: {userKey} | "
+                                                              f"Connection Time: {str(timeValue).replace('|', ':')}")
+                                    histLabel.grid(row=c - 1, column=0, sticky='w')
+                        c += 1
 
-                return True
+            return True
 
-            except (RuntimeError, WindowsError, socket.error) as e:
-                self.logIt_thread(self.log_path, msg=f'Connection Error: {e}')
-
-                # Update statusbar message
-                self.update_statusbar_messages_thread(msg=f'Status: {e}')
-
-                self.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip})...')
-                self.remove_lost_connection(con, ip)
-
-                return False
-
-        else:
+        # Break If Client Lost Connection
+        except (KeyError, socket.error, ConnectionResetError) as e:
             # Update statusbar message
-            self.update_statusbar_messages_thread(msg=f'Status: restart canceled.')
+            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
             return False
-
-    # Display Clients Last Restart
-    def last_restart(self, con: str, ip: str, sname: str) -> bool:
-        try:
-            self.logIt_thread(self.log_path, debug=False, msg=f'Sending lr command to client...')
-            con.send('lr'.encode())
-            self.logIt_thread(self.log_path, debug=False, msg=f'Send Completed.')
-
-            self.logIt_thread(self.log_path, debug=False, msg=f'Waiting for response from client...')
-            msg = con.recv(4096).decode()
-            self.logIt_thread(self.log_path, debug=False, msg=f'Client response: {msg}')
-
-            # Update statusbar message
-            self.update_statusbar_messages_thread(msg=f'Status: restart for {sname}: {msg.split("|")[1][15:]}')
-
-            # Display MessageBox on screen
-            messagebox.showinfo(f"Last Restart for: {ip} | {sname}", f"\t{msg.split('|')[1][15:]}\t\t\t")
-
-            return True
-
-        except (WindowsError, socket.error, ConnectionResetError) as e:
-            self.logIt_thread(self.log_path, debug=False, msg=f'Connection Error: {e}.')
-            # Update statusbar message
-            self.update_statusbar_messages_thread(msg=f'Status: {e}')
-
-            try:
-                self.logIt_thread(self.log_path, debug=False,
-                                  msg=f'Calling self.remove_lost_connection({con}, {ip})...')
-                self.remove_lost_connection(con, ip)
-                return False
-
-            except RuntimeError as e:
-                self.logIt_thread(self.log_path, debug=True, msg=f'Runtime Error: {e}.')
-                return False
-
-    # Run Anydesk on Client
-    def anydesk(self, con: str, ip: str, sname: str) -> bool:
-        self.logIt_thread(self.log_path, msg=f'Running anydesk({con}, {ip})...')
-
-        # Update statusbar message
-        self.update_statusbar_messages_thread(msg=f'Status: running anydesk on {ip} | {sname}...')
-
-        try:
-            self.logIt_thread(self.log_path, msg=f'Sending anydesk command to {con}...')
-            con.send('anydesk'.encode())
-            self.logIt_thread(self.log_path, msg=f'Send Completed.')
-
-            self.logIt_thread(self.log_path, msg=f'Waiting for response from client...')
-            msg = con.recv(1024).decode()
-            self.logIt_thread(self.log_path, msg=f'Client response: {msg}.')
-
-            if "OK" not in msg:
-                self.logIt_thread(self.log_path, msg=f'Printing msg from client...')
-
-                # Update statusbar message
-                self.update_statusbar_messages_thread(msg=f'Status: {ip} | {sname}: Anydesk not installed.')
-
-                install_anydesk = messagebox.askyesno("Install Anydesk",
-                                                      "Anydesk isn't installed on the remote machine. do you with to install?")
-
-                if install_anydesk:
-                    # Update statusbar message
-                    self.update_statusbar_messages_thread(msg=f'Status: installing anydesk on {ip} | {sname}...')
-
-                    self.logIt_thread(self.log_path, msg=f'Sending install command to {con}...')
-                    con.send('y'.encode())
-                    self.logIt_thread(self.log_path, msg=f'Send Completed.')
-
-                    textVar = StringVar()
-                    while True:
-                        self.logIt_thread(self.log_path, msg=f'Waiting for response from client...')
-                        msg = con.recv(1024).decode()
-                        self.logIt_thread(self.log_path, msg=f'Client response: {msg}.')
-                        textVar.set(msg)
-
-                        if "OK" not in str(msg):
-                            # Update statusbar message
-                            self.update_statusbar_messages_thread(msg=f'Status: {msg}')
-
-                        else:
-                            # Update statusbar message
-                            self.update_statusbar_messages_thread(msg=f'Status: {textVar}')
-
-                            msgBox = messagebox.showinfo(f"From {ip} | {sname}", f"Anydesk Running.\t\t\t\t")
-
-                            # Update statusbar message
-                            self.update_statusbar_messages_thread(msg=f'Status: anydesk running on {ip} | {sname}.')
-
-                            return True
-
-                else:
-                    self.logIt_thread(self.log_path, msg=f'Sending cancel command to {con}...')
-                    con.send('n'.encode())
-                    self.logIt_thread(self.log_path, msg=f'Send Completed.')
-                    return
-
-            else:
-                # Update statusbar message
-                self.update_statusbar_messages_thread(msg=f'Status: anydesk running on {ip} | {sname}.')
-
-                msgBox = messagebox.showinfo(f"From {ip} | {sname}", f"Anydesk Running.\t\t\t\t")
-                return True
-
-        except (WindowsError, ConnectionError, socket.error) as e:
-            self.logIt_thread(self.log_path, msg=f'Connection Error: {e}.')
-
-            # Update statusbar message
-            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
-
-            print(f"[{colored('!', 'red')}]Client lost connection.")
-            try:
-                self.logIt_thread(self.log_path, debug=True,
-                                  msg=f'Calling self.remove_lost_connection({con}, {ip})...')
-                self.remove_lost_connection(con, ip)
-                return False
-
-            except RuntimeError as e:
-                self.logIt_thread(self.log_path, debug=True, msg=f'Runtime Error: {e}.')
-                return False
-
-    # Screenshot from Client
-    def screenshot(self, con: str, ip: str, sname: str) -> None:
-        # Disable Controller Buttons
-        disThread = Thread(target=self.disable_controller_buttons,
-                           daemon=True,
-                           name="Disable Controller Buttons Thread")
-        disThread.start()
-
-        # Update statusbar message
-        self.update_statusbar_messages_thread(msg=f'Status: fetching screenshot from {ip} | {sname}...')
-
-        try:
-            print(f"[{colored('*', 'cyan')}]Fetching screenshot...")
-            self.logIt_thread(self.log_path, msg=f'Sending screen command to client...')
-            con.send('screen'.encode())
-            self.logIt_thread(self.log_path, msg=f'Send Completed.')
-
-            self.logIt_thread(self.log_path, msg=f'Calling Module: '
-                                                 f'screenshot({con, self.path, self.tmp_availables, self.clients})...')
-
-            scrnshot = screenshot.Screenshot(con, self.path, self.tmp_availables,
-                                             self.clients, self.log_path, self.targets)
-
-            self.logIt_thread(self.log_path, msg=f'Calling screenshot.recv_file()...')
-            scrnshot.recv_file(ip)
-
-            # Update statusbar message
-            self.update_statusbar_messages_thread(msg=f'Status: screenshot received from  {ip} | {sname}.')
-
-        except (WindowsError, socket.error, ConnectionResetError) as e:
-            self.logIt_thread(self.log_path, msg=f'Connection Error: {e}')
-
-            # Update statusbar message
-            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
-
-            self.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip}...)')
-            self.remove_lost_connection(con, ip)
-
-    # Client System Information
-    def sysinfo(self, con: str, ip: str, sname: str):
-        # Disable Buttons
-        disThread = Thread(target=self.disable_controller_buttons, name="Disable Controller Buttons Thread")
-        disThread.start()
-
-        # Update statusbar message
-        self.update_statusbar_messages_thread(msg=f'Status: waiting for system information from {ip} | {sname}...')
-
-        try:
-            self.logIt_thread(self.log_path, msg=f'Initializing Module: sysinfo...')
-            sinfo = sysinfo.Sysinfo(con, self.ttl, self.path, self.tmp_availables, self.clients, self.log_path, ip)
-
-            print(f"[{colored('*', 'cyan')}]Fetching system information, please wait... ")
-            self.logIt_thread(self.log_path, msg=f'Calling sysinfo.run()...')
-            if sinfo.run(ip):
-                # Update statusbar message
-                self.update_statusbar_messages_thread(
-                    msg=f'Status: system information file received from {ip} | {sname}.')
-
-                messagebox.showinfo(f"From {ip} | {sname}", "System information file received.\t\t\t\t\t\t\t\t")
-
-        except (WindowsError, socket.error, ConnectionResetError) as e:
-            self.logIt_thread(self.log_path, debug=True, msg=f'Connection Error: {e}.')
-
-            # Update statusbar message
-            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
-
-            try:
-                self.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip})...')
-                self.remove_lost_connection(con, ip)
-                return
-
-            except RuntimeError:
-                return
-
-    # Display/Kill Tasks on Client
-    def tasks(self, con: str, ip: str, sname: str) -> bool:
-        # Disable Buttons
-        disThread = Thread(target=self.disable_controller_buttons, name="Disable Controller Buttons Thread")
-        disThread.start()
-
-        # Update statusbar message
-        self.update_statusbar_messages_thread(msg=f'Status: running tasks command on {ip} | {sname}.')
-
-        self.logIt_thread(self.log_path, debug=False, msg=f'Initializing Module: tasks...')
-        tsks = tasks.Tasks(con, ip, self.clients, self.connections,
-                           self.targets, self.ips, self.tmp_availables,
-                           self.path, self.log_path, self.path, sname)
-
-        self.logIt_thread(self.log_path, debug=False, msg=f'Calling tasks.tasks()...')
-        filepath = tsks.tasks(ip)
-
-        killTask = messagebox.askyesno(f"Tasks from {ip} | {sname}", "Kill Task?\t\t\t\t\t\t\t\t")
-        if killTask:
-            try:
-                task_to_kill = simpledialog.askstring(parent=self, title='Task To Kill', prompt="Task to kill\t\t\t\t")
-                if task_to_kill is None:
-                    con.send('n'.encode())
-                    return False
-
-                if len(task_to_kill) < 1:
-                    con.send('n'.encode())
-                    return False
-
-                if not str(task_to_kill).endswith('exe'):
-                    return False
-
-                confirmKill = messagebox.askyesno(f'Kill task: {task_to_kill} on {sname}',
-                                                  f'Are you sure you want to kill {task_to_kill}?')
-
-                if confirmKill:
-                    try:
-                        self.logIt_thread(self.log_path, msg=f'Sending kill command to {ip}.')
-                        con.send('kill'.encode())
-                        self.logIt_thread(self.log_path, msg=f'Send complete.')
-
-                        self.logIt_thread(self.log_path, msg=f'Sending task name to {ip}...')
-                        con.send(task_to_kill.encode())
-                        self.logIt_thread(self.log_path, msg=f'Send complete.')
-
-                        self.logIt_thread(self.log_path, msg=f'Waiting for confirmation from {ip}...')
-                        msg = con.recv(1024).decode()
-                        self.logIt_thread(self.log_path, msg=f'{ip}: {msg}')
-                        print(f"[{colored('*', 'green')}]{msg}\n")
-
-                        messagebox.showinfo(f'Kill {task_to_kill}', f'Task {task_to_kill} killed.')
-
-                        # Update statusbar message
-                        self.update_statusbar_messages_thread(msg=f'Status: killed task {task_to_kill} on {ip} | {sname}.')
-
-                        return True
-
-                    except (WindowsError, socket.error) as e:
-                        self.logIt_thread(self.log_path, msg=f'Error: {e}.')
-
-                        # Update statusbar message
-                        self.update_statusbar_messages_thread(msg=f'Status: {e}.')
-
-                        self.remove_lost_connection(con, ip)
-                        return False
-
-                else:
-                    self.logIt_thread(self.log_path, msg=f'Sending pass command to {ip}.')
-                    try:
-                        con.send('pass'.encode())
-
-                    except socket.error as e:
-                        # Update statusbar message
-                        self.update_statusbar_messages_thread(msg=f'Status: {e}.')
-                        return False
-
-                    self.logIt_thread(self.log_path, msg=f'Send complete.')
-                    return False
-
-            except (WindowsError, socket.error, ConnectionResetError, ConnectionError) as e:
-                # Update statusbar message
-                self.update_statusbar_messages_thread(msg=f'Status: {e}.')
-
-                self.remove_lost_connection(con, ip)
-
-        else:
-            try:
-                con.send('n'.encode())
-
-            except socket.error as e:
-                # Update statusbar message
-                self.update_statusbar_messages_thread(msg=f'Status: {e}.')
-
-                return False
-
-            # Update statusbar message
-            self.update_statusbar_messages_thread(msg=f'Status: tasks file received from {ip} | {sname}.')
-
-            return True
-
-    # Browse local files by Clients Station Names
-    def browse_local_files(self, sname: str) -> subprocess:
-        return subprocess.Popen(rf"explorer {self.path}\{sname}")
 
     # Shell Connection to Client
     def shell(self, con: str, ip: str, sname: str) -> None:
@@ -1127,7 +1165,7 @@ class App(tk.Tk):
             return False
 
     # Disable Controller Buttons
-    def disable_controller_buttons(self):
+    def disable_controller_buttons(self, duration=None):
         for button in list(self.buttons):
             button.config(state=DISABLED)
 
