@@ -87,8 +87,8 @@ class Tasks:
 
     def tasks(self, ip) -> str:
         self.logIt_thread(self.log_path, msg=f'Running tasks({ip})...')
-        print(f"[{colored('*', 'cyan')}]Retrieving remote station's task list\n"
-              f"[{colored('*', 'cyan')}]Please wait...")
+        # print(f"[{colored('*', 'cyan')}]Retrieving remote station's task list\n"
+        #       f"[{colored('*', 'cyan')}]Please wait...")
         try:
             self.logIt_thread(self.log_path, msg=f'Sending tasks command to {ip}...')
             self.con.send('tasks'.encode())
@@ -134,7 +134,7 @@ class Tasks:
             self.logIt_thread(self.log_path, msg=f'Printing file content to screen...')
             with open(filenameRecv, 'r') as file:
                 data = file.read()
-                print(data)
+                # print(data)
 
             self.logIt_thread(self.log_path, msg=f'Renaming {filenameRecv} to send to {ip}...')
             name = ntpath.basename(str(filenameRecv))
@@ -166,100 +166,6 @@ class Tasks:
             print(f"[{colored('!', 'red')}]{e}")
             self.remove_lost_connection()
 
-    def kill_tasks(self, ip):
-        self.logIt_thread(self.log_path, msg=f'Running self.kill_tasks()...')
-        while True:
-            try:
-                self.logIt_thread(self.log_path, msg=f'Waiting for user confirmation...')
-                choose_task = input(f"[?]Kill a task [Y/n]? ")
-
-            except ValueError:
-                self.logIt_thread(self.log_path, msg=f'Value Error!')
-                print(f"[{colored('*', 'red')}]Choose [Y] or [N].")
-
-            if choose_task.lower() == 'y':
-                self.logIt_thread(self.log_path, msg=f'Calling self.task_to_kill()...')
-                self.task_to_kill(ip)
-                break
-
-            elif choose_task.lower() == 'n':
-                try:
-                    self.logIt_thread(self.log_path, msg=f'Sending pass command to {ip}...')
-                    self.con.send('pass'.encode())
-                    self.logIt_thread(self.log_path, msg=f'Send complete.')
-                    break
-
-                except Exception as e:
-                    self.logIt_thread(self.log_path, msg=f'Error: {e}')
-                    self.remove_lost_connection()
-                    break
-
-            else:
-                self.logIt_thread(self.log_path, msg=f'Wrong input detected.')
-                print(f"[{colored('*', 'red')}]Choose [Y] or [N].\n")
-
-        return
-
-    def task_to_kill(self, ip):
-        self.logIt_thread(self.log_path, msg=f'Running self.task_to_kill()...')
-        while True:
-            self.logIt_thread(self.log_path, msg=f'Waiting for user input...')
-            task_to_kill = input(f"Task filename [Q Back]: ")
-            if str(task_to_kill).lower() == 'q':
-                break
-
-            if str(task_to_kill).endswith('exe'):
-                if self.confirm_kill(task_to_kill).lower() == "y":
-                    try:
-                        self.logIt_thread(self.log_path, msg=f'Sending kill command to {ip}.')
-                        self.con.send('kill'.encode())
-                        self.logIt_thread(self.log_path, msg=f'Send complete.')
-
-                        self.logIt_thread(self.log_path, msg=f'Sending task name to {ip}...')
-                        self.con.send(task_to_kill.encode())
-                        self.logIt_thread(self.log_path, msg=f'Send complete.')
-
-                        self.logIt_thread(self.log_path, msg=f'Waiting for confirmation from {ip}...')
-                        msg = self.con.recv(1024).decode()
-                        self.logIt_thread(self.log_path, msg=f'{ip}: {msg}')
-                        print(f"[{colored('*', 'green')}]{msg}\n")
-                        break
-
-                    except (WindowsError, socket.error) as e:
-                        self.logIt_thread(self.log_path, msg=f'Error: {e}.')
-                        print(f"[{colored('!', 'red')}]Client lost connection.")
-                        self.remove_lost_connection()
-
-                else:
-                    self.logIt_thread(self.log_path, msg=f'Sending pass command to {ip}.')
-                    self.con.send('pass'.encode())
-                    self.logIt_thread(self.log_path, msg=f'Send complete.')
-                    break
-
-            else:
-                self.logIt_thread(self.log_path, msg=f'Error: {task_to_kill} not found.')
-                print(f"[{colored('*', 'red')}]{task_to_kill} not found.")
-
-        self.logIt_thread(self.log_path, msg=f'Task to kill: {task_to_kill}.')
-        return task_to_kill
-
-    def confirm_kill(self, task_to_kill):
-        self.logIt_thread(self.log_path, msg=f'Running self.confirm_kill({task_to_kill})...')
-        while True:
-            self.logIt_thread(self.log_path, msg=f'Waiting for user confirmation...')
-            confirm_kill = input(f"Are you sure you want to kill {task_to_kill} [Y/n]? ")
-            if confirm_kill.lower() == "y":
-                break
-
-            elif confirm_kill.lower() == "n":
-                break
-
-            else:
-                print(f"[{colored('*', 'red')}]Choose [Y] or [N].")
-
-        self.logIt_thread(self.log_path, msg=f'Confirmation: {confirm_kill}')
-        return confirm_kill
-
     def remove_lost_connection(self):
         self.logIt_thread(self.log_path, msg=f'Running self.remove_lost_connection()...')
         try:
@@ -273,10 +179,10 @@ class Tasks:
 
                                 del self.connections[con]
                                 del self.clients[con]
-                                print(f"[{colored('*', 'red')}]{colored(f'{ip}', 'yellow')} | "
-                                      f"{colored(f'{identKey}', 'yellow')} | "
-                                      f"{colored(f'{userValue}', 'yellow')} "
-                                      f"Removed from Availables list.\n")
+                                # print(f"[{colored('*', 'red')}]{colored(f'{ip}', 'yellow')} | "
+                                #       f"{colored(f'{identKey}', 'yellow')} | "
+                                #       f"{colored(f'{userValue}', 'yellow')} "
+                                #       f"Removed from Availables list.\n")
             return False
 
         except Exception as e:

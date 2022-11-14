@@ -6,18 +6,16 @@ import shutil
 import time
 import os
 
-# TODO: DONE: Logger
-# TODO: DONE: Switched to real time streaming and save to local file
-
 
 class Sysinfo:
-    def __init__(self, con, ttl, root, tmp_availables, clients, log_path):
+    def __init__(self, con, ttl, root, tmp_availables, clients, log_path, ip):
         self.con = con
         self.ttl = ttl
         self.root = root
         self.tmp_availables = tmp_availables
         self.clients = clients
         self.log_path = log_path
+        self.ip = ip
 
     def get_date(self):
         d = datetime.now().replace(microsecond=0)
@@ -52,29 +50,29 @@ class Sysinfo:
         self.logit_thread.start()
         return
 
-    def make_dir(self, ip: str) -> str:
-        self.logIt_thread(self.log_path, msg=f'Running make_dir()...')
-        self.logIt_thread(self.log_path, msg=f'Creating Directory...')
-
+    def make_dir(self, ip):
+        self.logIt_thread(self.log_path, debug=False, msg=f'Running make_dir()...')
+        self.logIt_thread(self.log_path, debug=False, msg=f'Creating Directory...')
         for conKey, ipValue in self.clients.items():
-            for ipKey, userValue in ipValue.items():
-                if ipKey == ip:
-                    for item in self.tmp_availables:
-                        if item[1] == ip:
-                            for identKey, timeValue in userValue.items():
-                                name = item[2]
-                                loggedUser = item[3]
-                                clientVersion = item[4]
-                                path = os.path.join(self.root, name)
+            for macKey, ipVal in ipValue.items():
+                for ipKey, userValue in ipVal.items():
+                    if ipKey == self.ip:
+                        for item in self.tmp_availables:
+                            if item[2] == self.ip:
+                                for identKey, timeValue in userValue.items():
+                                    name = item[3]
+                                    loggedUser = item[4]
+                                    clientVersion = item[5]
+                                    path = os.path.join(self.root, name)
 
-                                try:
-                                    os.makedirs(path)
+                                    try:
+                                        os.makedirs(path)
 
-                                except FileExistsError:
-                                    self.logIt_thread(self.log_path, msg=f'Passing FileExistsError...')
-                                    pass
+                                    except FileExistsError:
+                                        self.logIt_thread(self.log_path, debug=False, msg=f'Passing FileExistsError...')
+                                        pass
 
-        return name, loggedUser, path
+                                return name, loggedUser, path
 
     def run_command(self, ip, host, user):
         self.logIt_thread(self.log_path, msg=f'Running self.run_command()...')
@@ -86,7 +84,7 @@ class Sysinfo:
             self.logIt_thread(self.log_path, msg=f'Waiting for results from {self.con}...')
             result = self.con.recv(4096).decode()
             self.logIt_thread(self.log_path, msg=f'Results: {result}\n')
-            print(result)
+            # print(result)
 
             self.logIt_thread(self.log_path, msg=f'Writing results to {self.sysinfo}...')
             if not os.path.exists(self.sysinfo):
@@ -114,14 +112,14 @@ class Sysinfo:
 
         self.logIt_thread(self.log_path, msg=f'Running recv_file()...')
         self.logIt_thread(self.log_path, msg=f'Calling make_dir()...')
-        name, loggedUser, path = self.make_dir(ip)
+        name, user, path = self.make_dir(ip)
 
         self.logIt_thread(self.log_path, msg=f'Creating sysinfo file...')
         self.sysinfo = rf'C:\Peach\{name}\sysinfo {dt}.txt'
 
         self.logIt_thread(self.log_path, msg=f'Calling self.run_command()...')
 
-        if self.run_command(ip, name, loggedUser):
+        if self.run_command(ip, name, user):
             return True
 
         else:
