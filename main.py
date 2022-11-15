@@ -1,3 +1,5 @@
+import glob
+
 from PIL import Image, ImageTk
 from datetime import datetime
 from threading import Thread
@@ -492,7 +494,7 @@ class App(tk.Tk):
             self.update_statusbar_messages_thread(msg=f'Status: screenshot received from  {ip} | {sname}.')
 
             # Display file content in system information notebook TextBox
-            self.display_screenshot(self.system_information_tab, txt='Screenshot')
+            self.display_screenshot(fr"{self.path}\{sname}", self.system_information_tab, txt='Screenshot')
 
             # Enable Controller Buttons
             self.enable_buttons_thread()
@@ -1319,7 +1321,14 @@ class App(tk.Tk):
             self.tab_textbox.config(state=DISABLED)
 
     # Display Image slider with screenshots
-    def display_screenshot(self, tab, txt=''):
+    def display_screenshot(self, path: str, tab: str, txt=''):
+        images = glob.glob(fr"{path}\*.jpg")
+        images.sort(key=os.path.getmtime)
+
+        # Sort from newest on top to oldest on bottom
+        for image in images[::-1]:
+            print(image)
+
         tab = Frame(self.notebook, height=350)
         self.canvas = Canvas(tab, background='white', height=350)
         self.canvas.pack(fill=BOTH)
@@ -1329,7 +1338,8 @@ class App(tk.Tk):
 
         self.slide_button = Button(self.canvas, text="Test Button")
         # tab.bind("<Button-1>", do_nothing)
-        # self.slide_button.pack(anchor=NW, side=LEFT, pady=2, padx=2)
+        self.slide_button.configure(height=350)
+        self.slide_button.pack(side=BOTTOM, pady=2, padx=2)
 
         self.indexer = 1
         self.i = 20
