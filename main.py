@@ -638,6 +638,7 @@ class App(tk.Tk):
             with open(filepath, 'r') as file:
                 data = file.read()
                 self.system_scrollbar.configure(command=self.system_information_textbox.yview)
+                self.system_information_textbox.config(state=NORMAL)
                 self.system_information_textbox.insert(END, data)
                 self.system_information_textbox.config(state=DISABLED)
 
@@ -772,7 +773,22 @@ class App(tk.Tk):
         # Display file content in system information notebook TextBox
         with open(filepath, 'r') as file:
             data = file.read()
+            self.tasks_tab.destroy()
+            self.tasks_tab = Frame(self.notebook, height=350)
+
+            # Create Tasks Scrollbar
+            self.tasks_scrollbar = Scrollbar(self.tasks_tab, orient=VERTICAL)
+            self.tasks_scrollbar.pack(side=LEFT, fill=Y)
+
+            # Create Tasks Textbox
+            self.tasks_tab_textbox = Text(self.tasks_tab, yscrollcommand=self.tasks_scrollbar.set)
+            self.tasks_tab_textbox.pack(fill=BOTH)
+            
+            self.notebook.add(self.tasks_tab, text="Tasks")
+
             self.tasks_scrollbar.configure(command=self.tasks_tab_textbox.yview)
+            self.system_information_textbox.config(state=NORMAL)
+            self.tasks_tab_textbox.delete(1.0, END)
             self.tasks_tab_textbox.insert(END, data)
             self.tasks_tab_textbox.config(state=DISABLED)
 
@@ -1076,7 +1092,8 @@ class App(tk.Tk):
     def vital_signs(self) -> bool:
         self.logIt_thread(self.log_path, msg=f'Running vital_signs()...')
         if len(self.targets) == 0:
-            messagebox.showinfo("Refresh", "No Connected Stations.")
+            self.update_statusbar_messages_thread(msg='Status: No connected stations.')
+            # messagebox.showinfo("Refresh", "No Connected Stations.")
             return False
 
         callback = 'yes'
