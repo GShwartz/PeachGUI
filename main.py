@@ -635,12 +635,7 @@ class App(tk.Tk):
                 msg=f'Status: system information file received from {ip} | {sname}.')
 
             # Display file content in system information notebook TextBox
-            with open(filepath, 'r') as file:
-                data = file.read()
-                self.system_scrollbar.configure(command=self.system_information_textbox.yview)
-                self.system_information_textbox.config(state=NORMAL)
-                self.system_information_textbox.insert(END, data)
-                self.system_information_textbox.config(state=DISABLED)
+            self.display_file_content(filepath, self.system_information_tab, txt='system')
 
             # Enable Controller Buttons
             self.enable_buttons_thread()
@@ -771,26 +766,7 @@ class App(tk.Tk):
         filepath = tsks.tasks(ip)
 
         # Display file content in system information notebook TextBox
-        with open(filepath, 'r') as file:
-            data = file.read()
-            self.tasks_tab.destroy()
-            self.tasks_tab = Frame(self.notebook, height=350)
-
-            # Create Tasks Scrollbar
-            self.tasks_scrollbar = Scrollbar(self.tasks_tab, orient=VERTICAL)
-            self.tasks_scrollbar.pack(side=LEFT, fill=Y)
-
-            # Create Tasks Textbox
-            self.tasks_tab_textbox = Text(self.tasks_tab, yscrollcommand=self.tasks_scrollbar.set)
-            self.tasks_tab_textbox.pack(fill=BOTH)
-            
-            self.notebook.add(self.tasks_tab, text="Tasks")
-
-            self.tasks_scrollbar.configure(command=self.tasks_tab_textbox.yview)
-            self.system_information_textbox.config(state=NORMAL)
-            self.tasks_tab_textbox.delete(1.0, END)
-            self.tasks_tab_textbox.insert(END, data)
-            self.tasks_tab_textbox.config(state=DISABLED)
+        self.display_file_content(filepath, self.system_information_tab, txt='Tasks')
 
         # Display kill task question pop-up
         killTask = messagebox.askyesno(f"Tasks from {ip} | {sname}", "Kill Task?\t\t\t\t\t\t\t\t")
@@ -1316,16 +1292,42 @@ class App(tk.Tk):
 
             return
 
+    # Display file content in notebook
+    def display_file_content(self, filepath, tab, txt=''):
+        with open(filepath, 'r') as file:
+            data = file.read()
+            tab = Frame(self.notebook, height=350)
+
+            # Create Tasks Scrollbar
+            self.tab_scrollbar = Scrollbar(tab, orient=VERTICAL)
+            self.tab_scrollbar.pack(side=LEFT, fill=Y)
+
+            # Create Tasks Textbox
+            self.tab_textbox = Text(tab, yscrollcommand=self.tab_scrollbar.set)
+            self.tab_textbox.pack(fill=BOTH)
+
+            # Add tab to notebook
+            self.notebook.add(tab, text=f"{txt}")
+
+            self.tab_scrollbar.configure(command=self.tab_textbox.yview)
+            self.tab_textbox.config(state=NORMAL)
+            self.tab_textbox.delete(1.0, END)
+            self.tab_textbox.insert(END, data)
+            self.tab_textbox.config(state=DISABLED)
+
     # Build Notebook
     def create_notebook(self):
         # Create Notebook
-        self.notebook = ttk.Notebook(self.details_labelFrame, height=350)
+        self.notebook = ttk.Notebook(self.details_labelFrame, height=330)
         self.notebook.pack(expand=True, pady=5, fill=X)
 
+        self.clear_tabs = Button(self.details_labelFrame, text="Clear Tabs", pady=1)
+        self.clear_tabs.pack(anchor=W, padx=5, ipadx=2, ipady=2)
+
         # Create Tabs
-        self.screenshot_tab = Frame(self.notebook, height=350)
-        self.system_information_tab = Frame(self.notebook, height=350)
-        self.tasks_tab = Frame(self.notebook, height=350)
+        self.screenshot_tab = Frame(self.notebook, height=330)
+        self.system_information_tab = Frame(self.notebook, height=330)
+        self.tasks_tab = Frame(self.notebook, height=330)
 
         # Create System Information Scrollbar
         self.system_scrollbar = Scrollbar(self.system_information_tab, orient=VERTICAL)
@@ -1341,12 +1343,12 @@ class App(tk.Tk):
 
         # Create Tasks Textbox
         self.tasks_tab_textbox = Text(self.tasks_tab, yscrollcommand=self.tasks_scrollbar.set)
-        self.tasks_tab_textbox.pack(fill=BOTH)
+        self.tasks_tab_textbox.pack(fill=X)
 
         # Add tabs to notebook
-        self.notebook.add(self.screenshot_tab, text="Screenshot")
-        self.notebook.add(self.system_information_tab, text="System Information")
-        self.notebook.add(self.tasks_tab, text="Tasks")
+        # self.notebook.add(self.screenshot_tab, text="Screenshot")
+        # self.notebook.add(self.system_information_tab, text="System Information")
+        # self.notebook.add(self.tasks_tab, text="Tasks")
 
     # Manage Connected Table & Controller LabelFrame Buttons
     def selectItem(self, event) -> bool:
