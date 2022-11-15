@@ -1,5 +1,7 @@
 import glob
+import tkinter
 
+import PIL.Image
 from PIL import Image, ImageTk
 from datetime import datetime
 from threading import Thread
@@ -17,6 +19,7 @@ from tkinter import messagebox
 from tkinter import ttk
 from tkinter import *
 import tkinter as tk
+
 # import tkinter
 
 # Local Modules
@@ -51,10 +54,12 @@ class App(tk.Tk):
     log_path = fr'{path}\server_log.txt'
 
     WIDTH = 1350
-    HEIGHT = 820
+    HEIGHT = 830
 
     def __init__(self):
         super().__init__()
+        self.style = ttk.Style()
+
         # ======== Server Config ==========
         # Listener
         self.listener()
@@ -98,6 +103,8 @@ class App(tk.Tk):
         self.grid_rowconfigure(0, weight=1)
 
         # =-=-=-=-=-=-= MAIN FRAME GUI =-=-=-=-=-=-=-=
+        self.make_style()
+
         # Build and display
         self.build_main_window_frames()
         self.build_connected_table()
@@ -155,7 +162,7 @@ class App(tk.Tk):
         connhistThread.start()
 
     # Disable Controller Buttons Thread
-    def disable_buttons_thread(self, sidebar=None):
+    def disable_buttons_thread(self, sidebar=None) -> None:
         disable = Thread(target=self.disable_buttons,
                          args=(sidebar, ),
                          daemon=True,
@@ -163,7 +170,7 @@ class App(tk.Tk):
         disable.start()
 
     # Enable Controller Buttons Thread
-    def enable_buttons_thread(self):
+    def enable_buttons_thread(self) -> None:
         enable = Thread(target=self.enable_buttons,
                         daemon=True,
                         name="Enable Controller Buttons Thread")
@@ -172,7 +179,7 @@ class App(tk.Tk):
     # ==++==++==++== END THREADED FUNCS ==++==++==++== #
 
     # Build initial main frame GUI
-    def build_main_window_frames(self):
+    def build_main_window_frames(self) -> None:
         # Sidebar Frame
         self.sidebar_frame = Frame(self, width=150, background="RoyalBlue4")
         self.sidebar_frame.grid(row=0, column=0, sticky="nswe")
@@ -208,7 +215,7 @@ class App(tk.Tk):
         self.table_frame = LabelFrame(self.main_frame_table, text="Connected Stations")
         self.table_frame.pack(fill=BOTH)
 
-        # # Details Frame
+        # Details Frame
         self.details_frame = Frame(self.main_frame, relief='flat')
         self.details_frame.grid(row=3, column=0, sticky='news')
 
@@ -223,7 +230,7 @@ class App(tk.Tk):
         # self.status_labelFrame.grid(row=5, column=0, sticky='news')
 
     # Create Sidebar Buttons
-    def build_sidebar_buttons(self):
+    def build_sidebar_buttons(self) -> None:
         # Refresh Button
         self.btn_refresh = tk.Button(self.sidebar_frame,
                                      text="Refresh", width=15, pady=10,
@@ -284,11 +291,9 @@ class App(tk.Tk):
         self.connected_table.bind("<Button 1>", self.selectItem)
 
         # Style Table
-        self.connected_table_style = ttk.Style()
-        self.connected_table_style.theme_use("default")
-        self.connected_table_style.configure("Treeview", rowheight=20,
-                                             background="#D3D3D3", foreground="black")
-        self.connected_table_style.map("Treeview", background=[('selected', 'green')])
+        self.style.theme_use("Details")
+        self.style.configure("Treeview", rowheight=20, background="#D3D3D3", foreground="black")
+        self.style.map("Treeview", background=[('selected', 'green')])
 
     # Build Table for Connection History
     def create_connection_history_table(self) -> None:
@@ -329,7 +334,7 @@ class App(tk.Tk):
         self.history_table.heading("#6", text="Time")
 
     # Server listener
-    def listener(self):
+    def listener(self) -> None:
         self.server = socket.socket()
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server.bind((self.serverIP, self.port))
@@ -1322,32 +1327,41 @@ class App(tk.Tk):
 
     # Display Image slider with screenshots
     def display_screenshot(self, path: str, tab: str, txt=''):
+        # Sort folder for .jpg files and last creation time
         images = glob.glob(fr"{path}\*.jpg")
         images.sort(key=os.path.getmtime)
 
-        # Sort from newest on top to oldest on bottom
-        for image in images[::-1]:
-            print(image)
-
         tab = Frame(self.notebook, height=350)
-        self.canvas = Canvas(tab, background='white', height=350)
-        self.canvas.pack(fill=BOTH)
+        self.canvas = Canvas(tab, height=350)
+        self.canvas.pack(fill=BOTH, padx=10)
 
         # Add tab to notebook
         self.notebook.add(tab, text=f"{txt}")
 
-        self.slide_button = Button(self.canvas, text="Test Button")
-        # tab.bind("<Button-1>", do_nothing)
-        self.slide_button.configure(height=350)
-        self.slide_button.pack(side=BOTTOM, pady=2, padx=2)
+        # Last Screenshot
+        self.sc = PIL.Image.open(images[-1])
+        self.sc_resized = self.sc.resize((650, 350))
+        self.last_screenshot = ImageTk.PhotoImage(self.sc_resized)
 
-        self.indexer = 1
-        self.i = 20
+        # Display Last Screenshot file
+        self.slide_label = Label(self.canvas, image=self.last_screenshot)
+        self.slide_label.configure(height=350)
+        self.slide_label.pack(side=BOTTOM, fill=BOTH, padx=2, ipadx=10)
+
+    def make_style(self):
+        self.style.theme_create("Details", parent='alt', settings={
+            "TNotebook": {"configure": {"tabmargins": [2, 5, 2, 0]}},
+            "TNotebook.Tab": {
+                "configure": {"padding": [5, 1], "background": 'white'},
+                "map": {"background": [("selected", 'green')],
+                        "expand": [("selected", [1, 1, 1, 0])]}}})
+
+        self.style.configure("Treeview", rowheight=20, background="#D3D3D3", foreground="black")
+        self.style.map("Treeview", background=[('selected', 'green')])
 
     # Build Notebook
     def create_notebook(self):
-        def make_style():
-            pass
+        self.style.theme_use("Details")
 
         # Create Notebook
         self.notebook = ttk.Notebook(self.details_labelFrame, height=330)
@@ -1458,7 +1472,8 @@ class App(tk.Tk):
             pass
 
         # Display Details LabelFrame
-        self.details_labelFrame = LabelFrame(self.main_frame, text="Details", relief='ridge', height=400)
+        self.details_labelFrame = LabelFrame(self.main_frame, text="Details", relief='ridge',
+                                             height=400, background='light grey')
         self.details_labelFrame.grid(row=3, sticky='news', columnspan=3)
 
         self.create_notebook()
