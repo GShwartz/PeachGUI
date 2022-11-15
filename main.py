@@ -30,6 +30,7 @@ from Modules import sysinfo
 from Modules import tasks
 
 
+# TODO: Finish building the screenshot tab deletion in notebook
 # TODO: Create tools Class
 # TODO: Add Menubar
 
@@ -42,6 +43,7 @@ class App(tk.Tk):
     targets = []
     buttons = []
     sidebar_buttons = []
+    notebook_tabs = []
 
     # Temp dict to hold connected station's ID# & IP
     temp = {}
@@ -1325,11 +1327,22 @@ class App(tk.Tk):
             self.tab_textbox.insert(END, data)
             self.tab_textbox.config(state=DISABLED)
 
+            # Display Last Tab
+            self.notebook.select(tab)
+
+            # Remove Tabs
+            self.remove_tabs(tab)
+
     # Display Image slider with screenshots
     def display_screenshot(self, path: str, tab: str, txt=''):
         # Sort folder for .jpg files and last creation time
         images = glob.glob(fr"{path}\*.jpg")
         images.sort(key=os.path.getmtime)
+
+        # Last Screenshot
+        self.sc = PIL.Image.open(images[-1])
+        self.sc_resized = self.sc.resize((650, 350))
+        self.last_screenshot = ImageTk.PhotoImage(self.sc_resized)
 
         tab = Frame(self.notebook, height=350)
         self.canvas = Canvas(tab, height=350)
@@ -1337,17 +1350,31 @@ class App(tk.Tk):
 
         # Add tab to notebook
         self.notebook.add(tab, text=f"{txt}")
-
-        # Last Screenshot
-        self.sc = PIL.Image.open(images[-1])
-        self.sc_resized = self.sc.resize((650, 350))
-        self.last_screenshot = ImageTk.PhotoImage(self.sc_resized)
+        self.notebook_tabs.append(self.notebook.tab(0, "text"))
 
         # Display Last Screenshot file
-        self.slide_label = Label(self.canvas, image=self.last_screenshot)
-        self.slide_label.configure(height=350)
-        self.slide_label.pack(side=BOTTOM, fill=BOTH, padx=2, ipadx=10)
+        self.canvas.create_image(650, 150, image=self.last_screenshot)
 
+        # Display Last Tab
+        self.notebook.select(tab)
+
+        self.remove_tabs(tab)
+
+    # Remove empty screenshot tab from notebook
+    def remove_tabs(self, tab):
+        counter = 0
+        for t in self.notebook.tabs():
+            print(counter)
+            if self.notebook.tab(tab, "text") == self.notebook.tab(t, "text") and counter > 1:
+                print("YAY")
+                counter += 1
+
+            else:
+                print(self.notebook.tab(t, "text"))
+
+            return True
+
+    # Define GUI Styles
     def make_style(self):
         self.style.theme_create("Details", parent='alt', settings={
             "TNotebook": {"configure": {"tabmargins": [2, 5, 2, 0]}},
