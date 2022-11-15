@@ -491,6 +491,9 @@ class App(tk.Tk):
             # Update statusbar message
             self.update_statusbar_messages_thread(msg=f'Status: screenshot received from  {ip} | {sname}.')
 
+            # Display file content in system information notebook TextBox
+            self.display_screenshot(self.system_information_tab, txt='Screenshot')
+
             # Enable Controller Buttons
             self.enable_buttons_thread()
 
@@ -635,7 +638,7 @@ class App(tk.Tk):
                 msg=f'Status: system information file received from {ip} | {sname}.')
 
             # Display file content in system information notebook TextBox
-            self.display_file_content(filepath, self.system_information_tab, txt='system')
+            self.display_file_content(filepath, self.system_information_tab, txt='System Information')
 
             # Enable Controller Buttons
             self.enable_buttons_thread()
@@ -1293,7 +1296,7 @@ class App(tk.Tk):
             return
 
     # Display file content in notebook
-    def display_file_content(self, filepath, tab, txt=''):
+    def display_file_content(self, filepath: str, tab: str, txt=''):
         with open(filepath, 'r') as file:
             data = file.read()
             tab = Frame(self.notebook, height=350)
@@ -1315,8 +1318,27 @@ class App(tk.Tk):
             self.tab_textbox.insert(END, data)
             self.tab_textbox.config(state=DISABLED)
 
+    # Display Image slider with screenshots
+    def display_screenshot(self, tab, txt=''):
+        tab = Frame(self.notebook, height=350)
+        self.canvas = Canvas(tab, background='white', height=350)
+        self.canvas.pack(fill=BOTH)
+
+        # Add tab to notebook
+        self.notebook.add(tab, text=f"{txt}")
+
+        self.slide_button = Button(self.canvas, text="Test Button")
+        # tab.bind("<Button-1>", do_nothing)
+        # self.slide_button.pack(anchor=NW, side=LEFT, pady=2, padx=2)
+
+        self.indexer = 1
+        self.i = 20
+
     # Build Notebook
     def create_notebook(self):
+        def make_style():
+            pass
+
         # Create Notebook
         self.notebook = ttk.Notebook(self.details_labelFrame, height=330)
         self.notebook.pack(expand=True, pady=5, fill=X)
