@@ -30,7 +30,6 @@ from Modules import sysinfo
 from Modules import tasks
 
 
-# TODO: Finish building the screenshot tab deletion in notebook
 # TODO: Create tools Class
 # TODO: Add Menubar
 
@@ -44,6 +43,7 @@ class App(tk.Tk):
     buttons = []
     sidebar_buttons = []
     notebook_tabs = []
+    counter = 0
 
     # Temp dict to hold connected station's ID# & IP
     temp = {}
@@ -1330,9 +1330,6 @@ class App(tk.Tk):
             # Display Last Tab
             self.notebook.select(tab)
 
-            # Remove Tabs
-            self.remove_tabs(tab)
-
     # Display Image slider with screenshots
     def display_screenshot(self, path: str, tab: str, txt=''):
         # Sort folder for .jpg files and last creation time
@@ -1344,6 +1341,7 @@ class App(tk.Tk):
         self.sc_resized = self.sc.resize((650, 350))
         self.last_screenshot = ImageTk.PhotoImage(self.sc_resized)
 
+        # tab = [Frame(self.notebook, height=350) * 10]
         tab = Frame(self.notebook, height=350)
         self.canvas = Canvas(tab, height=350)
         self.canvas.pack(fill=BOTH, padx=10)
@@ -1362,17 +1360,15 @@ class App(tk.Tk):
 
     # Remove empty screenshot tab from notebook
     def remove_tabs(self, tab):
-        counter = 0
-        for t in self.notebook.tabs():
-            print(counter)
-            if self.notebook.tab(tab, "text") == self.notebook.tab(t, "text") and counter > 1:
-                print("YAY")
-                counter += 1
+        for t, ta in zip(self.notebook.tabs(), self.notebook.winfo_children()):
+            if self.notebook.tab(tab, "text") == self.notebook.tab(t, "text"):
+                self.counter += 1
+                print("YAY", self.counter)
 
             else:
-                print(self.notebook.tab(t, "text"))
+                print(self.notebook.tab(t, "text"), self.counter - 1)
 
-            return True
+        return True
 
     # Define GUI Styles
     def make_style(self):
