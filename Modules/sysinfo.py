@@ -1,5 +1,4 @@
 from datetime import datetime
-from termcolor import colored
 from threading import Thread
 import socket
 import shutil
@@ -120,7 +119,7 @@ class Sysinfo:
         self.logIt_thread(self.log_path, msg=f'Calling self.run_command()...')
 
         if self.run_command(ip, name, user):
-            return True
+            return self.sysinfo
 
         else:
             return False
