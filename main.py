@@ -30,6 +30,7 @@ from Modules import sysinfo
 from Modules import tasks
 
 
+# TODO: Fix Clear tabs buttons
 # TODO: Create tools Class
 # TODO: Add Menubar
 
@@ -42,7 +43,9 @@ class App(tk.Tk):
     targets = []
     buttons = []
     sidebar_buttons = []
-    counter = 0
+
+    displayed_screenshot_files = []
+    frames = []
     tabs = 0
 
     # Temp dict to hold connected station's ID# & IP
@@ -479,7 +482,7 @@ class App(tk.Tk):
 
     # ==++==++==++== CONTROLLER BUTTONS ==++==++==++==
     # Screenshot from Client
-    def screenshot(self, con: str, ip: str, sname: str) -> None:
+    def screenshot(self, con: str, ip: str, sname: str) -> bool:
         # Disable Controller Buttons
         self.disable_buttons_thread(sidebar=True)
 
@@ -509,6 +512,8 @@ class App(tk.Tk):
             # Enable Controller Buttons
             self.enable_buttons_thread()
 
+            return True
+
         except (WindowsError, socket.error, ConnectionResetError) as e:
             self.logIt_thread(self.log_path, msg=f'Connection Error: {e}')
 
@@ -517,6 +522,8 @@ class App(tk.Tk):
 
             self.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip}...)')
             self.remove_lost_connection(con, ip)
+
+            return False
 
     # Run Anydesk on Client
     def anydesk(self, con: str, ip: str, sname: str) -> bool:
@@ -1333,8 +1340,9 @@ class App(tk.Tk):
 
                 # Display Last Tab
                 self.notebook.select(tab)
-                self.tabs += 1
-                return True
+
+            self.tabs += 1
+            return True
 
         elif len(screenshot_path) > 0:
             images = glob.glob(fr"{screenshot_path}\*.jpg")
@@ -1344,38 +1352,64 @@ class App(tk.Tk):
             self.sc = PIL.Image.open(images[-1])
             self.sc_resized = self.sc.resize((650, 350))
             self.last_screenshot = ImageTk.PhotoImage(self.sc_resized)
+            self.displayed_screenshot_files.append(self.last_screenshot)
 
             if self.tabs > 0:
                 tab = Frame(self.notebook, height=350)
-                # Create notebook Tab
-                for t in self.notebook.tabs():
+                for n, t in enumerate(self.notebook.tabs()):
                     if self.notebook.tab(self.notebook.index(tab_id=t), 'text') == 'Screenshot' and \
-                            self.notebook.index(tab_id=t) == self.notebook.index(self.tabs - 1):
+                            self.notebook.index(tab_id=t) == self.notebook.index(n):
                         print(
-                            f"t: {t} | tname: {self.notebook.tab(t, 'text')} | t index: {self.notebook.index(tab_id=t)}")
+                            f"tname: {self.notebook.tab(t, 'text')} | t index: {self.notebook.index(tab_id=t)}")
 
-            tab = Frame(self.notebook, height=350)
+                        fr = ttk.Frame(self.notebook, height=350)
+                        self.frames.append(fr)
 
-            # Create Tasks Scrollbar
-            self.tab_scrollbar = Scrollbar(tab, orient=VERTICAL)
-            self.tab_scrollbar.pack(side=LEFT, fill=Y)
+                        tab = self.frames[-1]
+                        # Create Tasks Scrollbar
+                        self.tab_scrollbar = Scrollbar(tab, orient=VERTICAL)
+                        self.tab_scrollbar.pack(side=LEFT, fill=Y)
 
-            # Create Tasks Textbox
-            self.tab_textbox = Text(tab, yscrollcommand=self.tab_scrollbar.set)
-            self.tab_textbox.pack(fill=BOTH)
+                        # Create Tasks Textbox
+                        self.tab_textbox = Text(tab, yscrollcommand=self.tab_scrollbar.set)
+                        self.tab_textbox.pack(fill=BOTH)
 
-            # Display Image
-            self.tab_textbox.image_create(END, image=self.last_screenshot)
-            self.tab_scrollbar.configure(command=self.tab_textbox.yview)
+                        # Display Image
+                        self.tab_textbox.image_create(END, image=self.last_screenshot)
+                        self.tab_scrollbar.configure(command=self.tab_textbox.yview)
 
-            # Add tab to notebook
-            self.notebook.add(tab, text=f"{txt}")
-            self.tab_textbox.config(state=DISABLED)
+                        # Add tab to notebook
+                        self.notebook.add(tab, text=f"{txt}")
+                        self.tab_textbox.config(state=DISABLED)
 
-            # Display Last Tab
-            self.notebook.select(tab)
-            self.tabs += 1
-            return True
+                        # Display Last Tab
+                        self.notebook.select(tab)
+                        self.tabs += 1
+                        return True
+
+            else:
+                tab = Frame(self.notebook, height=350)
+
+                # Create Tasks Scrollbar
+                self.tab_scrollbar = Scrollbar(tab, orient=VERTICAL)
+                self.tab_scrollbar.pack(side=LEFT, fill=Y)
+
+                # Create Tasks Textbox
+                self.tab_textbox = Text(tab, yscrollcommand=self.tab_scrollbar.set)
+                self.tab_textbox.pack(fill=BOTH)
+
+                # Display Image
+                self.tab_textbox.image_create(END, image=self.last_screenshot)
+                self.tab_scrollbar.configure(command=self.tab_textbox.yview)
+
+                # Add tab to notebook
+                self.notebook.add(tab, text=f"{txt}")
+                self.tab_textbox.config(state=DISABLED)
+
+                # Display Last Tab
+                self.notebook.select(tab)
+                self.tabs += 1
+                return True
 
         else:
             print("ERROR")
