@@ -243,12 +243,6 @@ class App(tk.Tk):
         self.btn_refresh.grid(row=0, sticky="nwes")
         self.sidebar_buttons.append(self.btn_refresh)
 
-        # Connection History
-        self.btn_connection_history = tk.Button(self.sidebar_frame, text="History", width=15, pady=10,
-                                                command=lambda: self.connection_history_thread())
-        self.btn_connection_history.grid(row=1, sticky='news')
-        self.sidebar_buttons.append(self.btn_connection_history)
-
         # Update Clients Button
         self.btn_update_clients = tk.Button(self.sidebar_frame,
                                             text="Update All Clients", width=15, pady=10,
@@ -1355,37 +1349,30 @@ class App(tk.Tk):
             self.displayed_screenshot_files.append(self.last_screenshot)
 
             if self.tabs > 0:
-                tab = Frame(self.notebook, height=350)
-                for n, t in enumerate(self.notebook.tabs()):
-                    if self.notebook.tab(self.notebook.index(tab_id=t), 'text') == 'Screenshot' and \
-                            self.notebook.index(tab_id=t) == self.notebook.index(n):
-                        print(
-                            f"tname: {self.notebook.tab(t, 'text')} | t index: {self.notebook.index(tab_id=t)}")
+                fr = ttk.Frame(self.notebook, height=350)
+                self.frames.append(fr)
 
-                        fr = ttk.Frame(self.notebook, height=350)
-                        self.frames.append(fr)
+                tab = self.frames[-1]
+                # Create Tasks Scrollbar
+                self.tab_scrollbar = Scrollbar(tab, orient=VERTICAL)
+                self.tab_scrollbar.pack(side=LEFT, fill=Y)
 
-                        tab = self.frames[-1]
-                        # Create Tasks Scrollbar
-                        self.tab_scrollbar = Scrollbar(tab, orient=VERTICAL)
-                        self.tab_scrollbar.pack(side=LEFT, fill=Y)
+                # Create Tasks Textbox
+                self.tab_textbox = Text(tab, yscrollcommand=self.tab_scrollbar.set)
+                self.tab_textbox.pack(fill=BOTH)
 
-                        # Create Tasks Textbox
-                        self.tab_textbox = Text(tab, yscrollcommand=self.tab_scrollbar.set)
-                        self.tab_textbox.pack(fill=BOTH)
+                # Display Image
+                self.tab_textbox.image_create(END, image=self.last_screenshot)
+                self.tab_scrollbar.configure(command=self.tab_textbox.yview)
 
-                        # Display Image
-                        self.tab_textbox.image_create(END, image=self.last_screenshot)
-                        self.tab_scrollbar.configure(command=self.tab_textbox.yview)
+                # Add tab to notebook
+                self.notebook.add(tab, text=f"{txt}")
+                self.tab_textbox.config(state=DISABLED)
 
-                        # Add tab to notebook
-                        self.notebook.add(tab, text=f"{txt}")
-                        self.tab_textbox.config(state=DISABLED)
-
-                        # Display Last Tab
-                        self.notebook.select(tab)
-                        self.tabs += 1
-                        return True
+                # Display Last Tab
+                self.notebook.select(tab)
+                self.tabs += 1
+                return True
 
             else:
                 tab = Frame(self.notebook, height=350)
@@ -1411,47 +1398,6 @@ class App(tk.Tk):
                 self.tabs += 1
                 return True
 
-        else:
-            print("ERROR")
-            return False
-
-    # Display Image slider with screenshots
-    def display_screenshot(self, path: str, tab: str, txt=''):
-        images = glob.glob(fr"{path}\*.jpg")
-        images.sort(key=os.path.getmtime)
-
-        # Last Screenshot
-        self.sc = PIL.Image.open(images[-1])
-        self.sc_resized = self.sc.resize((650, 350))
-        self.last_screenshot = ImageTk.PhotoImage(self.sc_resized)
-
-        # Create notebook Tab
-        tab = Frame(self.notebook, height=350)
-
-        # Create Canvas in notebook tab field
-        self.canvas = Canvas(tab, height=350)
-        self.canvas.pack(fill=BOTH, padx=10)
-
-        # Add tab to notebook
-        self.notebook.add(tab, text=f"{txt}")
-
-        # Display Last Screenshot file
-        self.canvas.create_image(600, 200, image=self.last_screenshot)
-
-        # Display Last Tab
-        self.notebook.select(tab)
-        self.tabs += 1
-
-        if self.notebook.index(tab_id=tab) > 0:
-            if self.tabs > 1:
-                # print(f"tab index: {self.notebook.index(tab_id=tab)} | tab name: {self.notebook.tab(tab, 'text')}")
-                for t in self.notebook.tabs():
-                    if self.notebook.tab(self.notebook.index(tab_id=t), 'text') == 'Screenshot' and \
-                            self.notebook.index(tab_id=t) == self.notebook.index(tab_id=tab):
-                        print(f"t: {t} | tname: {self.notebook.tab(t, 'text')} | t index: {self.notebook.index(tab_id=t)}")
-
-        return True
-
     # Define GUI Styles
     def make_style(self):
         self.style.theme_create("Details", parent='alt', settings={
@@ -1464,16 +1410,24 @@ class App(tk.Tk):
         self.style.configure("Treeview", rowheight=20, background="#D3D3D3", foreground="black")
         self.style.map("Treeview", background=[('selected', 'green')])
 
+    def clear_tabs(self):
+        for f in self.frames:
+            f.destroy()
+        self.frames.clear()
+
+        return
+
     # Build Notebook
     def create_notebook(self):
+        self.frames.clear()
         self.style.theme_use("Details")
 
         # Create Notebook
         self.notebook = ttk.Notebook(self.details_labelFrame, height=330)
         self.notebook.pack(expand=False, pady=5, fill=X)
 
-        self.clear_tabs = Button(self.details_labelFrame, text="Clear Tabs", pady=1)
-        self.clear_tabs.pack(anchor=W, padx=5, ipadx=2, ipady=2)
+        # self.clear_tabs = Button(self.details_labelFrame, text="Clear Tabs", pady=1, command=lambda: self.clear_tabs)
+        # self.clear_tabs.pack(anchor=W, padx=5, ipadx=2, ipady=2)
 
         # Create Tabs
         self.screenshot_tab = Frame(self.notebook, height=330)
