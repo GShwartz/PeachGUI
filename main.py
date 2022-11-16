@@ -504,7 +504,7 @@ class App(tk.Tk):
             self.update_statusbar_messages_thread(msg=f'Status: screenshot received from  {ip} | {sname}.')
 
             # Display file content in system information notebook TextBox
-            self.display_screenshot(fr"{self.path}\{sname}", self.screenshot_tab, txt='Screenshot')
+            self.display_file_content(fr"{self.path}\{sname}", '', self.screenshot_tab, txt='Screenshot')
 
             # Enable Controller Buttons
             self.enable_buttons_thread()
@@ -650,7 +650,7 @@ class App(tk.Tk):
                 msg=f'Status: system information file received from {ip} | {sname}.')
 
             # Display file content in system information notebook TextBox
-            self.display_file_content(filepath, self.system_information_tab, txt='System Information')
+            self.display_file_content(None, filepath, self.system_information_tab, txt='System Information')
 
             # Enable Controller Buttons
             self.enable_buttons_thread()
@@ -781,7 +781,7 @@ class App(tk.Tk):
         filepath = tsks.tasks(ip)
 
         # Display file content in system information notebook TextBox
-        self.display_file_content(filepath, self.system_information_tab, txt='Tasks')
+        self.display_file_content(None, filepath, self.system_information_tab, txt='Tasks')
 
         # Display kill task question pop-up
         killTask = messagebox.askyesno(f"Tasks from {ip} | {sname}", "Kill Task?\t\t\t\t\t\t\t\t")
@@ -1308,9 +1308,52 @@ class App(tk.Tk):
             return
 
     # Display file content in notebook
-    def display_file_content(self, filepath: str, tab: str, txt='') -> bool:
-        with open(filepath, 'r') as file:
-            data = file.read()
+    def display_file_content(self, screenshot_path: str, filepath: str, tab: str, txt='') -> bool:
+        if len(filepath) > 0:
+            with open(filepath, 'r') as file:
+                data = file.read()
+                tab = Frame(self.notebook, height=350)
+
+                # Create Tasks Scrollbar
+                self.tab_scrollbar = Scrollbar(tab, orient=VERTICAL)
+                self.tab_scrollbar.pack(side=LEFT, fill=Y)
+
+                # Create Tasks Textbox
+                self.tab_textbox = Text(tab, yscrollcommand=self.tab_scrollbar.set)
+                self.tab_textbox.pack(fill=BOTH)
+
+                # Add tab to notebook
+                self.notebook.add(tab, text=f"{txt}")
+
+                self.tab_scrollbar.configure(command=self.tab_textbox.yview)
+                self.tab_textbox.config(state=NORMAL)
+                self.tab_textbox.delete(1.0, END)
+                self.tab_textbox.insert(END, data)
+                self.tab_textbox.config(state=DISABLED)
+
+                # Display Last Tab
+                self.notebook.select(tab)
+                self.tabs += 1
+                return True
+
+        elif len(screenshot_path) > 0:
+            images = glob.glob(fr"{screenshot_path}\*.jpg")
+            images.sort(key=os.path.getmtime)
+
+            # Last Screenshot
+            self.sc = PIL.Image.open(images[-1])
+            self.sc_resized = self.sc.resize((650, 350))
+            self.last_screenshot = ImageTk.PhotoImage(self.sc_resized)
+
+            if self.tabs > 0:
+                tab = Frame(self.notebook, height=350)
+                # Create notebook Tab
+                for t in self.notebook.tabs():
+                    if self.notebook.tab(self.notebook.index(tab_id=t), 'text') == 'Screenshot' and \
+                            self.notebook.index(tab_id=t) == self.notebook.index(self.tabs - 1):
+                        print(
+                            f"t: {t} | tname: {self.notebook.tab(t, 'text')} | t index: {self.notebook.index(tab_id=t)}")
+
             tab = Frame(self.notebook, height=350)
 
             # Create Tasks Scrollbar
@@ -1321,20 +1364,22 @@ class App(tk.Tk):
             self.tab_textbox = Text(tab, yscrollcommand=self.tab_scrollbar.set)
             self.tab_textbox.pack(fill=BOTH)
 
+            # Display Image
+            self.tab_textbox.image_create(END, image=self.last_screenshot)
+            self.tab_scrollbar.configure(command=self.tab_textbox.yview)
+
             # Add tab to notebook
             self.notebook.add(tab, text=f"{txt}")
-
-            self.tab_scrollbar.configure(command=self.tab_textbox.yview)
-            self.tab_textbox.config(state=NORMAL)
-            self.tab_textbox.delete(1.0, END)
-            self.tab_textbox.insert(END, data)
             self.tab_textbox.config(state=DISABLED)
 
             # Display Last Tab
             self.notebook.select(tab)
+            self.tabs += 1
+            return True
 
-        self.tabs += 1
-        return True
+        else:
+            print("ERROR")
+            return False
 
     # Display Image slider with screenshots
     def display_screenshot(self, path: str, tab: str, txt=''):
@@ -1345,8 +1390,6 @@ class App(tk.Tk):
         self.sc = PIL.Image.open(images[-1])
         self.sc_resized = self.sc.resize((650, 350))
         self.last_screenshot = ImageTk.PhotoImage(self.sc_resized)
-
-        print(f"winfo children: {self.notebook.winfo_children()}")
 
         # Create notebook Tab
         tab = Frame(self.notebook, height=350)
@@ -1418,11 +1461,6 @@ class App(tk.Tk):
         # Create Tasks Textbox
         self.tasks_tab_textbox = Text(self.tasks_tab, yscrollcommand=self.tasks_scrollbar.set)
         self.tasks_tab_textbox.pack(fill=X)
-
-        # Add tabs to notebook
-        # self.notebook.add(self.screenshot_tab, text="Screenshot")
-        # self.notebook.add(self.system_information_tab, text="System Information")
-        # self.notebook.add(self.tasks_tab, text="Tasks")
 
     # Manage Connected Table & Controller LabelFrame Buttons
     def selectItem(self, event) -> bool:
