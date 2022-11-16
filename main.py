@@ -43,6 +43,7 @@ class App(tk.Tk):
     buttons = []
     sidebar_buttons = []
     notebook_tabs = []
+    notebook_tabs_dict = {}
     counter = 0
 
     # Temp dict to hold connected station's ID# & IP
@@ -438,8 +439,11 @@ class App(tk.Tk):
 
     # Broadcast update command to all connected stations
     def update_all_clients(self) -> bool:
+        if len(self.targets) == 0:
+            messagebox.showwarning("Update All Clients", "No connected stations.")
+            return False
+
         self.disable_buttons_thread(sidebar=False)
-        # messagebox.showinfo("Update All Clients", "Updating clients, click refresh to view progress.")
 
         try:
             for t in self.targets:
@@ -1332,6 +1336,7 @@ class App(tk.Tk):
 
     # Display Image slider with screenshots
     def display_screenshot(self, path: str, tab: str, txt=''):
+        tabFrames = {}
         # Sort folder for .jpg files and last creation time
         images = glob.glob(fr"{path}\*.jpg")
         images.sort(key=os.path.getmtime)
@@ -1341,32 +1346,59 @@ class App(tk.Tk):
         self.sc_resized = self.sc.resize((650, 350))
         self.last_screenshot = ImageTk.PhotoImage(self.sc_resized)
 
-        # tab = [Frame(self.notebook, height=350) * 10]
         tab = Frame(self.notebook, height=350)
+
         self.canvas = Canvas(tab, height=350)
         self.canvas.pack(fill=BOTH, padx=10)
 
         # Add tab to notebook
         self.notebook.add(tab, text=f"{txt}")
-        self.notebook_tabs.append(self.notebook.tab(0, "text"))
+        self.notebook_tabs.append(self.notebook.tab(self.notebook.select(), "text"))
+
+        temp_dict = {self.counter: {self.notebook.tab(self.notebook.select(), "text"): str(self.notebook.select())}}
+        self.notebook_tabs_dict.update(temp_dict)
 
         # Display Last Screenshot file
-        self.canvas.create_image(650, 150, image=self.last_screenshot)
+        self.canvas.create_image(600, 200, image=self.last_screenshot)
 
         # Display Last Tab
         self.notebook.select(tab)
 
-        self.remove_tabs(tab)
+        self.check_tabs(tab)
 
     # Remove empty screenshot tab from notebook
-    def remove_tabs(self, tab):
-        for t, ta in zip(self.notebook.tabs(), self.notebook.winfo_children()):
-            if self.notebook.tab(tab, "text") == self.notebook.tab(t, "text"):
-                self.counter += 1
-                print("YAY", self.counter)
+    def check_tabs(self, tab):
+        idxs = {}
+        for count, tabnameValue in self.notebook_tabs_dict.items():
+            for tabName, tabID in tabnameValue.items():
+                if self.notebook.tab(tabID, 'text') == \
+                        self.notebook.tab(self.notebook.select(), 'text'):
+                    idx = self.notebook.index('current')
+                    tmp = {tabName: idx}
+                    idxs.update(tmp)
+                    print(idxs)
 
-            else:
-                print(self.notebook.tab(t, "text"), self.counter - 1)
+                else:
+                    print("There are 2 screenshot tabs open")
+                    if not tabName == self.notebook.tab(self.notebook.select(), 'text'):
+                        print(f"{tabName}: {self.notebook.tab(self.notebook.select(), 'text')}")
+                        continue
+
+                    self.notebook.hide(tabID)
+                    self.counter = 0
+
+            self.counter += 1
+            print(f"YALLA Counter {self.counter}")
+            return
+
+        # for t, ta in zip(self.notebook.tabs(), self.notebook.winfo_children()):
+        #     print(ta)
+        #     if self.notebook.tab(tab, "text") == self.notebook.tab(t, "text") and self.counter == 2:
+        #         self.counter += 1
+        #         print("YAY", self.counter)
+        #
+        #     else:
+        #         print(self.notebook.tab(t, "text"), self.counter - 1)
 
         return True
 
@@ -1388,7 +1420,7 @@ class App(tk.Tk):
 
         # Create Notebook
         self.notebook = ttk.Notebook(self.details_labelFrame, height=330)
-        self.notebook.pack(expand=True, pady=5, fill=X)
+        self.notebook.pack(expand=False, pady=5, fill=X)
 
         self.clear_tabs = Button(self.details_labelFrame, text="Clear Tabs", pady=1)
         self.clear_tabs.pack(anchor=W, padx=5, ipadx=2, ipady=2)
