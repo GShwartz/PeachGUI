@@ -1,16 +1,15 @@
-import glob
-import tkinter
-
-import PIL.Image
-from PIL import Image, ImageTk
 from datetime import datetime
 from threading import Thread
+import PIL.ImageTk
 import subprocess
 import threading
+import PIL.Image
+import pystray
 import os.path
 import socket
 import psutil
 import time
+import glob
 import sys
 
 # GUI
@@ -20,8 +19,6 @@ from tkinter import ttk
 from tkinter import *
 import tkinter as tk
 
-# import tkinter
-
 # Local Modules
 from Modules import vital_signs
 from Modules import screenshot
@@ -30,7 +27,6 @@ from Modules import sysinfo
 from Modules import tasks
 
 
-# TODO: Fix Clear tabs buttons
 # TODO: Create tools Class
 # TODO: Add Menubar
 
@@ -74,8 +70,9 @@ class App(tk.Tk):
             os.makedirs(self.path)
 
         # Run Listener Thread
-        listenerThread = Thread(target=self.run, name="Listener Thread")
-        listenerThread.daemon = True
+        listenerThread = Thread(target=self.run,
+                                daemon=True,
+                                name="Listener Thread")
         listenerThread.start()
 
         # ======== GUI Config ===========
@@ -101,7 +98,7 @@ class App(tk.Tk):
         self.minsize(f'{self.WIDTH}', f'{self.HEIGHT}')
 
         # Set Closing protocol
-        self.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.protocol("WM_DELETE_WINDOW", self.exit)
 
         # Main Window Frames
         self.grid_columnconfigure(1, weight=1)
@@ -123,8 +120,10 @@ class App(tk.Tk):
     # ==++==++==++== THREADED FUNCS ==++==++==++== #
     # Run log func in new Thread
     def logIt_thread(self, log_path=None, debug=False, msg='') -> None:
-        self.logit_thread = Thread(target=self.logIt, args=(log_path, debug, msg), name="Log Thread")
-        self.logit_thread.daemon = True
+        self.logit_thread = Thread(target=self.logIt,
+                                   args=(log_path, debug, msg),
+                                   daemon=True,
+                                   name="Log Thread")
         self.logit_thread.start()
 
     # Update status bar messages Thread
@@ -132,19 +131,21 @@ class App(tk.Tk):
         statusbarThread = Thread(target=self.update_statusbar_messages,
                                  args=(msg,),
                                  name="Update Statusbar Thread")
-        statusbarThread.daemon = True
         statusbarThread.start()
 
     # Display Server Information Thread
     def display_server_information_thread(self) -> None:
         # Display Server Information
-        infoThread = Thread(target=self.server_information, name="ServerInfo")
-        # infoThread.daemon = True
+        infoThread = Thread(target=self.server_information,
+                            daemon=True,
+                            name="ServerInfo")
         infoThread.start()
 
     # Vitals Thread
     def vital_signs_thread(self) -> None:
-        vitalsThread = Thread(target=self.vital_signs, name="Vitals Thread")
+        vitalsThread = Thread(target=self.vital_signs,
+                              daemon=True,
+                              name="Vitals Thread")
         vitalsThread.start()
 
     # Update Client Thread
@@ -157,13 +158,16 @@ class App(tk.Tk):
     # Display Available Connections Thread
     def sac_thread(self) -> None:
         self.sacThread = Thread(target=self.show_available_connections,
+                                daemon=True,
                                 name="Show Available Connections Thread")
         # self.sacThread.daemon = True
         self.sacThread.start()
 
     # Connection History Thread
     def connection_history_thread(self) -> None:
-        connhistThread = Thread(target=self.connection_history, name="Connection History Thread")
+        connhistThread = Thread(target=self.connection_history,
+                                daemon=True,
+                                name="Connection History Thread")
         connhistThread.start()
 
     # Disable Controller Buttons Thread
@@ -365,10 +369,15 @@ class App(tk.Tk):
 
     # Close App
     def on_closing(self, event=0) -> None:
-        self.destroy()
+        minimize = messagebox.askyesno("Exit or Minimize", "Minimize to Tray?")
+        if minimize:
+            self.withdraw()
+
+        else:
+            self.withdraw()
+            self.destroy()
 
     # ==++==++==++== SIDEBAR BUTTONS ==++==++==++==
-
     # Refresh server info & connected stations table with vital signs
     def refresh(self) -> None:
         self.disable_buttons_thread(sidebar=False)
@@ -453,26 +462,32 @@ class App(tk.Tk):
         messagebox.showinfo("Update All Clients", "Update command sent.\nClick refresh to update the connected table.")
 
     # EXIT
-    def exit(self) -> None:
-        if len(self.targets) > 0:
-            try:
-                for t in self.targets:
-                    self.logIt_thread(self.log_path, msg=f'Sending exit command to connected stations...')
-                    t.send('exit'.encode())
-                    self.logIt_thread(self.log_path, msg=f'Send completed.')
+    def exit(self, event=0) -> None:
+        minimize = messagebox.askyesno("Exit or Minimize", "Minimize to Tray?")
+        if minimize:
+            self.withdraw()
 
-                    self.logIt_thread(self.log_path, msg=f'Closing socket connections...')
-                    t.close()
-                    self.logIt_thread(self.log_path, msg=f'Socket connections closed.')
+        else:
+            if len(self.targets) > 0:
+                try:
+                    for t in self.targets:
+                        self.logIt_thread(self.log_path, msg=f'Sending exit command to connected stations...')
+                        t.send('exit'.encode())
+                        self.logIt_thread(self.log_path, msg=f'Send completed.')
 
-            except ConnectionResetError as e:
-                self.logIt_thread(self.log_path, debug=True, msg=f'Connection Error: {e}.')
-                self.logIt_thread(self.log_path, debug=True, msg=f'Exiting app with code 1...')
-                sys.exit(1)
+                        self.logIt_thread(self.log_path, msg=f'Closing socket connections...')
+                        t.close()
+                        self.logIt_thread(self.log_path, msg=f'Socket connections closed.')
 
-        self.logIt_thread(self.log_path, msg=f'Exiting app with code 0...')
-        self.destroy()
-        sys.exit(0)
+                except ConnectionResetError as e:
+                    self.logIt_thread(self.log_path, debug=True, msg=f'Connection Error: {e}.')
+                    self.logIt_thread(self.log_path, debug=True, msg=f'Exiting app with code 1...')
+                    sys.exit(1)
+
+            self.logIt_thread(self.log_path, msg=f'Exiting app with code 0...')
+            self.withdraw()
+            self.destroy()
+            sys.exit(0)
 
     # ==++==++==++== CONTROLLER BUTTONS ==++==++==++==
     # Screenshot from Client
@@ -677,7 +692,7 @@ class App(tk.Tk):
 
     # Display/Kill Tasks on Client
     def tasks(self, con: str, ip: str, sname: str) -> bool:
-        def what_task() -> str:
+        def what_task(filepath) -> str:
             task_to_kill = simpledialog.askstring(parent=self, title='Task To Kill', prompt="Task to kill\t\t\t\t")
             if task_to_kill is None:
                 try:
@@ -707,7 +722,7 @@ class App(tk.Tk):
                     self.enable_buttons_thread()
                     return False
 
-            if not str(task_to_kill).endswith('exe'):
+            if not str(task_to_kill).endswith('.exe'):
                 try:
                     con.send('n'.encode())
                     self.enable_buttons_thread()
@@ -787,7 +802,7 @@ class App(tk.Tk):
         # Display kill task question pop-up
         killTask = messagebox.askyesno(f"Tasks from {ip} | {sname}", "Kill Task?\t\t\t\t\t\t\t\t")
         if killTask:
-            task_to_kill = what_task()
+            task_to_kill = what_task(filepath)
             if str(task_to_kill) == '' or str(task_to_kill).startswith(' '):
                 self.enable_buttons_thread()
                 return Falseq
@@ -879,7 +894,9 @@ class App(tk.Tk):
     def run(self) -> None:
         self.logIt_thread(self.log_path, msg=f'Running run()...')
         self.logIt_thread(self.log_path, msg=f'Calling connect() in new thread...')
-        self.connectThread = Thread(target=self.connect, name=f"Connect Thread")
+        self.connectThread = Thread(target=self.connect,
+                                    daemon=True,
+                                    name=f"Connect Thread")
         self.connectThread.start()
 
         self.logIt_thread(self.log_path, msg=f'Adding thread to threads list...')
@@ -1345,7 +1362,7 @@ class App(tk.Tk):
             # Last Screenshot
             self.sc = PIL.Image.open(images[-1])
             self.sc_resized = self.sc.resize((650, 350))
-            self.last_screenshot = ImageTk.PhotoImage(self.sc_resized)
+            self.last_screenshot = PIL.ImageTk.PhotoImage(self.sc_resized)
             self.displayed_screenshot_files.append(self.last_screenshot)
 
             if self.tabs > 0:
@@ -1410,13 +1427,6 @@ class App(tk.Tk):
         self.style.configure("Treeview", rowheight=20, background="#D3D3D3", foreground="black")
         self.style.map("Treeview", background=[('selected', 'green')])
 
-    def clear_tabs(self):
-        for f in self.frames:
-            f.destroy()
-        self.frames.clear()
-
-        return
-
     # Build Notebook
     def create_notebook(self):
         self.frames.clear()
@@ -1425,9 +1435,6 @@ class App(tk.Tk):
         # Create Notebook
         self.notebook = ttk.Notebook(self.details_labelFrame, height=330)
         self.notebook.pack(expand=False, pady=5, fill=X)
-
-        # self.clear_tabs = Button(self.details_labelFrame, text="Clear Tabs", pady=1, command=lambda: self.clear_tabs)
-        # self.clear_tabs.pack(anchor=W, padx=5, ipadx=2, ipady=2)
 
         # Create Tabs
         self.screenshot_tab = Frame(self.notebook, height=330)
@@ -1503,14 +1510,17 @@ class App(tk.Tk):
             self.buttons.append(self.browse_btn)
 
         def client_system_information_thread(con: str, ip: str, sname: str):
-            clientSystemInformationThread = Thread(target=self.sysinfo, args=(con, ip, sname),
+            clientSystemInformationThread = Thread(target=self.sysinfo,
+                                                   args=(con, ip, sname),
+                                                   daemon=True,
                                                    name="Client System Information Thread")
-            clientSystemInformationThread.daemon = True
             clientSystemInformationThread.start()
 
         def screenshot_thread(con: str, ip: str, sname: str):
-            screenThread = Thread(target=self.screenshot, args=(con, ip, sname), name='Screenshot Thread')
-            screenThread.daemon = True
+            screenThread = Thread(target=self.screenshot,
+                                  args=(con, ip, sname),
+                                  daemon=True,
+                                  name='Screenshot Thread')
             screenThread.start()
 
         # Respond to mouse clicks on connected table
@@ -1530,6 +1540,7 @@ class App(tk.Tk):
                                              height=400, background='light grey')
         self.details_labelFrame.grid(row=3, sticky='news', columnspan=3)
 
+        # Build Notebook under Details LabelFrame
         self.create_notebook()
 
         # Create a Controller LabelFrame with Buttons and connect shell by TreeView Table selection
@@ -1542,9 +1553,10 @@ class App(tk.Tk):
                                 make_buttons()
                                 self.enable_buttons_thread()
 
-                                shellThread = Thread(target=self.shell, args=(clientConn, clientIP, sname),
+                                shellThread = Thread(target=self.shell,
+                                                     args=(clientConn, clientIP, sname),
+                                                     daemon=True,
                                                      name="Shell Thread")
-                                shellThread.daemon = True
                                 shellThread.start()
 
                                 # Reset temp dict
@@ -1553,6 +1565,24 @@ class App(tk.Tk):
                                 return True
 
 
+def on_clicked(icon, item):
+    if str(item) == "Restore":
+        app.deiconify()
+
+
 if __name__ == '__main__':
+    icon_path = fr"{os.path.dirname(__file__)}\peach.png"
+    # Configure system tray icon
+    icon_image = PIL.Image.open(icon_path)
+    icon = pystray.Icon("Peach", icon_image, menu=pystray.Menu(
+        pystray.MenuItem("Restore", on_clicked)
+    ))
+
+    # Show system tray icon
+    iconThread = Thread(target=icon.run,
+                        daemon=True,
+                        name="Icon Thread")
+    iconThread.start()
+
     app = App()
     app.mainloop()
