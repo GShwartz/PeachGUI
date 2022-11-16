@@ -42,9 +42,8 @@ class App(tk.Tk):
     targets = []
     buttons = []
     sidebar_buttons = []
-    notebook_tabs = []
-    notebook_tabs_dict = {}
     counter = 0
+    tabs = 0
 
     # Temp dict to hold connected station's ID# & IP
     temp = {}
@@ -167,7 +166,7 @@ class App(tk.Tk):
     # Disable Controller Buttons Thread
     def disable_buttons_thread(self, sidebar=None) -> None:
         disable = Thread(target=self.disable_buttons,
-                         args=(sidebar, ),
+                         args=(sidebar,),
                          daemon=True,
                          name="Disable Controller Buttons Thread")
         disable.start()
@@ -505,7 +504,7 @@ class App(tk.Tk):
             self.update_statusbar_messages_thread(msg=f'Status: screenshot received from  {ip} | {sname}.')
 
             # Display file content in system information notebook TextBox
-            self.display_screenshot(fr"{self.path}\{sname}", self.system_information_tab, txt='Screenshot')
+            self.display_screenshot(fr"{self.path}\{sname}", self.screenshot_tab, txt='Screenshot')
 
             # Enable Controller Buttons
             self.enable_buttons_thread()
@@ -1309,7 +1308,7 @@ class App(tk.Tk):
             return
 
     # Display file content in notebook
-    def display_file_content(self, filepath: str, tab: str, txt=''):
+    def display_file_content(self, filepath: str, tab: str, txt='') -> bool:
         with open(filepath, 'r') as file:
             data = file.read()
             tab = Frame(self.notebook, height=350)
@@ -1334,10 +1333,11 @@ class App(tk.Tk):
             # Display Last Tab
             self.notebook.select(tab)
 
+        self.tabs += 1
+        return True
+
     # Display Image slider with screenshots
     def display_screenshot(self, path: str, tab: str, txt=''):
-        tabFrames = {}
-        # Sort folder for .jpg files and last creation time
         images = glob.glob(fr"{path}\*.jpg")
         images.sort(key=os.path.getmtime)
 
@@ -1346,59 +1346,32 @@ class App(tk.Tk):
         self.sc_resized = self.sc.resize((650, 350))
         self.last_screenshot = ImageTk.PhotoImage(self.sc_resized)
 
+        print(f"winfo children: {self.notebook.winfo_children()}")
+
+        # Create notebook Tab
         tab = Frame(self.notebook, height=350)
 
+        # Create Canvas in notebook tab field
         self.canvas = Canvas(tab, height=350)
         self.canvas.pack(fill=BOTH, padx=10)
 
         # Add tab to notebook
         self.notebook.add(tab, text=f"{txt}")
-        self.notebook_tabs.append(self.notebook.tab(self.notebook.select(), "text"))
-
-        temp_dict = {self.counter: {self.notebook.tab(self.notebook.select(), "text"): str(self.notebook.select())}}
-        self.notebook_tabs_dict.update(temp_dict)
 
         # Display Last Screenshot file
         self.canvas.create_image(600, 200, image=self.last_screenshot)
 
         # Display Last Tab
         self.notebook.select(tab)
+        self.tabs += 1
 
-        self.check_tabs(tab)
-
-    # Remove empty screenshot tab from notebook
-    def check_tabs(self, tab):
-        idxs = {}
-        for count, tabnameValue in self.notebook_tabs_dict.items():
-            for tabName, tabID in tabnameValue.items():
-                if self.notebook.tab(tabID, 'text') == \
-                        self.notebook.tab(self.notebook.select(), 'text'):
-                    idx = self.notebook.index('current')
-                    tmp = {tabName: idx}
-                    idxs.update(tmp)
-                    print(idxs)
-
-                else:
-                    print("There are 2 screenshot tabs open")
-                    if not tabName == self.notebook.tab(self.notebook.select(), 'text'):
-                        print(f"{tabName}: {self.notebook.tab(self.notebook.select(), 'text')}")
-                        continue
-
-                    self.notebook.hide(tabID)
-                    self.counter = 0
-
-            self.counter += 1
-            print(f"YALLA Counter {self.counter}")
-            return
-
-        # for t, ta in zip(self.notebook.tabs(), self.notebook.winfo_children()):
-        #     print(ta)
-        #     if self.notebook.tab(tab, "text") == self.notebook.tab(t, "text") and self.counter == 2:
-        #         self.counter += 1
-        #         print("YAY", self.counter)
-        #
-        #     else:
-        #         print(self.notebook.tab(t, "text"), self.counter - 1)
+        if self.notebook.index(tab_id=tab) > 0:
+            if self.tabs > 1:
+                # print(f"tab index: {self.notebook.index(tab_id=tab)} | tab name: {self.notebook.tab(tab, 'text')}")
+                for t in self.notebook.tabs():
+                    if self.notebook.tab(self.notebook.index(tab_id=t), 'text') == 'Screenshot' and \
+                            self.notebook.index(tab_id=t) == self.notebook.index(tab_id=tab):
+                        print(f"t: {t} | tname: {self.notebook.tab(t, 'text')} | t index: {self.notebook.index(tab_id=t)}")
 
         return True
 
