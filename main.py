@@ -55,7 +55,7 @@ class App(tk.Tk):
     log_path = fr'{path}\server_log.txt'
 
     WIDTH = 1348
-    HEIGHT = 795
+    HEIGHT = 800
 
     def __init__(self):
         super().__init__()
@@ -176,93 +176,64 @@ class App(tk.Tk):
                         daemon=True,
                         name="Enable Controller Buttons Thread")
         enable.start()
-
     # ==++==++==++== END THREADED FUNCS ==++==++==++== #
 
     # Build initial main frame GUI
     def build_main_window_frames(self) -> None:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running build_main_window_frames()...')
-        # Sidebar Frame
         self.local_tools.logIt_thread(self.log_path, msg=f'Building sidebar frame...')
         self.sidebar_frame = Frame(self, width=150, background="RoyalBlue4")
         self.sidebar_frame.grid(row=0, column=0, sticky="nswe")
-
-        # Main Frame
         self.local_tools.logIt_thread(self.log_path, msg=f'Building main frame...')
         self.main_frame = Frame(self, background="ghost white", relief="sunken")
         self.main_frame.configure(border=1)
         self.main_frame.grid(row=0, column=1, sticky="nswe", padx=10)
         self.main_frame.rowconfigure(5, weight=1)
         self.main_frame.columnconfigure(0, weight=1)
-
-        # Main Frame top bar - shows server information
         self.local_tools.logIt_thread(self.log_path, msg=f'Building main frame top bar...')
         self.main_frame_top = Frame(self.main_frame, relief='flat')
         self.main_frame_top.grid(row=0, column=0, sticky="nwes")
-
-        # Main frame top bar LabelFrame
         self.local_tools.logIt_thread(self.log_path, msg=f'Building main frame top bar labelFrame...')
         self.top_bar_label = LabelFrame(self.main_frame, text="Server Information", relief='solid')
         self.top_bar_label.grid(row=0, column=0, sticky='news')
-
-        # Table Frame in Main Frame
         self.local_tools.logIt_thread(self.log_path, msg=f'Building table frame in main frame...')
         self.main_frame_table = Frame(self.main_frame, relief='flat')
         self.main_frame_table.grid(row=1, column=0, sticky="news", pady=2)
-
-        # Controller Frame
         self.local_tools.logIt_thread(self.log_path, msg=f'Building controller frame in main frame...')
         self.controller_frame = Frame(self.main_frame, relief='flat')
         self.controller_frame.grid(row=2, column=0, sticky='news', pady=2)
-
-        # Controller Buttons LabelFrame in Main Frame
         self.local_tools.logIt_thread(self.log_path, msg=f'Building controller buttons label frame in main frame...')
         self.controller_btns = LabelFrame(self.controller_frame, text="Controller", relief='solid', height=60)
         self.controller_btns.pack(fill=BOTH)
-
-        # Create Connected Table inside Main Frame
         self.local_tools.logIt_thread(self.log_path, msg=f'Building connected table in main frame...')
         self.table_frame = LabelFrame(self.main_frame_table, text="Connected Stations")
         self.table_frame.pack(fill=BOTH)
-
-        # Details Frame
         self.local_tools.logIt_thread(self.log_path, msg=f'Building details frame in main frame...')
         self.details_frame = Frame(self.main_frame, relief='flat')
         self.details_frame.grid(row=3, column=0, sticky='news')
-
-        # Statusbar Frame
         self.local_tools.logIt_thread(self.log_path, msg=f'Building statusbar frame in main frame...')
         self.statusbar_frame = Frame(self.main_frame, relief='solid', pady=5)
         self.statusbar_frame.grid(row=4, column=0, sticky='news')
-
-        # Status LabelFrame
         self.local_tools.logIt_thread(self.log_path, msg=f'Building statusbar label frame in main frame...')
         self.status_labelFrame = LabelFrame(self.statusbar_frame, height=5, width=900, text='Status', relief='solid',
                                             pady=5)
         self.status_labelFrame.pack(fill=BOTH)
-        # self.status_labelFrame.grid(row=5, column=0, sticky='news')
 
     # Create Sidebar Buttons
     def build_sidebar_buttons(self) -> None:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running build_sidebar_buttons()...')
-        # Refresh Button
         self.local_tools.logIt_thread(self.log_path, msg=f'Building refresh button...')
         self.btn_refresh = tk.Button(self.sidebar_frame,
                                      text="Refresh", width=15, pady=10,
                                      command=lambda: self.refresh())
         self.btn_refresh.grid(row=0, sticky="nwes")
         self.sidebar_buttons.append(self.btn_refresh)
-
-        # Update Clients Button
         self.local_tools.logIt_thread(self.log_path, msg=f'Building update clients button...')
         self.btn_update_clients = tk.Button(self.sidebar_frame,
                                             text="Update All Clients", width=15, pady=10,
                                             command=lambda: self.update_all_clients_thread())
-
         self.btn_update_clients.grid(row=2, sticky="nwes")
         self.sidebar_buttons.append(self.btn_update_clients)
-
-        # EXIT Button
         self.local_tools.logIt_thread(self.log_path, msg=f'Building exit button...')
         self.btn_exit = tk.Button(self.sidebar_frame,
                                   text="Exit", width=15, pady=10,
@@ -273,12 +244,9 @@ class App(tk.Tk):
     # Create Treeview Table for connected stations
     def build_connected_table(self) -> None:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running build_connected_table()...')
-        # Create Scrollbar
         self.local_tools.logIt_thread(self.log_path, msg=f'Displaying Scrollbar...')
         self.table_sb = Scrollbar(self.table_frame, orient=VERTICAL)
         self.table_sb.pack(side=LEFT, fill=Y)
-
-        # Create a Table for connected stations
         self.local_tools.logIt_thread(self.log_path, msg=f'Displaying connected table...')
         self.connected_table = ttk.Treeview(self.table_frame,
                                             columns=("ID", "MAC Address",
@@ -305,7 +273,7 @@ class App(tk.Tk):
         self.connected_table.bind("<Button 1>", self.select_item)
 
         # Style Table
-        self.local_tools.logIt_thread(self.log_path, msg=f'Styling...')
+        self.local_tools.logIt_thread(self.log_path, msg=f'Styling Connected table...')
         self.style.theme_use("Details")
         self.style.configure("Treeview", rowheight=20, background="#D3D3D3", foreground="black")
         self.style.map("Treeview", background=[('selected', 'green')])
@@ -313,18 +281,13 @@ class App(tk.Tk):
     # Build Table for Connection History
     def create_connection_history_table(self) -> None:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running create_connection_history_table()...')
-        # History LabelFrame
         self.local_tools.logIt_thread(self.log_path, msg=f'Displaying connection history labelFrame...')
         self.history_labelFrame = LabelFrame(self.main_frame, text="Connection History",
                                              relief='ridge')
         self.history_labelFrame.grid(row=3, column=0, sticky='news')
-
-        # Create Scrollbar
         self.local_tools.logIt_thread(self.log_path, msg=f'Displaying Scrollbar in history labelFrame...')
         self.history_table_scrollbar = Scrollbar(self.history_labelFrame, orient=VERTICAL)
         self.history_table_scrollbar.pack(side=LEFT, fill=Y)
-
-        # Create Tree
         self.local_tools.logIt_thread(self.log_path, msg=f'Displaying connection history table in labelFrame...')
         self.history_table = ttk.Treeview(self.history_labelFrame,
                                           columns=("ID", "MAC Address",
@@ -332,12 +295,11 @@ class App(tk.Tk):
                                                    "Logged User", "Time"),
                                           show="headings", selectmode='none',
                                           yscrollcommand=self.history_table_scrollbar.set)
-
         self.history_table.config(height=17)
         self.history_table.pack()
         self.history_table_scrollbar.config(command=self.history_table.yview)
 
-        # Columns & Headings config
+        # Table Columns & Headings
         self.history_table.column("#1", anchor=CENTER)
         self.history_table.heading("#1", text="ID")
         self.history_table.column("#2", anchor=CENTER)
@@ -422,24 +384,17 @@ class App(tk.Tk):
     # Display Connection History
     def connection_history(self) -> bool:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running connection_history()...')
-
-        # Clear Selected row in Connected Stations table
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.show_available_connections()...')
         self.show_available_connections()
-
-        # Disable Buttons
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread(sidebar=False)...')
         self.disable_buttons_thread(sidebar=False)
-
-        # Display Connection History Table
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.create_connection_history_table()...')
         self.create_connection_history_table()
-        self.update_statusbar_messages_thread(msg=f'Status: displaying connection history.\t\t\t\t\t\t\t\t\t\t\t\t\t')
 
+        self.update_statusbar_messages_thread(msg=f'Status: displaying connection history.\t\t\t\t\t\t\t\t\t\t\t\t\t')
         # Create striped row tags
         self.history_table.tag_configure('oddrow', background='white')
         self.history_table.tag_configure('evenrow', background='lightblue')
-
         c = 0  # Initiate Counter for Connection Number
         try:
             # Iterate Through Connection History List Items
@@ -492,6 +447,7 @@ class App(tk.Tk):
         self.refresh()
         self.local_tools.logIt_thread(self.log_path, msg=f'Displaying update info popup window...')
         messagebox.showinfo("Update All Clients", "Update command sent.\nClick refresh to update the connected table.")
+        return True
 
     # EXIT
     def exit(self, event=0) -> None:
@@ -535,7 +491,6 @@ class App(tk.Tk):
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread()...')
         self.disable_buttons_thread(sidebar=True)
         self.update_statusbar_messages_thread(msg=f'Status: fetching screenshot from {ip} | {sname}...')
-
         try:
             self.local_tools.logIt_thread(self.log_path, msg=f'Sending screen command to client...')
             con.send('screen'.encode())
@@ -564,7 +519,6 @@ class App(tk.Tk):
     def anydesk(self, con: str, ip: str, sname: str) -> bool:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running anydesk({con}, {ip})...')
         self.update_statusbar_messages_thread(msg=f'Status: running anydesk on {ip} | {sname}...')
-
         try:
             self.local_tools.logIt_thread(self.log_path, msg=f'Sending anydesk command to {con}...')
             con.send('anydesk'.encode())
@@ -573,7 +527,6 @@ class App(tk.Tk):
             self.local_tools.logIt_thread(self.log_path, msg=f'Waiting for response from client...')
             msg = con.recv(1024).decode()
             self.local_tools.logIt_thread(self.log_path, msg=f'Client response: {msg}.')
-
             if "OK" not in msg:
                 self.local_tools.logIt_thread(self.log_path, msg=f'Printing msg from client...')
                 self.update_statusbar_messages_thread(msg=f'Status: {ip} | {sname}: Anydesk not installed.')
@@ -594,7 +547,6 @@ class App(tk.Tk):
                         self.local_tools.logIt_thread(self.log_path, msg=f'Client response: {msg}.')
                         textVar.set(msg)
                         self.local_tools.logIt_thread(self.log_path, msg=f'textVar: {textVar}')
-
                         if "OK" not in str(msg):
                             self.update_statusbar_messages_thread(msg=f'Status: {msg}')
 
@@ -966,22 +918,15 @@ class App(tk.Tk):
             self.local_tools.logIt_thread(self.log_path, msg=f'Connection from {self.ip} accepted.')
 
             try:
-                # Get MAC Address
                 self.local_tools.logIt_thread(self.log_path, msg=f'Waiting for MAC Address...')
                 self.client_mac = get_mac_address()
                 self.local_tools.logIt_thread(self.log_path, msg=f'MAC: {self.client_mac}.')
-
-                # Get Remote Computer's Name
                 self.local_tools.logIt_thread(self.log_path, msg=f'Waiting for station name...')
                 self.hostname = get_hostname()
                 self.local_tools.logIt_thread(self.log_path, msg=f'Station name: {self.hostname}.')
-
-                # Get Current User
                 self.local_tools.logIt_thread(self.log_path, msg=f'Waiting for logged user...')
                 self.loggedUser = get_user()
                 self.local_tools.logIt_thread(self.log_path, msg=f'Logged user: {self.loggedUser}.')
-
-                # Get Client Version
                 self.local_tools.logIt_thread(self.log_path, msg=f'Waiting for client version...')
                 self.client_version = get_client_version()
                 self.local_tools.logIt_thread(self.log_path, msg=f'Client version: {self.client_version}.')
@@ -1088,7 +1033,7 @@ class App(tk.Tk):
                 ver = t.recv(1024).decode()
                 self.local_tools.logIt_thread(self.log_path, msg=f'Response from {t}: {ver}.')
 
-            except socket.error:
+            except (WindowsError, socket.error):
                 self.remove_lost_connection(t, self.ips[i])
                 break
 
@@ -1262,11 +1207,11 @@ class App(tk.Tk):
     def enable_buttons(self):
         self.local_tools.logIt_thread(self.log_path, msg=f'Running enable_buttons()...')
         for button in list(self.buttons):
-            self.local_tools.logIt_thread(self.log_path, msg=f'Enabling {button}...')
+            self.local_tools.logIt_thread(self.log_path, msg=f'Enabling {button.config("text")[-1]} button...')
             button.config(state=NORMAL)
 
         for sbutton in list(self.sidebar_buttons):
-            self.local_tools.logIt_thread(self.log_path, msg=f'Enabling sidebar {sbutton}...')
+            self.local_tools.logIt_thread(self.log_path, msg=f'Enabling sidebar {sbutton.config("text")[-1]} button...')
             sbutton.config(state=NORMAL)
 
     # Disable Controller Buttons
@@ -1535,9 +1480,6 @@ class App(tk.Tk):
 
 
 class Locals:
-    def __init__(self):
-        super().__init__()
-
     # Run log func in new Thread
     def logIt_thread(self, log_path=None, debug=False, msg='') -> None:
         self.logit_thread = Thread(target=self.logIt,
