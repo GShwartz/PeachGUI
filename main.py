@@ -189,9 +189,9 @@ class App(tk.Tk):
         self.sidebar_frame = Frame(self, width=150, background="SteelBlue")
         self.sidebar_frame.grid(row=0, column=0, sticky="nswe")
         self.local_tools.logIt_thread(self.log_path, msg=f'Building main frame...')
-        self.main_frame = Frame(self, background="ghost white", relief="sunken")
+        self.main_frame = Frame(self, background="ghost white", relief="sunken", bd=5)
         self.main_frame.configure(border=1)
-        self.main_frame.grid(row=0, column=1, sticky="nswe", padx=10)
+        self.main_frame.grid(row=0, column=1, sticky="nswe", padx=3)
         self.main_frame.rowconfigure(5, weight=1)
         self.main_frame.columnconfigure(0, weight=1)
         self.local_tools.logIt_thread(self.log_path, msg=f'Building main frame top bar...')
@@ -446,6 +446,30 @@ class App(tk.Tk):
         self.local_tools.logIt_thread(self.log_path, msg=f'Displaying update info popup window...')
         time.sleep(2)
         messagebox.showinfo("Update All Clients", "Update command sent.\nClick refresh to update the connected table.")
+        self.refresh()
+        return True
+
+    # Update Selected Client
+    def update_selected_client(self, con: str, ip: str, sname: str) -> bool:
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running update_selected_client()...')
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread()...')
+        self.disable_buttons_thread()
+        self.local_tools.logIt_thread(self.log_path, msg=f'Sending update command to {ip} | {sname}...')
+        try:
+            con.send('update'.encode())
+            self.local_tools.logIt_thread(self.log_path, msg=f'Send Completed.')
+            self.local_tools.logIt_thread(self.log_path, msg=f'Waiting for response from {ip} | {sname}...')
+            msg = con.recv(1024).decode()
+            self.local_tools.logIt_thread(self.log_path, msg=f'{ip}|{sname}: {msg}')
+
+        except (WindowsError, socket.error) as e:
+            self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}.')
+            return False
+
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.refresh()...')
+        self.local_tools.logIt_thread(self.log_path, msg=f'Displaying update info popup window...')
+        time.sleep(2)
+        messagebox.showinfo(f"Update {sname}", "Update command sent.")
         self.refresh()
         return True
 
@@ -1405,32 +1429,6 @@ class App(tk.Tk):
         self.local_tools.logIt_thread(self.log_path, msg=f'Building tasks textbox...')
         self.tasks_tab_textbox = Text(self.tasks_tab, yscrollcommand=self.tasks_scrollbar.set)
         self.tasks_tab_textbox.pack(fill=X)
-
-    # Update Selected Client
-    def update_selected_client(self, con: str, ip: str, sname: str) -> bool:
-        self.local_tools.logIt_thread(self.log_path, msg=f'Running update_selected_client()...')
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread()...')
-        self.disable_buttons_thread()
-        self.local_tools.logIt_thread(self.log_path, msg=f'Sending update command to {ip} | {sname}...')
-        try:
-            con.send('update'.encode())
-            self.local_tools.logIt_thread(self.log_path, msg=f'Send Completed.')
-            self.local_tools.logIt_thread(self.log_path, msg=f'Waiting for response from {ip} | {sname}...')
-            msg = con.recv(1024).decode()
-            self.local_tools.logIt_thread(self.log_path, msg=f'{ip}|{sname}: {msg}')
-
-        except (WindowsError, socket.error) as e:
-            self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}.')
-            return False
-
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.refresh()...')
-        self.local_tools.logIt_thread(self.log_path, msg=f'Displaying update info popup window...')
-        time.sleep(2)
-        messagebox.showinfo(f"Update {sname}", "Update command sent.")
-        self.refresh()
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.enable_buttons_thread()...')
-        self.enable_buttons_thread()
-        return True
 
     # Manage Connected Table & Controller LabelFrame Buttons
     def select_item(self, event) -> bool:
