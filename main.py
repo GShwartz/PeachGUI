@@ -99,7 +99,7 @@ class App(tk.Tk):
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        # =-=-=-=-=-=-= MAIN FRAME GUI =-=-=-=-=-=-=-=
+        # Initiate app's styling
         self.make_style()
 
         # Build and display
