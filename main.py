@@ -143,6 +143,14 @@ class App(tk.Tk):
                         name="Update All Clients Thread")
         update.start()
 
+    # Update Selected Client Thread
+    def update_selected_client_thread(self, con: str, ip: str, sname: str):
+        updateThread = Thread(target=self.update_selected_client,
+                              args=(con, ip, sname),
+                              daemon=True,
+                              name="Update Selected Client Thread")
+        updateThread.start()
+
     # Display Available Connections Thread
     def sac_thread(self) -> None:
         self.sacThread = Thread(target=self.show_available_connections,
@@ -238,6 +246,12 @@ class App(tk.Tk):
 
     # Create Treeview Table for connected stations
     def build_connected_table(self) -> None:
+        def highlight(event):
+            self.connected_table = event.widget
+            item = self.connected_table.identify_row(event.y)
+            self.connected_table.tk.call(self.connected_table, "tag", "remove", "highlight")
+            self.connected_table.tk.call(self.connected_table, "tag", "add", "highlight", item)
+
         self.local_tools.logIt_thread(self.log_path, msg=f'Running build_connected_table()...')
         self.local_tools.logIt_thread(self.log_path, msg=f'Displaying Scrollbar...')
         self.table_sb = Scrollbar(self.table_frame, orient=VERTICAL)
@@ -251,6 +265,8 @@ class App(tk.Tk):
                                             selectmode='browse', yscrollcommand=self.table_sb.set)
         self.connected_table.pack(fill=BOTH)
         self.table_sb.config(command=self.connected_table.yview)
+        self.local_tools.logIt_thread(self.log_path, msg=f'Defining highlight event for Connected Table...')
+        self.connected_table.tag_configure('highlight', background='lightblue')
 
         # Columns & Headings config
         self.connected_table.column("#1", anchor=CENTER)
@@ -266,6 +282,11 @@ class App(tk.Tk):
         self.connected_table.column("#6", anchor=CENTER)
         self.connected_table.heading("#6", text="Client Version")
         self.connected_table.bind("<Button 1>", self.select_item)
+        self.connected_table.bind("<Motion>", highlight)
+
+        self.local_tools.logIt_thread(self.log_path, msg=f'Stying table row colors...')
+        self.connected_table.tag_configure('oddrow', background='floral white')
+        self.connected_table.tag_configure('evenrow', background='cornsilk')
 
     # Build Table for Connection History
     def create_connection_history_table(self) -> None:
@@ -321,6 +342,7 @@ class App(tk.Tk):
             self.local_tools.logIt_thread(self.log_path, msg=f'Destroying app window...')
             self.destroy()
 
+    # Create Menubar
     def build_menubar(self):
         self.local_tools.logIt_thread(self.log_path, msg=f'Running build_menubar()...')
         menubar = Menu(self, tearoff=0)
@@ -367,10 +389,7 @@ class App(tk.Tk):
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.create_connection_history_table()...')
         self.create_connection_history_table()
 
-        self.update_statusbar_messages_thread(msg=f'Status: displaying connection history.\t\t\t\t\t\t\t\t\t\t\t\t\t')
-        # Create striped row tags
-        self.history_table.tag_configure('oddrow', background='white')
-        self.history_table.tag_configure('evenrow', background='lightblue')
+        self.update_statusbar_messages_thread(msg=f'Status: displaying connection history.')
         c = 0  # Initiate Counter for Connection Number
         try:
             # Iterate Through Connection History List Items
@@ -424,9 +443,10 @@ class App(tk.Tk):
             pass
 
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.refresh()...')
-        self.refresh()
         self.local_tools.logIt_thread(self.log_path, msg=f'Displaying update info popup window...')
+        time.sleep(2)
         messagebox.showinfo("Update All Clients", "Update command sent.\nClick refresh to update the connected table.")
+        self.refresh()
         return True
 
     # Minimize Window
@@ -1145,10 +1165,6 @@ class App(tk.Tk):
         self.local_tools.logIt_thread(self.log_path, msg=f'Cleaning connected table entries...')
         self.connected_table.delete(*self.connected_table.get_children())
 
-        self.local_tools.logIt_thread(self.log_path, msg=f'Stying table row colors...')
-        self.connected_table.tag_configure('oddrow', background='floral white')
-        self.connected_table.tag_configure('evenrow', background='cornsilk')
-
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling make_tmp()...')
         make_tmp()
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling extract()...')
@@ -1390,6 +1406,32 @@ class App(tk.Tk):
         self.tasks_tab_textbox = Text(self.tasks_tab, yscrollcommand=self.tasks_scrollbar.set)
         self.tasks_tab_textbox.pack(fill=X)
 
+    # Update Selected Client
+    def update_selected_client(self, con: str, ip: str, sname: str) -> bool:
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running update_selected_client()...')
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread()...')
+        self.disable_buttons_thread()
+        self.local_tools.logIt_thread(self.log_path, msg=f'Sending update command to {ip} | {sname}...')
+        try:
+            con.send('update'.encode())
+            self.local_tools.logIt_thread(self.log_path, msg=f'Send Completed.')
+            self.local_tools.logIt_thread(self.log_path, msg=f'Waiting for response from {ip} | {sname}...')
+            msg = con.recv(1024).decode()
+            self.local_tools.logIt_thread(self.log_path, msg=f'{ip}|{sname}: {msg}')
+
+        except (WindowsError, socket.error) as e:
+            self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}.')
+            return False
+
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.refresh()...')
+        self.local_tools.logIt_thread(self.log_path, msg=f'Displaying update info popup window...')
+        time.sleep(2)
+        messagebox.showinfo(f"Update {sname}", "Update command sent.")
+        self.refresh()
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.enable_buttons_thread()...')
+        self.enable_buttons_thread()
+        return True
+
     # Manage Connected Table & Controller LabelFrame Buttons
     def select_item(self, event) -> bool:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running select_item()...')
@@ -1438,6 +1480,10 @@ class App(tk.Tk):
             self.browse_btn.grid(row=0, column=6, sticky="w", pady=5, padx=2, ipadx=2)
             self.local_tools.logIt_thread(self.log_path, msg=f'Updating controller buttons list...')
             self.buttons.append(self.browse_btn)
+            self.update_client = Button(self.controller_btns, text="Update Client", width=15, pady=5,
+                                        command=lambda: self.update_selected_client_thread(clientConn, clientIP, sname))
+            self.update_client.grid(row=0, column=7, sticky="w", pady=5, padx=2, ipadx=2)
+            self.buttons.append(self.update_client)
 
         def client_system_information_thread(con: str, ip: str, sname: str):
             clientSystemInformationThread = Thread(target=self.sysinfo,
