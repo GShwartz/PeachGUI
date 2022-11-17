@@ -108,6 +108,7 @@ class App(tk.Tk):
         self.make_style()
 
         # Build and display
+        self.build_menubar()
         self.build_main_window_frames()
         self.build_connected_table()
         self.build_sidebar_buttons()
@@ -363,6 +364,23 @@ class App(tk.Tk):
             self.local_tools.logIt_thread(self.log_path, msg=f'Destroying app window...')
             self.destroy()
 
+    # ==++==++==++== MENUBAR ==++==++==++==
+    def build_menubar(self):
+        menubar = Menu(self, tearoff=0)
+        file = Menu(menubar, tearoff=0)
+        file.add_command(label="Minimize", command=self.minimize)
+        file.add_separator()
+        file.add_command(label="Exit", command=self.exit)
+
+        helpbar = Menu(self, tearoff=0)
+        helpbar.add_command(label="Help")
+        helpbar.add_command(label="About")
+
+        menubar.add_cascade(label='File', menu=file)
+        menubar.add_cascade(label="Help", menu=helpbar)
+
+        self.config(menu=menubar)
+
     # ==++==++==++== SIDEBAR BUTTONS ==++==++==++==
     # Refresh server info & connected stations table with vital signs
     def refresh(self) -> None:
@@ -448,6 +466,9 @@ class App(tk.Tk):
         self.local_tools.logIt_thread(self.log_path, msg=f'Displaying update info popup window...')
         messagebox.showinfo("Update All Clients", "Update command sent.\nClick refresh to update the connected table.")
         return True
+
+    def minimize(self):
+        return self.withdraw()
 
     # EXIT
     def exit(self, event=0) -> None:
@@ -1219,18 +1240,18 @@ class App(tk.Tk):
         self.local_tools.logIt_thread(self.log_path, msg=f'Running disable_buttons(sidebar=None)...')
         if sidebar:
             for button in list(self.buttons):
-                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling {button}...')
+                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling {button.config("text")[-1]}...')
                 button.config(state=DISABLED)
 
             for sbutton in list(self.sidebar_buttons):
-                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling sidebar {sbutton}...')
+                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling sidebar {sbutton.config("text")[-1]}...')
                 sbutton.config(state=DISABLED)
 
             return
 
         else:
             for button in list(self.buttons):
-                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling {button}...')
+                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling {button.config("text")}...')
                 button.config(state=DISABLED)
 
             return
@@ -1550,5 +1571,6 @@ if __name__ == '__main__':
 
     # Initialize GUI app
     app = App()
+
     # Run App
     app.mainloop()
