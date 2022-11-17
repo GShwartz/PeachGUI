@@ -26,8 +26,8 @@ from Modules import freestyle
 from Modules import sysinfo
 from Modules import tasks
 
+
 # TODO: Fix Styling to multiple widgets
-# TODO: Create tools Class
 # TODO: Add Menubar
 
 
@@ -54,8 +54,8 @@ class App(tk.Tk):
     path = r'c:\Peach'
     log_path = fr'{path}\server_log.txt'
 
-    WIDTH = 1350
-    HEIGHT = 830
+    WIDTH = 1348
+    HEIGHT = 795
 
     def __init__(self):
         super().__init__()
@@ -78,7 +78,7 @@ class App(tk.Tk):
 
         # ======== GUI Config ===========
         # Set main window preferences
-        self.title("Peach")
+        self.title("Peach - By Gil Shwartz @2022")
         self.iconbitmap('peach.ico')
 
         # Update screen geometry variables
@@ -183,10 +183,12 @@ class App(tk.Tk):
     def build_main_window_frames(self) -> None:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running build_main_window_frames()...')
         # Sidebar Frame
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building sidebar frame...')
         self.sidebar_frame = Frame(self, width=150, background="RoyalBlue4")
         self.sidebar_frame.grid(row=0, column=0, sticky="nswe")
 
         # Main Frame
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building main frame...')
         self.main_frame = Frame(self, background="ghost white", relief="sunken")
         self.main_frame.configure(border=1)
         self.main_frame.grid(row=0, column=1, sticky="nswe", padx=10)
@@ -194,38 +196,47 @@ class App(tk.Tk):
         self.main_frame.columnconfigure(0, weight=1)
 
         # Main Frame top bar - shows server information
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building main frame top bar...')
         self.main_frame_top = Frame(self.main_frame, relief='flat')
         self.main_frame_top.grid(row=0, column=0, sticky="nwes")
 
         # Main frame top bar LabelFrame
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building main frame top bar labelFrame...')
         self.top_bar_label = LabelFrame(self.main_frame, text="Server Information", relief='solid')
         self.top_bar_label.grid(row=0, column=0, sticky='news')
 
         # Table Frame in Main Frame
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building table frame in main frame...')
         self.main_frame_table = Frame(self.main_frame, relief='flat')
         self.main_frame_table.grid(row=1, column=0, sticky="news", pady=2)
 
         # Controller Frame
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building controller frame in main frame...')
         self.controller_frame = Frame(self.main_frame, relief='flat')
         self.controller_frame.grid(row=2, column=0, sticky='news', pady=2)
 
         # Controller Buttons LabelFrame in Main Frame
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building controller buttons label frame in main frame...')
         self.controller_btns = LabelFrame(self.controller_frame, text="Controller", relief='solid', height=60)
         self.controller_btns.pack(fill=BOTH)
 
-        # Create Connected Table inside Main Frame when show connected btn pressed
+        # Create Connected Table inside Main Frame
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building connected table in main frame...')
         self.table_frame = LabelFrame(self.main_frame_table, text="Connected Stations")
         self.table_frame.pack(fill=BOTH)
 
         # Details Frame
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building details frame in main frame...')
         self.details_frame = Frame(self.main_frame, relief='flat')
         self.details_frame.grid(row=3, column=0, sticky='news')
 
         # Statusbar Frame
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building statusbar frame in main frame...')
         self.statusbar_frame = Frame(self.main_frame, relief='solid', pady=5)
         self.statusbar_frame.grid(row=4, column=0, sticky='news')
 
         # Status LabelFrame
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building statusbar label frame in main frame...')
         self.status_labelFrame = LabelFrame(self.statusbar_frame, height=5, width=900, text='Status', relief='solid',
                                             pady=5)
         self.status_labelFrame.pack(fill=BOTH)
@@ -235,6 +246,7 @@ class App(tk.Tk):
     def build_sidebar_buttons(self) -> None:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running build_sidebar_buttons()...')
         # Refresh Button
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building refresh button...')
         self.btn_refresh = tk.Button(self.sidebar_frame,
                                      text="Refresh", width=15, pady=10,
                                      command=lambda: self.refresh())
@@ -242,6 +254,7 @@ class App(tk.Tk):
         self.sidebar_buttons.append(self.btn_refresh)
 
         # Update Clients Button
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building update clients button...')
         self.btn_update_clients = tk.Button(self.sidebar_frame,
                                             text="Update All Clients", width=15, pady=10,
                                             command=lambda: self.update_all_clients_thread())
@@ -250,6 +263,7 @@ class App(tk.Tk):
         self.sidebar_buttons.append(self.btn_update_clients)
 
         # EXIT Button
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building exit button...')
         self.btn_exit = tk.Button(self.sidebar_frame,
                                   text="Exit", width=15, pady=10,
                                   command=lambda: self.exit())
@@ -288,7 +302,7 @@ class App(tk.Tk):
         self.connected_table.heading("#5", text="Logged User")
         self.connected_table.column("#6", anchor=CENTER)
         self.connected_table.heading("#6", text="Client Version")
-        self.connected_table.bind("<Button 1>", self.selectItem)
+        self.connected_table.bind("<Button 1>", self.select_item)
 
         # Style Table
         self.local_tools.logIt_thread(self.log_path, msg=f'Styling...')
@@ -494,7 +508,8 @@ class App(tk.Tk):
             if len(self.targets) > 0:
                 try:
                     for t in self.targets:
-                        self.local_tools.logIt_thread(self.log_path, msg=f'Sending exit command to connected stations...')
+                        self.local_tools.logIt_thread(self.log_path,
+                                                      msg=f'Sending exit command to connected stations...')
                         t.send('exit'.encode())
                         self.local_tools.logIt_thread(self.log_path, msg=f'Send completed.')
                         self.local_tools.logIt_thread(self.log_path, msg=f'Closing socket connections...')
@@ -531,7 +546,8 @@ class App(tk.Tk):
             self.local_tools.logIt_thread(self.log_path, msg=f'Calling screenshot.recv_file({ip})...')
             scrnshot.recv_file(ip)
             self.update_statusbar_messages_thread(msg=f'Status: screenshot received from  {ip} | {sname}.')
-            self.local_tools.logIt_thread(self.log_path, msg=fr'Calling self.display_file_content({self.path}\{sname}, "", {self.screenshot_tab}, txt="Screenshot")...')
+            self.local_tools.logIt_thread(self.log_path,
+                                          msg=fr'Calling self.display_file_content({self.path}\{sname}, "", {self.screenshot_tab}, txt="Screenshot")...')
             self.display_file_content(fr"{self.path}\{sname}", '', self.screenshot_tab, txt='Screenshot')
             self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.enable_buttons_thread()...')
             self.enable_buttons_thread()
@@ -547,8 +563,6 @@ class App(tk.Tk):
     # Run Anydesk on Client
     def anydesk(self, con: str, ip: str, sname: str) -> bool:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running anydesk({con}, {ip})...')
-
-        # Update statusbar message
         self.update_statusbar_messages_thread(msg=f'Status: running anydesk on {ip} | {sname}...')
 
         try:
@@ -582,7 +596,6 @@ class App(tk.Tk):
                         self.local_tools.logIt_thread(self.log_path, msg=f'textVar: {textVar}')
 
                         if "OK" not in str(msg):
-                            # Update statusbar message
                             self.update_statusbar_messages_thread(msg=f'Status: {msg}')
 
                         else:
@@ -618,15 +631,10 @@ class App(tk.Tk):
             self.local_tools.logIt_thread(self.log_path, msg=f'Sending lr command to client...')
             con.send('lr'.encode())
             self.local_tools.logIt_thread(self.log_path, msg=f'Send Completed.')
-
             self.local_tools.logIt_thread(self.log_path, msg=f'Waiting for response from client...')
             msg = con.recv(4096).decode()
             self.local_tools.logIt_thread(self.log_path, msg=f'Client response: {msg}')
-
-            # Update statusbar message
             self.update_statusbar_messages_thread(msg=f'Status: restart for {sname}: {msg.split("|")[1][15:]}')
-
-            # Display MessageBox on screen
             self.local_tools.logIt_thread(self.log_path, msg=f'Display popup with last restart info...')
             messagebox.showinfo(f"Last Restart for: {ip} | {sname}", f"\t{msg.split('|')[1][15:]}\t\t\t")
             return True
@@ -641,21 +649,14 @@ class App(tk.Tk):
     # Client System Information
     def sysinfo(self, con: str, ip: str, sname: str):
         self.local_tools.logIt_thread(self.log_path, msg=f'Running self.sysinfo({con}, {ip}, {sname})...')
-        # Disable Controller Button
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread(sidebar=True)...')
         self.disable_buttons_thread(sidebar=True)
-
-        # Update statusbar message
         self.update_statusbar_messages_thread(msg=f'Status: waiting for system information from {ip} | {sname}...')
-
         try:
             self.local_tools.logIt_thread(self.log_path, msg=f'Initializing Module: sysinfo...')
             sinfo = sysinfo.Sysinfo(con, self.ttl, self.path, self.tmp_availables, self.clients, self.log_path, ip)
-
             self.local_tools.logIt_thread(self.log_path, msg=f'Calling sysinfo.run()...')
             filepath = sinfo.run(ip)
-
-            # Update statusbar message
             self.update_statusbar_messages_thread(
                 msg=f'Status: system information file received from {ip} | {sname}.')
 
@@ -663,15 +664,12 @@ class App(tk.Tk):
             self.local_tools.logIt_thread(self.log_path,
                                           msg=f'Calling self.display_file_content(None, {filepath}, {self.system_information_tab}, txt="System Information")...')
             self.display_file_content(None, filepath, self.system_information_tab, txt='System Information')
-
-            # Enable Controller Buttons
             self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.enable_buttons_thread()...')
             self.enable_buttons_thread()
 
         except (WindowsError, socket.error, ConnectionResetError) as e:
             self.local_tools.logIt_thread(self.log_path, debug=True, msg=f'Connection Error: {e}.')
             self.update_statusbar_messages_thread(msg=f'Status: {e}.')
-
             try:
                 self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip})...')
                 self.remove_lost_connection(con, ip)
@@ -714,31 +712,45 @@ class App(tk.Tk):
 
             if len(task_to_kill) == 0:
                 try:
+                    self.local_tools.logIt_thread(self.log_path, msg=f'Sending "n" to {ip}...')
                     con.send('n'.encode())
+                    self.local_tools.logIt_thread(self.log_path, msg=f'Send completed.')
+                    self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.enable_buttons_thread()...')
                     self.enable_buttons_thread()
+                    self.local_tools.logIt_thread(self.log_path, msg=f'Displaying warning popup window...')
                     messagebox.showwarning(f"From {ip} | {sname}", "Task Kill canceled.\t\t\t\t\t\t\t\t")
                     return False
 
                 except (WindowsError, socket.error) as e:
                     self.local_tools.logIt_thread(self.log_path, msg=f'Error: {e}.')
                     self.update_statusbar_messages_thread(msg=f"Status: {e}")
+                    self.local_tools.logIt_thread(self.log_path,
+                                                  msg=f'Calling self.remove_lost_connection({con}, {ip})...')
                     self.remove_lost_connection(con, ip)
+                    self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.enable_buttons_thread()...')
                     self.enable_buttons_thread()
                     return False
 
             if not str(task_to_kill).endswith('.exe'):
                 try:
+                    self.local_tools.logIt_thread(self.log_path, msg=f'Calling sysinfo.run()...')
                     con.send('n'.encode())
+                    self.local_tools.logIt_thread(self.log_path, msg=f'Send completed.')
+                    self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.enable_buttons_thread()...')
                     self.enable_buttons_thread()
+                    self.local_tools.logIt_thread(self.log_path, msg=f'Displaying warning popup window...')
                     messagebox.showwarning(f"From {ip} | {sname}", "Task Kill canceled.\t\t\t\t\t\t\t\t")
                     return False
 
                 except (WindowsError, socket.error) as e:
                     self.local_tools.logIt_thread(self.log_path, msg=f'Error: {e}.')
                     self.update_statusbar_messages_thread(msg=f"Status: {e}")
+                    self.local_tools.logIt_thread(self.log_path,
+                                                  msg=f'Calling self.remove_lost_connection({con}, {ip})...')
                     self.remove_lost_connection(con, ip)
                     return False
 
+            self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.enable_buttons_thread()...')
             self.enable_buttons_thread()
             return task_to_kill
 
@@ -782,11 +794,7 @@ class App(tk.Tk):
             self.local_tools.logIt_thread(self.log_path, msg=f'Displaying {msg} in popup window...')
             messagebox.showinfo(f"From {ip} | {sname}", f"{msg}.\t\t\t\t\t\t\t\t")
             self.local_tools.logIt_thread(self.log_path, msg=f'Message received.')
-
-            # Update statusbar message
             self.update_statusbar_messages_thread(msg=f'Status: killed task {task_to_kill} on {ip} | {sname}.')
-
-            # Enable Controller Buttons
             self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.enable_buttons_thread()...')
             self.enable_buttons_thread()
             return True
@@ -794,25 +802,19 @@ class App(tk.Tk):
         # Disable controller buttons
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread()...')
         self.disable_buttons_thread(sidebar=True)
-
-        # Update statusbar message
         self.update_statusbar_messages_thread(msg=f'Status: running tasks command on {ip} | {sname}.')
-
         self.local_tools.logIt_thread(self.log_path, debug=False, msg=f'Initializing Module: tasks...')
         tsks = tasks.Tasks(con, ip, self.clients, self.connections,
                            self.targets, self.ips, self.tmp_availables,
                            self.path, self.log_path, self.path, sname)
-
         self.local_tools.logIt_thread(self.log_path, debug=False, msg=f'Calling tasks.tasks()...')
         filepath = tsks.tasks(ip)
         self.local_tools.logIt_thread(self.log_path, msg=f'filepath: {filepath}')
 
-        # Display file content in system information notebook TextBox
         self.local_tools.logIt_thread(self.log_path,
                                       msg=f'Calling self.display_file_content(None, {filepath}, {self.system_information_tab}, txt="Tasks")...')
+        # Display file content in system information notebook TextBox
         self.display_file_content(None, filepath, self.system_information_tab, txt='Tasks')
-
-        # Display kill task question pop-up
         self.local_tools.logIt_thread(self.log_path, msg=f'Displaying popup to kill a task...')
         killTask = messagebox.askyesno(f"Tasks from {ip} | {sname}", "Kill Task?\t\t\t\t\t\t\t\t")
         self.local_tools.logIt_thread(self.log_path, msg=f'Kill task: {killTask}.')
@@ -858,8 +860,10 @@ class App(tk.Tk):
                 self.local_tools.logIt_thread(self.log_path, msg=f'Sending "n" to {ip}.')
                 con.send('n'.encode())
                 self.local_tools.logIt_thread(self.log_path, msg=f'Send completed.')
+                self.update_statusbar_messages_thread(msg=f'Status: tasks file received from {ip} | {sname}.')
                 self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.enable_buttons_thread()...')
                 self.enable_buttons_thread()
+                return True
 
             except (WindowsError, socket.error) as e:
                 self.local_tools.logIt_thread(self.log_path, msg=f'Error: {e}.')
@@ -868,21 +872,10 @@ class App(tk.Tk):
                 self.remove_lost_connection(con, ip)
                 return False
 
-            # Update statusbar message
-            self.update_statusbar_messages_thread(msg=f'Status: tasks file received from {ip} | {sname}.')
-
-        # Enable Controller Buttons
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.enable_buttons_thread()...')
-        self.enable_buttons_thread()
-        return True
-
     # Restart Client
     def restart(self, con: str, ip: str, sname: str) -> bool:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running restart({con}, {ip}, {sname})')
-        # Update statusbar message
         self.update_statusbar_messages_thread(msg=f'Status: waiting for restart confirmation...')
-
-        # Display MessageBox on screen
         self.local_tools.logIt_thread(self.log_path, msg=f'Displaying self.sure() popup window...')
         self.sure = messagebox.askyesno(f"Restart for: {ip} | {sname}",
                                         f"Are you sure you want to restart {sname}?\t")
@@ -1063,16 +1056,12 @@ class App(tk.Tk):
             if self.conn in self.targets and self.ip in self.ips:
                 self.local_tools.logIt_thread(self.log_path, msg=f'Removing {self.conn} from self.targets...')
                 self.targets.remove(self.conn)
-
                 self.local_tools.logIt_thread(self.log_path, msg=f'Removing {self.ip} from self.ips list...')
                 self.ips.remove(self.ip)
-
                 self.local_tools.logIt_thread(self.log_path, msg=f'Deleting {self.conn} from self.connections.')
                 del self.connections[self.conn]
-
                 self.local_tools.logIt_thread(self.log_path, msg=f'Deleting {self.conn} from self.clients...')
                 del self.clients[self.conn]
-
                 self.local_tools.logIt_thread(self.log_path, msg=f'[V]{self.ip} removed from lists.')
                 return False
 
@@ -1092,11 +1081,9 @@ class App(tk.Tk):
                 self.local_tools.logIt_thread(self.log_path, msg=f'Sending "alive" to {t}...')
                 t.send('alive'.encode())
                 self.local_tools.logIt_thread(self.log_path, msg=f'Send completed.')
-
                 self.local_tools.logIt_thread(self.log_path, msg=f'Waiting for response from {t}...')
                 ans = t.recv(1024).decode()
                 self.local_tools.logIt_thread(self.log_path, msg=f'Response from {t}: {ans}.')
-
                 self.local_tools.logIt_thread(self.log_path, msg=f'Waiting for client version from {t}...')
                 ver = t.recv(1024).decode()
                 self.local_tools.logIt_thread(self.log_path, msg=f'Response from {t}: {ver}.')
@@ -1155,7 +1142,8 @@ class App(tk.Tk):
                                         if (count, macKey, ipKey, identKey, userValue) in self.tmp_availables:
                                             continue
 
-                                self.local_tools.logIt_thread(self.log_path, msg=f'Updating self.tmp_availables list...')
+                                self.local_tools.logIt_thread(self.log_path,
+                                                              msg=f'Updating self.tmp_availables list...')
                                 self.tmp_availables.append((count, macKey, ipKey, identKey, userV, clientVer))
                 count += 1
 
@@ -1209,16 +1197,13 @@ class App(tk.Tk):
     # Shell Connection to Client
     def shell(self, con: str, ip: str, sname: str) -> None:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running shell({con}, {ip})...')
-
-        # Update statusbar message
         self.update_statusbar_messages_thread(msg=f'Status: shell connected to {ip} | {sname}.')
-
         while True:
             # Wait for User Input & hide print
             self.local_tools.logIt_thread(self.log_path, msg=f'Waiting for input...')
             cmd = input(f"")
 
-            # Run Custom Command
+            # Run Custom Command // FUTURE add-on for expert mode
             if int(cmd) == 100:
                 self.local_tools.logIt_thread(self.log_path, msg=f'Command: 100')
                 try:
@@ -1242,7 +1227,6 @@ class App(tk.Tk):
                 self.local_tools.logIt_thread(self.log_path, msg=f'Initializing Freestyle Module...')
                 free = freestyle.Freestyle(con, path, self.tmp_availables, self.clients,
                                            log_path, host, user)
-
                 self.local_tools.logIt_thread(self.log_path, msg=f'Calling freestyle module...')
                 free.freestyle(ip)
 
@@ -1276,88 +1260,100 @@ class App(tk.Tk):
 
     # Enable Controller Buttons
     def enable_buttons(self):
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running enable_buttons()...')
         for button in list(self.buttons):
+            self.local_tools.logIt_thread(self.log_path, msg=f'Enabling {button}...')
             button.config(state=NORMAL)
 
         for sbutton in list(self.sidebar_buttons):
+            self.local_tools.logIt_thread(self.log_path, msg=f'Enabling sidebar {sbutton}...')
             sbutton.config(state=NORMAL)
 
     # Disable Controller Buttons
     def disable_buttons(self, sidebar=None):
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running disable_buttons(sidebar=None)...')
         if sidebar:
             for button in list(self.buttons):
+                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling {button}...')
                 button.config(state=DISABLED)
 
             for sbutton in list(self.sidebar_buttons):
+                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling sidebar {sbutton}...')
                 sbutton.config(state=DISABLED)
 
             return
 
         else:
             for button in list(self.buttons):
+                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling {button}...')
                 button.config(state=DISABLED)
 
             return
 
     # Display file content in notebook
     def display_file_content(self, screenshot_path: str, filepath: str, tab: str, txt='') -> bool:
+        self.local_tools.logIt_thread(self.log_path,
+                                      msg=f'Running display_file_content({screenshot_path}, {filepath}, {tab}, txt="")...')
+
         def text():
+            self.local_tools.logIt_thread(self.log_path, msg=f'opening {filepath}...')
             with open(filepath, 'r') as file:
                 data = file.read()
+                self.local_tools.logIt_thread(self.log_path, msg=f'Building notebook tab...')
                 tab = Frame(self.notebook, height=350)
-
-                # Create Tasks Scrollbar
+                self.local_tools.logIt_thread(self.log_path, msg=f'Building text scrollbar...')
                 self.tab_scrollbar = Scrollbar(tab, orient=VERTICAL)
                 self.tab_scrollbar.pack(side=LEFT, fill=Y)
-
-                # Create Tasks Textbox
+                self.local_tools.logIt_thread(self.log_path, msg=f'Building text Textbox...')
                 self.tab_textbox = Text(tab, yscrollcommand=self.tab_scrollbar.set)
                 self.tab_textbox.pack(fill=BOTH)
-
-                # Add tab to notebook
+                self.local_tools.logIt_thread(self.log_path, msg=f'Adding tab to notebook...')
                 self.notebook.add(tab, text=f"{txt}")
-
+                self.local_tools.logIt_thread(self.log_path, msg=f'Enabling scroller buttons...')
                 self.tab_scrollbar.configure(command=self.tab_textbox.yview)
+                self.local_tools.logIt_thread(self.log_path, msg=f'Enabling textbox entry...')
                 self.tab_textbox.config(state=NORMAL)
+                self.local_tools.logIt_thread(self.log_path, msg=f'Clearing textbox...')
                 self.tab_textbox.delete(1.0, END)
+                self.local_tools.logIt_thread(self.log_path, msg=f'Inserting file content to Textbox...')
                 self.tab_textbox.insert(END, data)
+                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling Textbox entry...')
                 self.tab_textbox.config(state=DISABLED)
-
-                # Display Last Tab
+                self.local_tools.logIt_thread(self.log_path, msg=f'Displaying latest notebook tab...')
                 self.notebook.select(tab)
                 self.tabs += 1
                 return True
 
         def picture():
+            self.local_tools.logIt_thread(self.log_path, msg=f'Building frame...')
             fr = ttk.Frame(self.notebook, height=350)
+            self.local_tools.logIt_thread(self.log_path, msg=f'Updating frames list...')
             self.frames.append(fr)
-
+            self.local_tools.logIt_thread(self.log_path, msg=f'Defining working frame...')
             tab = self.frames[-1]
-            # Create Tasks Scrollbar
+            self.local_tools.logIt_thread(self.log_path, msg=f'Building Textbox scrollbar...')
             self.tab_scrollbar = Scrollbar(tab, orient=VERTICAL)
             self.tab_scrollbar.pack(side=LEFT, fill=Y)
-
-            # Create Tasks Textbox
+            self.local_tools.logIt_thread(self.log_path, msg=f'Building Textbox...')
             self.tab_textbox = Text(tab, yscrollcommand=self.tab_scrollbar.set)
             self.tab_textbox.pack(fill=BOTH)
-
-            # Display Image
+            self.local_tools.logIt_thread(self.log_path, msg=f'Display image in Textbox...')
             self.tab_textbox.image_create(END, image=self.last_screenshot)
             self.tab_scrollbar.configure(command=self.tab_textbox.yview)
-
-            # Add tab to notebook
+            self.local_tools.logIt_thread(self.log_path, msg=f'Adding tab to notebook...')
             self.notebook.add(tab, text=f"{txt}")
+            self.local_tools.logIt_thread(self.log_path, msg=f'Running disable_buttons(sidebar=None)...')
             self.tab_textbox.config(state=DISABLED)
-
-            # Display Last Tab
             self.notebook.select(tab)
             self.tabs += 1
             return True
 
         if len(filepath) > 0:
+            self.local_tools.logIt_thread(self.log_path, msg=f'Calling text()...')
             text()
 
         elif len(screenshot_path) > 0:
+            self.local_tools.logIt_thread(self.log_path, msg=f'Sorting jpg files by creation time...')
             images = glob.glob(fr"{screenshot_path}\*.jpg")
             images.sort(key=os.path.getmtime)
 
@@ -1368,28 +1364,26 @@ class App(tk.Tk):
             self.displayed_screenshot_files.append(self.last_screenshot)
 
             if self.tabs > 0:
+                self.local_tools.logIt_thread(self.log_path, msg=f'Calling picture()...')
                 picture()
 
             else:
+                self.local_tools.logIt_thread(self.log_path, msg=f'Building working frame...')
                 tab = Frame(self.notebook, height=350)
-
-                # Create Tasks Scrollbar
+                self.local_tools.logIt_thread(self.log_path, msg=f'Build Textbox scrollbar...')
                 self.tab_scrollbar = Scrollbar(tab, orient=VERTICAL)
                 self.tab_scrollbar.pack(side=LEFT, fill=Y)
-
-                # Create Tasks Textbox
+                self.local_tools.logIt_thread(self.log_path, msg=f'Building Textbox...')
                 self.tab_textbox = Text(tab, yscrollcommand=self.tab_scrollbar.set)
                 self.tab_textbox.pack(fill=BOTH)
-
-                # Display Image
+                self.local_tools.logIt_thread(self.log_path, msg=f'Displaying image in Textbox...')
                 self.tab_textbox.image_create(END, image=self.last_screenshot)
                 self.tab_scrollbar.configure(command=self.tab_textbox.yview)
-
-                # Add tab to notebook
+                self.local_tools.logIt_thread(self.log_path, msg=f'Adding tab to notebook...')
                 self.notebook.add(tab, text=f"{txt}")
+                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling Textbox entry...')
                 self.tab_textbox.config(state=DISABLED)
-
-                # Display Last Tab
+                self.local_tools.logIt_thread(self.log_path, msg=f'Displaying latest notebook tab...')
                 self.notebook.select(tab)
                 self.tabs += 1
                 return True
@@ -1408,84 +1402,78 @@ class App(tk.Tk):
 
     # Build Notebook
     def create_notebook(self):
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running create_notebook()...')
+        self.local_tools.logIt_thread(self.log_path, msg=f'Clearing frames list...')
         self.frames.clear()
+        self.local_tools.logIt_thread(self.log_path, msg=f'Defining working style "Details"...')
         self.style.theme_use("Details")
-
-        # Create Notebook
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building notebook...')
         self.notebook = ttk.Notebook(self.details_labelFrame, height=330)
         self.notebook.pack(expand=False, pady=5, fill=X)
-
-        # Create Tabs
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building tabs...')
         self.screenshot_tab = Frame(self.notebook, height=330)
         self.system_information_tab = Frame(self.notebook, height=330)
         self.tasks_tab = Frame(self.notebook, height=330)
-
-        # Create System Information Scrollbar
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building sysinfo scrollbar...')
         self.system_scrollbar = Scrollbar(self.system_information_tab, orient=VERTICAL)
         self.system_scrollbar.pack(side=LEFT, fill=Y)
-
-        # Create System Information Textbox
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building sysinfo textbox...')
         self.system_information_textbox = Text(self.system_information_tab, yscrollcommand=self.system_scrollbar.set)
         self.system_information_textbox.pack(fill=BOTH)
-
-        # Create Tasks Scrollbar
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building tasks scrollbar...')
         self.tasks_scrollbar = Scrollbar(self.tasks_tab, orient=VERTICAL)
         self.tasks_scrollbar.pack(side=LEFT, fill=Y)
-
-        # Create Tasks Textbox
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building tasks textbox...')
         self.tasks_tab_textbox = Text(self.tasks_tab, yscrollcommand=self.tasks_scrollbar.set)
         self.tasks_tab_textbox.pack(fill=X)
 
     # Manage Connected Table & Controller LabelFrame Buttons
-    def selectItem(self, event) -> bool:
+    def select_item(self, event) -> bool:
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running select_item()...')
+
         # Create Controller Buttons
         def make_buttons():
-            # Screenshot Button
+            self.local_tools.logIt_thread(self.log_path, msg=f'Building screenshot button...')
             self.screenshot_btn = Button(self.controller_btns, text="Screenshot", width=15, pady=5,
                                          command=lambda: screenshot_thread(clientConn, clientIP, sname))
             self.screenshot_btn.grid(row=0, sticky="w", pady=5, padx=2, ipadx=2)
+            self.local_tools.logIt_thread(self.log_path, msg=f'Updating controller buttons list...')
             self.buttons.append(self.screenshot_btn)
-
-            # Anydesk Button
+            self.local_tools.logIt_thread(self.log_path, msg=f'Building anydesk button...')
             self.anydesk_btn = Button(self.controller_btns, text="Anydesk", width=15, pady=5,
                                       command=lambda: self.anydesk(clientConn, ip, sname))
-
             self.anydesk_btn.grid(row=0, column=1, sticky="w", pady=5, padx=2, ipadx=2)
+            self.local_tools.logIt_thread(self.log_path, msg=f'Updating controller buttons list...')
             self.buttons.append(self.anydesk_btn)
-
-            # Last Restart Button
+            self.local_tools.logIt_thread(self.log_path, msg=f'Building last restart button...')
             self.last_restart_btn = Button(self.controller_btns, text="Last Restart", width=15, pady=5,
                                            command=lambda: self.last_restart(clientConn, ip, sname))
-
             self.last_restart_btn.grid(row=0, column=2, sticky="w", pady=5, padx=2, ipadx=2)
+            self.local_tools.logIt_thread(self.log_path, msg=f'Updating controller buttons list...')
             self.buttons.append(self.last_restart_btn)
-
-            # System Information Button
+            self.local_tools.logIt_thread(self.log_path, msg=f'Building system information button...')
             self.sysinfo_btn = Button(self.controller_btns, text="SysInfo", width=15, pady=5,
                                       command=lambda: client_system_information_thread(clientConn, clientIP, sname))
-
             self.sysinfo_btn.grid(row=0, column=3, sticky="w", pady=5, padx=2, ipadx=2)
+            self.local_tools.logIt_thread(self.log_path, msg=f'Updating controller buttons list...')
             self.buttons.append(self.sysinfo_btn)
-
-            # Tasks Button
+            self.local_tools.logIt_thread(self.log_path, msg=f'Building tasks button...')
             self.tasks_btn = Button(self.controller_btns, text="Tasks", width=15, pady=5,
                                     command=lambda: self.tasks(clientConn, clientIP, sname))
-
             self.tasks_btn.grid(row=0, column=4, sticky="w", pady=5, padx=2, ipadx=2)
+            self.local_tools.logIt_thread(self.log_path, msg=f'Updating controller buttons list...')
             self.buttons.append(self.tasks_btn)
-
-            # Restart Button
+            self.local_tools.logIt_thread(self.log_path, msg=f'Building restart button...')
             self.restart_btn = Button(self.controller_btns, text="Restart", width=15, pady=5,
                                       command=lambda: self.restart(clientConn, ip, sname))
-
             self.restart_btn.grid(row=0, column=5, sticky="w", pady=5, padx=2, ipadx=2)
+            self.local_tools.logIt_thread(self.log_path, msg=f'Updating controller buttons list...')
             self.buttons.append(self.restart_btn)
-
-            # Browse Local Files Button
+            self.local_tools.logIt_thread(self.log_path, msg=f'Building local files button...')
             self.browse_btn = Button(self.controller_btns, text="Local Files", width=15, pady=5,
                                      command=lambda: self.browse_local_files(sname))
-
             self.browse_btn.grid(row=0, column=6, sticky="w", pady=5, padx=2, ipadx=2)
+            self.local_tools.logIt_thread(self.log_path, msg=f'Updating controller buttons list...')
             self.buttons.append(self.browse_btn)
 
         def client_system_information_thread(con: str, ip: str, sname: str):
@@ -1508,6 +1496,7 @@ class App(tk.Tk):
 
         try:
             if not row[2] in self.temp.values():
+                self.local_tools.logIt_thread(self.log_path, msg=f'Updating self.temp dictionary...')
                 self.temp[row[0]] = row[2]
 
         # Error can raise when clicking on empty space so the row is None or empty.
@@ -1515,11 +1504,11 @@ class App(tk.Tk):
             pass
 
         # Display Details LabelFrame
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building details LabelFrame...')
         self.details_labelFrame = LabelFrame(self.main_frame, text="Details", relief='ridge',
                                              height=400, background='light grey')
         self.details_labelFrame.grid(row=3, sticky='news', columnspan=3)
-
-        # Build Notebook under Details LabelFrame
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.create_notebook()...')
         self.create_notebook()
 
         # Create a Controller LabelFrame with Buttons and connect shell by TreeView Table selection
@@ -1529,18 +1518,19 @@ class App(tk.Tk):
                     for clientIP, vals in clientIPv.items():
                         if clientIP == ip:
                             for sname in vals.keys():
+                                self.local_tools.logIt_thread(self.log_path, msg=f'Calling make_buttons()...')
                                 make_buttons()
+                                self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.enable_buttons_thread...')
                                 self.enable_buttons_thread()
-
+                                self.local_tools.logIt_thread(self.log_path, msg=f'Running shell thread...')
                                 shellThread = Thread(target=self.shell,
                                                      args=(clientConn, clientIP, sname),
                                                      daemon=True,
                                                      name="Shell Thread")
                                 shellThread.start()
 
-                                # Reset temp dict
+                                self.local_tools.logIt_thread(self.log_path, msg=f'Clearing self.temp dictionary...')
                                 self.temp.clear()
-
                                 return True
 
 
@@ -1616,5 +1606,7 @@ if __name__ == '__main__':
                         name="Icon Thread")
     iconThread.start()
 
+    # Initialize GUI app
     app = App()
+    # Run App
     app.mainloop()
