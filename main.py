@@ -2,7 +2,6 @@ from datetime import datetime
 from threading import Thread
 import PIL.ImageTk
 import subprocess
-import threading
 import PIL.Image
 import pystray
 import os.path
@@ -25,10 +24,6 @@ from Modules import screenshot
 from Modules import freestyle
 from Modules import sysinfo
 from Modules import tasks
-
-
-# TODO: Fix Styling to multiple widgets
-# TODO: Add Menubar
 
 
 class App(tk.Tk):
@@ -55,7 +50,7 @@ class App(tk.Tk):
     log_path = fr'{path}\server_log.txt'
 
     WIDTH = 1348
-    HEIGHT = 800
+    HEIGHT = 765
 
     def __init__(self):
         super().__init__()
@@ -183,7 +178,7 @@ class App(tk.Tk):
     def build_main_window_frames(self) -> None:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running build_main_window_frames()...')
         self.local_tools.logIt_thread(self.log_path, msg=f'Building sidebar frame...')
-        self.sidebar_frame = Frame(self, width=150, background="RoyalBlue4")
+        self.sidebar_frame = Frame(self, width=150, background="SteelBlue")
         self.sidebar_frame.grid(row=0, column=0, sticky="nswe")
         self.local_tools.logIt_thread(self.log_path, msg=f'Building main frame...')
         self.main_frame = Frame(self, background="ghost white", relief="sunken")
@@ -210,15 +205,14 @@ class App(tk.Tk):
         self.table_frame = LabelFrame(self.main_frame_table, text="Connected Stations")
         self.table_frame.pack(fill=BOTH)
         self.local_tools.logIt_thread(self.log_path, msg=f'Building details frame in main frame...')
-        self.details_frame = Frame(self.main_frame, relief='flat')
+        self.details_frame = Frame(self.main_frame, relief='flat', pady=10)
         self.details_frame.grid(row=3, column=0, sticky='news')
         self.local_tools.logIt_thread(self.log_path, msg=f'Building statusbar frame in main frame...')
-        self.statusbar_frame = Frame(self.main_frame, relief='solid', pady=5)
+        self.statusbar_frame = Frame(self.main_frame, relief=SUNKEN, bd=1)
         self.statusbar_frame.grid(row=4, column=0, sticky='news')
         self.local_tools.logIt_thread(self.log_path, msg=f'Building statusbar label frame in main frame...')
-        self.status_labelFrame = LabelFrame(self.statusbar_frame, height=5, width=900, text='Status', relief='solid',
-                                            pady=5)
-        self.status_labelFrame.pack(fill=BOTH)
+        self.status_label = Label(self.statusbar_frame, text='Status', relief=FLAT, anchor=W)
+        self.status_label.pack(fill=BOTH)
 
     # Create Sidebar Buttons
     def build_sidebar_buttons(self) -> None:
@@ -239,8 +233,8 @@ class App(tk.Tk):
         self.btn_exit = tk.Button(self.sidebar_frame,
                                   text="Exit", width=15, pady=10,
                                   command=lambda: self.exit())
-        self.btn_exit.grid(row=3, sticky="nwes")
-        self.sidebar_buttons.append(self.btn_exit)
+        # self.btn_exit.grid(row=3, sticky="nwes")
+        # self.sidebar_buttons.append(self.btn_exit)
 
     # Create Treeview Table for connected stations
     def build_connected_table(self) -> None:
@@ -272,12 +266,6 @@ class App(tk.Tk):
         self.connected_table.column("#6", anchor=CENTER)
         self.connected_table.heading("#6", text="Client Version")
         self.connected_table.bind("<Button 1>", self.select_item)
-
-        # Style Table
-        self.local_tools.logIt_thread(self.log_path, msg=f'Styling Connected table...')
-        self.style.theme_use("Details")
-        self.style.configure("Treeview", rowheight=20, background="#D3D3D3", foreground="black")
-        self.style.map("Treeview", background=[('selected', 'green')])
 
     # Build Table for Connection History
     def create_connection_history_table(self) -> None:
@@ -314,40 +302,9 @@ class App(tk.Tk):
         self.history_table.column("#6", anchor=CENTER)
         self.history_table.heading("#6", text="Time")
 
-    # Server listener
-    def listener(self) -> None:
-        self.local_tools.logIt_thread(self.log_path, msg=f'Running listener()...')
-        self.server = socket.socket()
-        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.local_tools.logIt_thread(self.log_path, msg=f'Binding {self.serverIP}, {self.port}...')
-        self.server.bind((self.serverIP, self.port))
-        self.server.listen()
-
-    # Display Server Information
-    def server_information(self) -> dict:
-        self.local_tools.logIt_thread(self.log_path, msg=f'Running show server information...')
-        last_reboot = psutil.boot_time()
-        data = {
-            'Server_IP': self.serverIP,
-            'Server_Port': self.port,
-            'Last_Boot': datetime.fromtimestamp(last_reboot).replace(microsecond=0),
-            'Connected_Stations': len(self.targets)
-        }
-        self.local_tools.logIt_thread(self.log_path, msg=f'Displaying Label: '
-                                                         f'{self.serverIP} | {self.port} | '
-                                                         f'{datetime.fromtimestamp(last_reboot).replace(microsecond=0)}" | '
-                                                         f'{len(self.targets)}')
-        label = Label(self.top_bar_label, text=f"\t\t\t\t\tServer IP: {self.serverIP}\t\tServer Port: {self.port}\t\t"
-                                               f"Last Boot: {datetime.fromtimestamp(last_reboot).replace(microsecond=0)}\t\t"
-                                               f"Connected Stations: {len(self.targets)}", anchor=CENTER)
-        label.grid(row=0, sticky='w')
-        return data
-
     # Update status bar messages
     def update_statusbar_messages(self, msg=''):
-        status_label = Label(self.status_labelFrame, relief='flat',
-                             text=f"{msg}\t\t\t\t\t\t\t\t")
-        status_label.grid(row=0, column=0, sticky='w')
+        self.status_label.config(text=msg)
 
     # Close App
     def on_closing(self, event=0) -> None:
@@ -364,8 +321,8 @@ class App(tk.Tk):
             self.local_tools.logIt_thread(self.log_path, msg=f'Destroying app window...')
             self.destroy()
 
-    # ==++==++==++== MENUBAR ==++==++==++==
     def build_menubar(self):
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running build_menubar()...')
         menubar = Menu(self, tearoff=0)
         file = Menu(menubar, tearoff=0)
         file.add_command(label="Minimize", command=self.minimize)
@@ -380,6 +337,7 @@ class App(tk.Tk):
         menubar.add_cascade(label="Help", menu=helpbar)
 
         self.config(menu=menubar)
+        return
 
     # ==++==++==++== SIDEBAR BUTTONS ==++==++==++==
     # Refresh server info & connected stations table with vital signs
@@ -432,6 +390,10 @@ class App(tk.Tk):
                                         self.history_table.insert('', 'end', values=(c, macKey, ipKey,
                                                                                      identKey, userKey,
                                                                                      timeValue), tags=('oddrow',))
+
+                                    self.local_tools.logIt_thread(self.log_path, msg=f'Stying table row colors...')
+                                    self.history_table.tag_configure('oddrow', background='snow')
+                                    self.history_table.tag_configure('evenrow', background='ghost white')
                         c += 1
             return True
 
@@ -467,6 +429,7 @@ class App(tk.Tk):
         messagebox.showinfo("Update All Clients", "Update command sent.\nClick refresh to update the connected table.")
         return True
 
+    # Minimize Window
     def minimize(self):
         return self.withdraw()
 
@@ -1007,6 +970,15 @@ class App(tk.Tk):
             self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.welcome_message()...')
             self.welcome_message()
 
+    # Server listener
+    def listener(self) -> None:
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running listener()...')
+        self.server = socket.socket()
+        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.local_tools.logIt_thread(self.log_path, msg=f'Binding {self.serverIP}, {self.port}...')
+        self.server.bind((self.serverIP, self.port))
+        self.server.listen()
+
     # Send welcome message to connected clients
     def welcome_message(self) -> bool:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running welcome_message()...')
@@ -1030,6 +1002,27 @@ class App(tk.Tk):
                 del self.clients[self.conn]
                 self.local_tools.logIt_thread(self.log_path, msg=f'[V]{self.ip} removed from lists.')
                 return False
+
+    # Display Server Information
+    def server_information(self) -> dict:
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running show server information...')
+        last_reboot = psutil.boot_time()
+        data = {
+            'Server_IP': self.serverIP,
+            'Server_Port': self.port,
+            'Last_Boot': datetime.fromtimestamp(last_reboot).replace(microsecond=0),
+            'Connected_Stations': len(self.targets)
+        }
+        self.local_tools.logIt_thread(self.log_path, msg=f'Displaying Label: '
+                                                         f'{self.serverIP} | {self.port} | '
+                                                         f'{datetime.fromtimestamp(last_reboot).replace(microsecond=0)}" | '
+                                                         f'{len(self.targets)}')
+        label = Label(self.top_bar_label,
+                      text=f"\t\t\t\t\tServer IP: {self.serverIP}\t\tServer Port: {self.port}\t\t"
+                           f"Last Boot: {datetime.fromtimestamp(last_reboot).replace(microsecond=0)}\t\t"
+                           f"Connected Stations: {len(self.targets)}", anchor=CENTER)
+        label.grid(row=0, sticky='w')
+        return data
 
     # Check if connected stations are still connected
     def vital_signs(self) -> bool:
@@ -1117,9 +1110,6 @@ class App(tk.Tk):
 
         def extract():
             self.local_tools.logIt_thread(self.log_path, msg=f'Running extract()...')
-            self.local_tools.logIt_thread(self.log_path, msg=f'Stying table row colors...')
-            self.connected_table.tag_configure('oddrow', background='floral white')
-            self.connected_table.tag_configure('evenrow', background='lightcyan')
             self.local_tools.logIt_thread(self.log_path, msg=f'Iterating self.tmp_availables list...')
             for item in self.tmp_availables:
                 for conKey, ipValue in self.clients.items():
@@ -1154,6 +1144,10 @@ class App(tk.Tk):
         # Clear previous entries in GUI table
         self.local_tools.logIt_thread(self.log_path, msg=f'Cleaning connected table entries...')
         self.connected_table.delete(*self.connected_table.get_children())
+
+        self.local_tools.logIt_thread(self.log_path, msg=f'Stying table row colors...')
+        self.connected_table.tag_configure('oddrow', background='floral white')
+        self.connected_table.tag_configure('evenrow', background='cornsilk')
 
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling make_tmp()...')
         make_tmp()
@@ -1240,18 +1234,18 @@ class App(tk.Tk):
         self.local_tools.logIt_thread(self.log_path, msg=f'Running disable_buttons(sidebar=None)...')
         if sidebar:
             for button in list(self.buttons):
-                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling {button.config("text")[-1]}...')
+                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling {button.config("text")[-1]} button...')
                 button.config(state=DISABLED)
 
             for sbutton in list(self.sidebar_buttons):
-                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling sidebar {sbutton.config("text")[-1]}...')
+                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling sidebar {sbutton.config("text")[-1]} button...')
                 sbutton.config(state=DISABLED)
 
             return
 
         else:
             for button in list(self.buttons):
-                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling {button.config("text")}...')
+                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling {button.config("text")[-1]}...')
                 button.config(state=DISABLED)
 
             return
@@ -1356,23 +1350,26 @@ class App(tk.Tk):
 
     # Define GUI Styles
     def make_style(self):
-        self.style.theme_create("Details", parent='alt', settings={
+        self.local_tools.logIt_thread(self.log_path, msg=f'Styling App...')
+        self.style.theme_create("Peach", parent='classic', settings={
             "TNotebook": {"configure": {"tabmargins": [2, 5, 2, 0]}},
             "TNotebook.Tab": {
                 "configure": {"padding": [5, 1], "background": 'white'},
                 "map": {"background": [("selected", 'green')],
-                        "expand": [("selected", [1, 1, 1, 0])]}}})
+                        "expand": [("selected", [1, 1, 1, 0])]}},
 
-        self.style.configure("Treeview", rowheight=20, background="#D3D3D3", foreground="black")
-        self.style.map("Treeview", background=[('selected', 'green')])
+            "Treeview.Heading": {
+                "configure": {"padding": 2, "background": 'dark grey', 'relief': 'ridge'},
+                "map": {"background": [("selected", 'green')]}}})
+
+        self.style.theme_use("Peach")
+        self.style.map("Treeview", background=[('selected', 'sea green')])
 
     # Build Notebook
     def create_notebook(self):
         self.local_tools.logIt_thread(self.log_path, msg=f'Running create_notebook()...')
         self.local_tools.logIt_thread(self.log_path, msg=f'Clearing frames list...')
         self.frames.clear()
-        self.local_tools.logIt_thread(self.log_path, msg=f'Defining working style "Details"...')
-        self.style.theme_use("Details")
         self.local_tools.logIt_thread(self.log_path, msg=f'Building notebook...')
         self.notebook = ttk.Notebook(self.details_labelFrame, height=330)
         self.notebook.pack(expand=False, pady=5, fill=X)
