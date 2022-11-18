@@ -219,10 +219,10 @@ class App(tk.Tk):
     def build_main_window_frames(self) -> None:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running build_main_window_frames()...')
         self.local_tools.logIt_thread(self.log_path, msg=f'Building sidebar frame...')
-        self.sidebar_frame = Frame(self, width=150, background="slate gray")
+        self.sidebar_frame = Frame(self, width=130, background="slate gray")
         self.sidebar_frame.grid(row=0, column=0, sticky="nswe")
         self.local_tools.logIt_thread(self.log_path, msg=f'Building main frame...')
-        self.main_frame = Frame(self, background="cornsilk2", relief="raised", bd=1)
+        self.main_frame = Frame(self, relief="raised", bd=1)
         self.main_frame.configure(border=1)
         self.main_frame.grid(row=0, column=1, sticky="nswe", padx=1)
         self.main_frame.rowconfigure(5, weight=1)
@@ -262,10 +262,10 @@ class App(tk.Tk):
     def build_sidebar_buttons(self) -> None:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running build_sidebar_buttons()...')
         self.local_tools.logIt_thread(self.log_path, msg=f'Building refresh button...')
-        self.btn_refresh = tk.Button(self.sidebar_frame,
-                                     text="Refresh", width=15, pady=10,
+        self.btn_refresh = tk.Button(self,
+                                     text="Refresh", width=15, pady=5,
                                      command=lambda: self.refresh())
-        self.btn_refresh.grid(row=0, sticky="nwes")
+        self.btn_refresh.grid(row=0, column=0, sticky="new")
         self.sidebar_buttons.append(self.btn_refresh)
         self.local_tools.logIt_thread(self.log_path, msg=f'Building update clients button...')
         self.btn_update_clients = tk.Button(self.sidebar_frame,
@@ -1092,7 +1092,7 @@ class App(tk.Tk):
                                                          f'{datetime.fromtimestamp(last_reboot).replace(microsecond=0)}" | '
                                                          f'{len(self.targets)}')
         label = Label(self.top_bar_label,
-                      text=f"\t\t\t\t\tServer IP: {self.serverIP}\t\tServer Port: {self.port}\t\t"
+                      text=f"\t\t\t\t\t  Server IP: {self.serverIP}\t\tServer Port: {self.port}\t\t"
                            f"Last Boot: {datetime.fromtimestamp(last_reboot).replace(microsecond=0)}\t\t"
                            f"Connected Stations: {len(self.targets)}", anchor=CENTER, background='cornsilk2')
         label.grid(row=0, sticky='w')
@@ -1356,28 +1356,21 @@ class App(tk.Tk):
                 return True
 
         def picture():
-            self.local_tools.logIt_thread(self.log_path, msg=f'Building frame...')
-            fr = ttk.Frame(self.notebook, height=350)
-            self.local_tools.logIt_thread(self.log_path, msg=f'Updating frames list...')
+            self.local_tools.logIt_thread(self.log_path, msg=f'Building working frame...')
+            fr = Frame(self.notebook, height=350)
             self.frames.append(fr)
-            self.local_tools.logIt_thread(self.log_path, msg=f'Defining working frame...')
             tab = self.frames[-1]
-            self.local_tools.logIt_thread(self.log_path, msg=f'Building Textbox scrollbar...')
-            self.tab_scrollbar = Scrollbar(tab, orient=VERTICAL)
-            self.tab_scrollbar.pack(side=LEFT, fill=Y)
-            self.local_tools.logIt_thread(self.log_path, msg=f'Building Textbox...')
-            self.tab_textbox = Text(tab, yscrollcommand=self.tab_scrollbar.set)
-            self.tab_textbox.pack(fill=BOTH)
-            self.local_tools.logIt_thread(self.log_path, msg=f'Display image in Textbox...')
-            self.tab_textbox.image_create(END, image=self.last_screenshot)
-            self.tab_scrollbar.configure(command=self.tab_textbox.yview)
+            button = Button(tab, image=self.last_screenshot, command=show_picture)
+            button.pack()
             self.local_tools.logIt_thread(self.log_path, msg=f'Adding tab to notebook...')
             self.notebook.add(tab, text=f"{txt}")
-            self.local_tools.logIt_thread(self.log_path, msg=f'Running disable_buttons(sidebar=None)...')
-            self.tab_textbox.config(state=DISABLED)
+            self.local_tools.logIt_thread(self.log_path, msg=f'Displaying latest notebook tab...')
             self.notebook.select(tab)
             self.tabs += 1
             return True
+            
+        def show_picture():
+            self.sc.show()
 
         if len(filepath) > 0:
             self.local_tools.logIt_thread(self.log_path, msg=f'Calling text()...')
@@ -1401,19 +1394,10 @@ class App(tk.Tk):
             else:
                 self.local_tools.logIt_thread(self.log_path, msg=f'Building working frame...')
                 tab = Frame(self.notebook, height=350)
-                self.local_tools.logIt_thread(self.log_path, msg=f'Build Textbox scrollbar...')
-                self.tab_scrollbar = Scrollbar(tab, orient=VERTICAL)
-                self.tab_scrollbar.pack(side=LEFT, fill=Y)
-                self.local_tools.logIt_thread(self.log_path, msg=f'Building Textbox...')
-                self.tab_textbox = Text(tab, yscrollcommand=self.tab_scrollbar.set)
-                self.tab_textbox.pack(fill=BOTH)
-                self.local_tools.logIt_thread(self.log_path, msg=f'Displaying image in Textbox...')
-                self.tab_textbox.image_create(END, image=self.last_screenshot)
-                self.tab_scrollbar.configure(command=self.tab_textbox.yview)
+                button = Button(tab, image=self.last_screenshot, command=show_picture)
+                button.pack()
                 self.local_tools.logIt_thread(self.log_path, msg=f'Adding tab to notebook...')
                 self.notebook.add(tab, text=f"{txt}")
-                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling Textbox entry...')
-                self.tab_textbox.config(state=DISABLED)
                 self.local_tools.logIt_thread(self.log_path, msg=f'Displaying latest notebook tab...')
                 self.notebook.select(tab)
                 self.tabs += 1
