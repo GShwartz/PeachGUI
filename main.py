@@ -13,6 +13,7 @@ import sys
 
 # GUI
 from tkinter import simpledialog
+from tkinter import filedialog
 from tkinter import messagebox
 from tkinter import ttk
 from tkinter import *
@@ -185,6 +186,13 @@ class App(tk.Tk):
                         daemon=True,
                         name="Enable Controller Buttons Thread")
         enable.start()
+
+    # Save Connection History Thread
+    def save_connection_history_thread(self):
+        saveThread = Thread(target=self.save_history_connections,
+                            daemon=True,
+                            name="Save Connection History Thread")
+        saveThread.start()
     # ==++==++==++== END THREADED FUNCS ==++==++==++== #
 
     # Create Menubar
@@ -195,7 +203,7 @@ class App(tk.Tk):
         tools = Menu(self, tearoff=0)
         helpbar = Menu(self, tearoff=0)
 
-        file.add_command(label="Save connection history", command='')
+        file.add_command(label="Save connection history", command=self.save_connection_history_thread)
         file.add_command(label="Minimize", command=self.minimize)
         file.add_separator()
         file.add_command(label="Exit", command=self.on_closing)
@@ -476,7 +484,6 @@ class App(tk.Tk):
         messagebox.showinfo("Update All Clients", "Update command sent.\nClick refresh to update the connected table.")
         self.refresh()
         return True
-
     # ==++==++==++== END SIDEBAR BUTTONS ==++==++==++==
 
     # ==++==++==++== GUI WINDOW ==++==++==++==
@@ -486,7 +493,7 @@ class App(tk.Tk):
         self.style.theme_create("Peach", parent='classic', settings={
             "TNotebook": {"configure": {"tabmargins": [2, 5, 2, 0], 'background': 'gainsboro'}},
             "TNotebook.Tab": {
-                "configure": {"padding": [5, 1], "background": 'slate gray'},
+                "configure": {"padding": [5, 2], "background": 'slate gray'},
                 "map": {"background": [("selected", 'green')],
                         "expand": [("selected", [1, 1, 1, 0])]}},
 
@@ -521,6 +528,126 @@ class App(tk.Tk):
     def minimize(self):
         return self.withdraw()
 
+    # Enable Controller Buttons
+    def enable_buttons(self):
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running enable_buttons()...')
+        for button in list(self.buttons):
+            self.local_tools.logIt_thread(self.log_path, msg=f'Enabling {button.config("text")[-1]} button...')
+            button.config(state=NORMAL)
+
+        for sbutton in list(self.sidebar_buttons):
+            self.local_tools.logIt_thread(self.log_path,
+                                          msg=f'Enabling sidebar {sbutton.config("text")[-1]} button...')
+            sbutton.config(state=NORMAL)
+
+    # Disable Controller Buttons
+    def disable_buttons(self, sidebar=None):
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running disable_buttons(sidebar=None)...')
+        if sidebar:
+            for button in list(self.buttons):
+                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling {button.config("text")[-1]} button...')
+                button.config(state=DISABLED)
+
+            for sbutton in list(self.sidebar_buttons):
+                self.local_tools.logIt_thread(self.log_path,
+                                              msg=f'Disabling sidebar {sbutton.config("text")[-1]} button...')
+                sbutton.config(state=DISABLED)
+
+            return
+
+        else:
+            for button in list(self.buttons):
+                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling {button.config("text")[-1]}...')
+                button.config(state=DISABLED)
+
+            return
+
+    # Display file content in notebook
+    def display_file_content(self, screenshot_path: str, filepath: str, tab: str, txt='') -> bool:
+        self.local_tools.logIt_thread(self.log_path,
+                                      msg=f'Running display_file_content({screenshot_path}, {filepath}, {tab}, txt="")...')
+
+        def text():
+            self.local_tools.logIt_thread(self.log_path, msg=f'opening {filepath}...')
+            with open(filepath, 'r') as file:
+                data = file.read()
+                self.local_tools.logIt_thread(self.log_path, msg=f'Building notebook tab...')
+                tab = Frame(self.notebook, height=350)
+                self.local_tools.logIt_thread(self.log_path, msg=f'Building text scrollbar...')
+                self.tab_scrollbar = Scrollbar(tab, orient=VERTICAL)
+                self.tab_scrollbar.pack(side=LEFT, fill=Y)
+                self.local_tools.logIt_thread(self.log_path, msg=f'Building text Textbox...')
+                self.tab_textbox = Text(tab, yscrollcommand=self.tab_scrollbar.set)
+                self.tab_textbox.pack(fill=BOTH)
+                self.local_tools.logIt_thread(self.log_path, msg=f'Adding tab to notebook...')
+                self.notebook.add(tab, text=f"{txt}")
+                self.local_tools.logIt_thread(self.log_path, msg=f'Enabling scroller buttons...')
+                self.tab_scrollbar.configure(command=self.tab_textbox.yview)
+                self.local_tools.logIt_thread(self.log_path, msg=f'Enabling textbox entry...')
+                self.tab_textbox.config(state=NORMAL)
+                self.local_tools.logIt_thread(self.log_path, msg=f'Clearing textbox...')
+                self.tab_textbox.delete(1.0, END)
+                self.local_tools.logIt_thread(self.log_path, msg=f'Inserting file content to Textbox...')
+                self.tab_textbox.insert(END, data)
+                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling Textbox entry...')
+                self.tab_textbox.config(state=DISABLED)
+                self.local_tools.logIt_thread(self.log_path, msg=f'Displaying latest notebook tab...')
+                self.notebook.select(tab)
+                self.tabs += 1
+                return True
+
+        def picture():
+            self.local_tools.logIt_thread(self.log_path, msg=f'Building working frame...')
+            fr = Frame(self.notebook, height=350, background='black')
+            self.frames.append(fr)
+            tab = self.frames[-1]
+            button = Button(tab, image=self.last_screenshot, command=show_picture_thread)
+            button.pack()
+            self.local_tools.logIt_thread(self.log_path, msg=f'Adding tab to notebook...')
+            self.notebook.add(tab, text=f"{txt}")
+            self.local_tools.logIt_thread(self.log_path, msg=f'Displaying latest notebook tab...')
+            self.notebook.select(tab)
+            self.tabs += 1
+            return True
+
+        def show_picture_thread():
+            showThread = Thread(target=show_picture, daemon=True, name="Show Picture Thread")
+            showThread.start()
+
+        def show_picture():
+            self.sc.show()
+
+        if len(filepath) > 0:
+            self.local_tools.logIt_thread(self.log_path, msg=f'Calling text()...')
+            text()
+
+        elif len(screenshot_path) > 0:
+            self.local_tools.logIt_thread(self.log_path, msg=f'Sorting jpg files by creation time...')
+            images = glob.glob(fr"{screenshot_path}\*.jpg")
+            images.sort(key=os.path.getmtime)
+
+            # Last Screenshot
+            self.sc = PIL.Image.open(images[-1])
+            self.sc_resized = self.sc.resize((650, 350))
+            self.last_screenshot = PIL.ImageTk.PhotoImage(self.sc_resized)
+            self.displayed_screenshot_files.append(self.last_screenshot)
+
+            if self.tabs > 0:
+                self.local_tools.logIt_thread(self.log_path, msg=f'Calling picture()...')
+                picture()
+
+            else:
+                self.local_tools.logIt_thread(self.log_path, msg=f'Building working frame...')
+                tab = Frame(self.notebook, height=350, background='black')
+                button = Button(tab, image=self.last_screenshot, command=show_picture_thread)
+                button.pack()
+                self.local_tools.logIt_thread(self.log_path, msg=f'Adding tab to notebook...')
+                self.notebook.add(tab, text=f"{txt}")
+                self.local_tools.logIt_thread(self.log_path, msg=f'Displaying latest notebook tab...')
+                self.notebook.select(tab)
+                self.tabs += 1
+                return True
+
     # ==++==++==++== CONTROLLER BUTTONS ==++==++==++==
     # Screenshot from Client
     def screenshot(self, con: str, ip: str, sname: str) -> bool:
@@ -540,7 +667,7 @@ class App(tk.Tk):
             self.update_statusbar_messages_thread(msg=f'screenshot received from  {ip} | {sname}.')
             self.local_tools.logIt_thread(self.log_path,
                                           msg=fr'Calling self.display_file_content({self.path}\{sname}, "", {self.screenshot_tab}, txt="Screenshot")...')
-            self.display_file_content(fr"{self.path}\{sname}", '', self.screenshot_tab, txt='Screenshot')
+            self.display_file_content(fr"{self.path}\{sname}", '', self.screenshot_tab, txt='Screenshot preview')
             self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.enable_buttons_thread()...')
             self.enable_buttons_thread()
             return True
@@ -1288,125 +1415,6 @@ class App(tk.Tk):
             self.local_tools.logIt_thread(self.log_path, msg=f'Runtime Error: {e}.')
             return False
 
-    # Enable Controller Buttons
-    def enable_buttons(self):
-        self.local_tools.logIt_thread(self.log_path, msg=f'Running enable_buttons()...')
-        for button in list(self.buttons):
-            self.local_tools.logIt_thread(self.log_path, msg=f'Enabling {button.config("text")[-1]} button...')
-            button.config(state=NORMAL)
-
-        for sbutton in list(self.sidebar_buttons):
-            self.local_tools.logIt_thread(self.log_path, msg=f'Enabling sidebar {sbutton.config("text")[-1]} button...')
-            sbutton.config(state=NORMAL)
-
-    # Disable Controller Buttons
-    def disable_buttons(self, sidebar=None):
-        self.local_tools.logIt_thread(self.log_path, msg=f'Running disable_buttons(sidebar=None)...')
-        if sidebar:
-            for button in list(self.buttons):
-                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling {button.config("text")[-1]} button...')
-                button.config(state=DISABLED)
-
-            for sbutton in list(self.sidebar_buttons):
-                self.local_tools.logIt_thread(self.log_path,
-                                              msg=f'Disabling sidebar {sbutton.config("text")[-1]} button...')
-                sbutton.config(state=DISABLED)
-
-            return
-
-        else:
-            for button in list(self.buttons):
-                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling {button.config("text")[-1]}...')
-                button.config(state=DISABLED)
-
-            return
-
-    # Display file content in notebook
-    def display_file_content(self, screenshot_path: str, filepath: str, tab: str, txt='') -> bool:
-        self.local_tools.logIt_thread(self.log_path,
-                                      msg=f'Running display_file_content({screenshot_path}, {filepath}, {tab}, txt="")...')
-
-        def text():
-            self.local_tools.logIt_thread(self.log_path, msg=f'opening {filepath}...')
-            with open(filepath, 'r') as file:
-                data = file.read()
-                self.local_tools.logIt_thread(self.log_path, msg=f'Building notebook tab...')
-                tab = Frame(self.notebook, height=350)
-                self.local_tools.logIt_thread(self.log_path, msg=f'Building text scrollbar...')
-                self.tab_scrollbar = Scrollbar(tab, orient=VERTICAL)
-                self.tab_scrollbar.pack(side=LEFT, fill=Y)
-                self.local_tools.logIt_thread(self.log_path, msg=f'Building text Textbox...')
-                self.tab_textbox = Text(tab, yscrollcommand=self.tab_scrollbar.set)
-                self.tab_textbox.pack(fill=BOTH)
-                self.local_tools.logIt_thread(self.log_path, msg=f'Adding tab to notebook...')
-                self.notebook.add(tab, text=f"{txt}")
-                self.local_tools.logIt_thread(self.log_path, msg=f'Enabling scroller buttons...')
-                self.tab_scrollbar.configure(command=self.tab_textbox.yview)
-                self.local_tools.logIt_thread(self.log_path, msg=f'Enabling textbox entry...')
-                self.tab_textbox.config(state=NORMAL)
-                self.local_tools.logIt_thread(self.log_path, msg=f'Clearing textbox...')
-                self.tab_textbox.delete(1.0, END)
-                self.local_tools.logIt_thread(self.log_path, msg=f'Inserting file content to Textbox...')
-                self.tab_textbox.insert(END, data)
-                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling Textbox entry...')
-                self.tab_textbox.config(state=DISABLED)
-                self.local_tools.logIt_thread(self.log_path, msg=f'Displaying latest notebook tab...')
-                self.notebook.select(tab)
-                self.tabs += 1
-                return True
-
-        def picture():
-            self.local_tools.logIt_thread(self.log_path, msg=f'Building working frame...')
-            fr = Frame(self.notebook, height=350)
-            self.frames.append(fr)
-            tab = self.frames[-1]
-            button = Button(tab, image=self.last_screenshot, command=show_picture_thread)
-            button.pack()
-            self.local_tools.logIt_thread(self.log_path, msg=f'Adding tab to notebook...')
-            self.notebook.add(tab, text=f"{txt}")
-            self.local_tools.logIt_thread(self.log_path, msg=f'Displaying latest notebook tab...')
-            self.notebook.select(tab)
-            self.tabs += 1
-            return True
-
-        def show_picture_thread():
-            showThread = Thread(target=show_picture, daemon=True, name="Show Picture Thread")
-            showThread.start()
-
-        def show_picture():
-            self.sc.show()
-
-        if len(filepath) > 0:
-            self.local_tools.logIt_thread(self.log_path, msg=f'Calling text()...')
-            text()
-
-        elif len(screenshot_path) > 0:
-            self.local_tools.logIt_thread(self.log_path, msg=f'Sorting jpg files by creation time...')
-            images = glob.glob(fr"{screenshot_path}\*.jpg")
-            images.sort(key=os.path.getmtime)
-
-            # Last Screenshot
-            self.sc = PIL.Image.open(images[-1])
-            self.sc_resized = self.sc.resize((650, 350))
-            self.last_screenshot = PIL.ImageTk.PhotoImage(self.sc_resized)
-            self.displayed_screenshot_files.append(self.last_screenshot)
-
-            if self.tabs > 0:
-                self.local_tools.logIt_thread(self.log_path, msg=f'Calling picture()...')
-                picture()
-
-            else:
-                self.local_tools.logIt_thread(self.log_path, msg=f'Building working frame...')
-                tab = Frame(self.notebook, height=350)
-                button = Button(tab, image=self.last_screenshot, command=show_picture_thread)
-                button.pack()
-                self.local_tools.logIt_thread(self.log_path, msg=f'Adding tab to notebook...')
-                self.notebook.add(tab, text=f"{txt}")
-                self.local_tools.logIt_thread(self.log_path, msg=f'Displaying latest notebook tab...')
-                self.notebook.select(tab)
-                self.tabs += 1
-                return True
-
     # Set Options
     def options(self):
         options_window = tk.Toplevel()
@@ -1423,6 +1431,31 @@ class App(tk.Tk):
 
         # Set Window Size & Location & Center Window
         options_window.geometry(f'{400}x{400}+{int(x)}+{int(y)}')
+
+    # Save History to file
+    def save_history_connections(self):
+        c = 0  # Initiate Counter for Connection Number
+        filename = filedialog.asksaveasfilename()
+        with open(filename, 'w') as file:
+            try:
+                # Iterate Through Connection History List Items
+                self.local_tools.logIt_thread(self.log_path, msg=f'Iterating self.connHistory...')
+                for connection in self.connHistory:
+                    for conKey, macValue in connection.items():
+                        for macKey, ipVal in macValue.items():
+                            for ipKey, identValue in ipVal.items():
+                                for identKey, userValue in identValue.items():
+                                    for userKey, timeValue in userValue.items():
+                                        # Show results in GUI table
+                                        file.write(f"#{c} | MAC: {macKey} | IP: {ipKey} | Station: {identKey} | User: {userKey} | Time: {timeValue} \n")
+                            c += 1
+
+            except (KeyError, socket.error, ConnectionResetError) as e:
+                self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}')
+                self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+                return False
+
+        return True
 
     # Manage Connected Table & Controller LabelFrame Buttons
     def select_item(self, event) -> bool:
