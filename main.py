@@ -25,6 +25,9 @@ from Modules import freestyle
 from Modules import sysinfo
 from Modules import tasks
 
+# TODO: Add Tools menu to Menubar
+# TODO: Fill Help & About in Menubar
+
 
 class App(tk.Tk):
     clients = {}
@@ -35,6 +38,7 @@ class App(tk.Tk):
     buttons = []
     sidebar_buttons = []
 
+    # List to hold captured screenshot images
     displayed_screenshot_files = []
     frames = []
     tabs = 0
@@ -93,7 +97,7 @@ class App(tk.Tk):
         self.minsize(f'{self.WIDTH}', f'{self.HEIGHT}')
 
         # Set Closing protocol
-        self.protocol("WM_DELETE_WINDOW", self.exit)
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         # Main Window Frames
         self.grid_columnconfigure(1, weight=1)
@@ -113,7 +117,7 @@ class App(tk.Tk):
         self.show_available_connections()
         self.connection_history()
 
-    # ==++==++==++== THREADED FUNCS ==++==++==++== #
+    # ==++==++==++== THREADED ==++==++==++== #
     # Update status bar messages Thread
     def update_statusbar_messages_thread(self, msg=''):
         statusbarThread = Thread(target=self.update_statusbar_messages,
@@ -182,14 +186,42 @@ class App(tk.Tk):
         enable.start()
     # ==++==++==++== END THREADED FUNCS ==++==++==++== #
 
+    # Create Menubar
+    def build_menubar(self):
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running build_menubar()...')
+        menubar = Menu(self, tearoff=0)
+        file = Menu(menubar, tearoff=0)
+        tools = Menu(self, tearoff=0)
+        helpbar = Menu(self, tearoff=0)
+
+        file.add_command(label="Save connection history", command='')
+        file.add_command(label="Minimize", command=self.minimize)
+        file.add_separator()
+        file.add_command(label="Exit", command=self.on_closing)
+
+        tools.add_command(label="Refresh", command=self.refresh)
+        tools.add_command(label="Update all clients", command=self.update_all_clients_thread)
+        tools.add_separator()
+        tools.add_command(label="Options", command=self.options)
+
+        helpbar.add_command(label="Help")
+        helpbar.add_command(label="About")
+
+        menubar.add_cascade(label='File', menu=file)
+        menubar.add_cascade(label='Tools', menu=tools)
+        menubar.add_cascade(label="Help", menu=helpbar)
+
+        self.config(menu=menubar)
+        return
+
     # Build initial main frame GUI
     def build_main_window_frames(self) -> None:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running build_main_window_frames()...')
         self.local_tools.logIt_thread(self.log_path, msg=f'Building sidebar frame...')
-        self.sidebar_frame = Frame(self, width=150, background="SteelBlue")
+        self.sidebar_frame = Frame(self, width=150, background="slate gray")
         self.sidebar_frame.grid(row=0, column=0, sticky="nswe")
         self.local_tools.logIt_thread(self.log_path, msg=f'Building main frame...')
-        self.main_frame = Frame(self, background="ghost white", relief="sunken", bd=5)
+        self.main_frame = Frame(self, background="cornsilk2", relief="sunken", bd=5)
         self.main_frame.configure(border=1)
         self.main_frame.grid(row=0, column=1, sticky="nswe", padx=3)
         self.main_frame.rowconfigure(5, weight=1)
@@ -198,16 +230,16 @@ class App(tk.Tk):
         self.main_frame_top = Frame(self.main_frame, relief='flat')
         self.main_frame_top.grid(row=0, column=0, sticky="nwes")
         self.local_tools.logIt_thread(self.log_path, msg=f'Building main frame top bar labelFrame...')
-        self.top_bar_label = LabelFrame(self.main_frame, text="Server Information", relief='solid')
+        self.top_bar_label = LabelFrame(self.main_frame, text="Server Information", relief='solid', background='cornsilk2')
         self.top_bar_label.grid(row=0, column=0, sticky='news')
         self.local_tools.logIt_thread(self.log_path, msg=f'Building table frame in main frame...')
         self.main_frame_table = Frame(self.main_frame, relief='flat')
         self.main_frame_table.grid(row=1, column=0, sticky="news", pady=2)
         self.local_tools.logIt_thread(self.log_path, msg=f'Building controller frame in main frame...')
-        self.controller_frame = Frame(self.main_frame, relief='flat')
+        self.controller_frame = Frame(self.main_frame, relief='flat', background='cornsilk2')
         self.controller_frame.grid(row=2, column=0, sticky='news', pady=2)
         self.local_tools.logIt_thread(self.log_path, msg=f'Building controller buttons label frame in main frame...')
-        self.controller_btns = LabelFrame(self.controller_frame, text="Controller", relief='solid', height=60)
+        self.controller_btns = LabelFrame(self.controller_frame, text="Controller", relief='solid', height=60, background='cornsilk2')
         self.controller_btns.pack(fill=BOTH)
         self.local_tools.logIt_thread(self.log_path, msg=f'Building connected table in main frame...')
         self.table_frame = LabelFrame(self.main_frame_table, text="Connected Stations")
@@ -237,12 +269,6 @@ class App(tk.Tk):
                                             command=lambda: self.update_all_clients_thread())
         self.btn_update_clients.grid(row=2, sticky="nwes")
         self.sidebar_buttons.append(self.btn_update_clients)
-        self.local_tools.logIt_thread(self.log_path, msg=f'Building exit button...')
-        self.btn_exit = tk.Button(self.sidebar_frame,
-                                  text="Exit", width=15, pady=10,
-                                  command=lambda: self.exit())
-        # self.btn_exit.grid(row=3, sticky="nwes")
-        # self.sidebar_buttons.append(self.btn_exit)
 
     # Create Treeview Table for connected stations
     def build_connected_table(self) -> None:
@@ -323,43 +349,35 @@ class App(tk.Tk):
         self.history_table.column("#6", anchor=CENTER)
         self.history_table.heading("#6", text="Time")
 
+    # Build Notebook
+    def create_notebook(self):
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running create_notebook()...')
+        self.local_tools.logIt_thread(self.log_path, msg=f'Clearing frames list...')
+        self.frames.clear()
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building notebook...')
+        self.notebook = ttk.Notebook(self.details_labelFrame, height=330)
+        self.notebook.pack(expand=False, pady=5, fill=X)
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building tabs...')
+        self.screenshot_tab = Frame(self.notebook, height=330)
+        self.system_information_tab = Frame(self.notebook, height=330)
+        self.tasks_tab = Frame(self.notebook, height=330)
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building sysinfo scrollbar...')
+        self.system_scrollbar = Scrollbar(self.system_information_tab, orient=VERTICAL)
+        self.system_scrollbar.pack(side=LEFT, fill=Y)
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building sysinfo textbox...')
+        self.system_information_textbox = Text(self.system_information_tab,
+                                               yscrollcommand=self.system_scrollbar.set)
+        self.system_information_textbox.pack(fill=BOTH)
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building tasks scrollbar...')
+        self.tasks_scrollbar = Scrollbar(self.tasks_tab, orient=VERTICAL)
+        self.tasks_scrollbar.pack(side=LEFT, fill=Y)
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building tasks textbox...')
+        self.tasks_tab_textbox = Text(self.tasks_tab, yscrollcommand=self.tasks_scrollbar.set)
+        self.tasks_tab_textbox.pack(fill=X)
+
     # Update status bar messages
     def update_statusbar_messages(self, msg=''):
-        self.status_label.config(text=msg)
-
-    # Close App
-    def on_closing(self, event=0) -> None:
-        self.local_tools.logIt_thread(self.log_path, msg=f'Displaying minimize popup window...')
-        minimize = messagebox.askyesno("Exit or Minimize", "Minimize to Tray?")
-        self.local_tools.logIt_thread(self.log_path, msg=f'Minimize: {minimize}')
-        if minimize:
-            self.local_tools.logIt_thread(self.log_path, msg=f'Hiding app window...')
-            self.withdraw()
-
-        else:
-            self.local_tools.logIt_thread(self.log_path, msg=f'Hiding app window...')
-            self.withdraw()
-            self.local_tools.logIt_thread(self.log_path, msg=f'Destroying app window...')
-            self.destroy()
-
-    # Create Menubar
-    def build_menubar(self):
-        self.local_tools.logIt_thread(self.log_path, msg=f'Running build_menubar()...')
-        menubar = Menu(self, tearoff=0)
-        file = Menu(menubar, tearoff=0)
-        file.add_command(label="Minimize", command=self.minimize)
-        file.add_separator()
-        file.add_command(label="Exit", command=self.exit)
-
-        helpbar = Menu(self, tearoff=0)
-        helpbar.add_command(label="Help")
-        helpbar.add_command(label="About")
-
-        menubar.add_cascade(label='File', menu=file)
-        menubar.add_cascade(label="Help", menu=helpbar)
-
-        self.config(menu=menubar)
-        return
+        self.status_label.config(text=f"Status: {msg}")
 
     # ==++==++==++== SIDEBAR BUTTONS ==++==++==++==
     # Refresh server info & connected stations table with vital signs
@@ -377,7 +395,7 @@ class App(tk.Tk):
         self.show_available_connections()
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling connection_history()...')
         self.connection_history()
-        self.update_statusbar_messages_thread(msg='Status: refresh complete.')
+        self.update_statusbar_messages_thread(msg='refresh complete.')
 
     # Display Connection History
     def connection_history(self) -> bool:
@@ -436,8 +454,14 @@ class App(tk.Tk):
                 self.local_tools.logIt_thread(self.log_path, msg=f'Sending update command to all connected stations...')
                 t.send('update'.encode())
                 self.local_tools.logIt_thread(self.log_path, msg=f'Send completed.')
-                msg = t.recv(1024).decode()
-                self.local_tools.logIt_thread(self.log_path, msg=f'Station: {msg}')
+                try:
+                    msg = t.recv(1024).decode()
+                    self.local_tools.logIt_thread(self.log_path, msg=f'Station: {msg}')
+
+                except (WindowsError, socket.error) as e:
+                    self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}')
+                    self.update_statusbar_messages_thread(msg=f'ERROR: {e}')
+                    continue
 
         except RuntimeError:
             pass
@@ -448,69 +472,44 @@ class App(tk.Tk):
         messagebox.showinfo("Update All Clients", "Update command sent.\nClick refresh to update the connected table.")
         self.refresh()
         return True
+    # ==++==++==++== END SIDEBAR BUTTONS ==++==++==++==
 
-    # Update Selected Client
-    def update_selected_client(self, con: str, ip: str, sname: str) -> bool:
-        self.local_tools.logIt_thread(self.log_path, msg=f'Running update_selected_client()...')
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread()...')
-        self.disable_buttons_thread()
-        self.local_tools.logIt_thread(self.log_path, msg=f'Sending update command to {ip} | {sname}...')
-        try:
-            con.send('update'.encode())
-            self.local_tools.logIt_thread(self.log_path, msg=f'Send Completed.')
-            self.local_tools.logIt_thread(self.log_path, msg=f'Waiting for response from {ip} | {sname}...')
-            msg = con.recv(1024).decode()
-            self.local_tools.logIt_thread(self.log_path, msg=f'{ip}|{sname}: {msg}')
+    # ==++==++==++== GUI WINDOW ==++==++==++==
+    # Define GUI Styles
+    def make_style(self):
+        self.local_tools.logIt_thread(self.log_path, msg=f'Styling App...')
+        self.style.theme_create("Peach", parent='classic', settings={
+            "TNotebook": {"configure": {"tabmargins": [2, 5, 2, 0], 'background': 'cornsilk2'}},
+            "TNotebook.Tab": {
+                "configure": {"padding": [5, 1], "background": 'light cyan'},
+                "map": {"background": [("selected", 'green')],
+                        "expand": [("selected", [1, 1, 1, 0])]}},
 
-        except (WindowsError, socket.error) as e:
-            self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}.')
-            return False
+            "Treeview.Heading": {
+                "configure": {"padding": 2, "background": 'slate grey', 'relief': 'ridge', 'foreground': 'white'},
+                "map": {"background": [("selected", 'green')]}}})
 
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.refresh()...')
-        self.local_tools.logIt_thread(self.log_path, msg=f'Displaying update info popup window...')
-        time.sleep(2)
-        messagebox.showinfo(f"Update {sname}", "Update command sent.")
-        self.refresh()
-        return True
+        self.style.theme_use("Peach")
+        self.style.map("Treeview", background=[('selected', 'sea green')])
+
+    # Close App
+    def on_closing(self, event=0) -> None:
+        self.local_tools.logIt_thread(self.log_path, msg=f'Displaying minimize popup window...')
+        minimize = messagebox.askyesno("Exit or Minimize", "Minimize to Tray?")
+        self.local_tools.logIt_thread(self.log_path, msg=f'Minimize: {minimize}')
+        if minimize:
+            self.local_tools.logIt_thread(self.log_path, msg=f'Hiding app window...')
+            self.withdraw()
+
+        else:
+            self.local_tools.logIt_thread(self.log_path, msg=f'Hiding app window...')
+            self.withdraw()
+            self.local_tools.logIt_thread(self.log_path, msg=f'Destroying app window...')
+            self.destroy()
 
     # Minimize Window
     def minimize(self):
         return self.withdraw()
-
-    # EXIT
-    def exit(self, event=0) -> None:
-        self.local_tools.logIt_thread(self.log_path, msg=f'Running exit()...')
-        self.local_tools.logIt_thread(self.log_path, msg=f'Displaying minimize popup box...')
-        minimize = messagebox.askyesno("Exit or Minimize", "Minimize to Tray?")
-        self.local_tools.logIt_thread(self.log_path, msg=f'Minimize: {minimize}')
-        if minimize:
-            self.local_tools.logIt_thread(self.log_path, msg=f'Minimizing to system tray...')
-            self.withdraw()
-            self.local_tools.logIt_thread(self.log_path, msg=f'Minimized.')
-
-        else:
-            if len(self.targets) > 0:
-                try:
-                    for t in self.targets:
-                        self.local_tools.logIt_thread(self.log_path,
-                                                      msg=f'Sending exit command to connected stations...')
-                        t.send('exit'.encode())
-                        self.local_tools.logIt_thread(self.log_path, msg=f'Send completed.')
-                        self.local_tools.logIt_thread(self.log_path, msg=f'Closing socket connections...')
-                        t.close()
-                        self.local_tools.logIt_thread(self.log_path, msg=f'Socket connections closed.')
-
-                except ConnectionResetError as e:
-                    self.local_tools.logIt_thread(self.log_path, debug=True, msg=f'Connection Error: {e}.')
-                    self.local_tools.logIt_thread(self.log_path, debug=True, msg=f'Exiting app with code 1...')
-                    sys.exit(1)
-
-            self.local_tools.logIt_thread(self.log_path, msg=f'Hiding window...')
-            self.withdraw()
-            self.local_tools.logIt_thread(self.log_path, msg=f'Destroying window...')
-            self.destroy()
-            self.local_tools.logIt_thread(self.log_path, msg=f'Exiting app with code 0...')
-            sys.exit(0)
 
     # ==++==++==++== CONTROLLER BUTTONS ==++==++==++==
     # Screenshot from Client
@@ -518,7 +517,7 @@ class App(tk.Tk):
         self.local_tools.logIt_thread(self.log_path, msg=f'Running screenshot({con}, {ip}, {sname})...')
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread()...')
         self.disable_buttons_thread(sidebar=True)
-        self.update_statusbar_messages_thread(msg=f'Status: fetching screenshot from {ip} | {sname}...')
+        self.update_statusbar_messages_thread(msg=f'fetching screenshot from {ip} | {sname}...')
         try:
             self.local_tools.logIt_thread(self.log_path, msg=f'Sending screen command to client...')
             con.send('screen'.encode())
@@ -528,7 +527,7 @@ class App(tk.Tk):
                                              self.clients, self.log_path, self.targets)
             self.local_tools.logIt_thread(self.log_path, msg=f'Calling screenshot.recv_file({ip})...')
             scrnshot.recv_file(ip)
-            self.update_statusbar_messages_thread(msg=f'Status: screenshot received from  {ip} | {sname}.')
+            self.update_statusbar_messages_thread(msg=f'screenshot received from  {ip} | {sname}.')
             self.local_tools.logIt_thread(self.log_path,
                                           msg=fr'Calling self.display_file_content({self.path}\{sname}, "", {self.screenshot_tab}, txt="Screenshot")...')
             self.display_file_content(fr"{self.path}\{sname}", '', self.screenshot_tab, txt='Screenshot')
@@ -538,7 +537,7 @@ class App(tk.Tk):
 
         except (WindowsError, socket.error, ConnectionResetError) as e:
             self.local_tools.logIt_thread(self.log_path, msg=f'Connection Error: {e}')
-            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+            self.update_statusbar_messages_thread(msg=f'{e}.')
             self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip}...)')
             self.remove_lost_connection(con, ip)
             return False
@@ -546,7 +545,7 @@ class App(tk.Tk):
     # Run Anydesk on Client
     def anydesk(self, con: str, ip: str, sname: str) -> bool:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running anydesk({con}, {ip})...')
-        self.update_statusbar_messages_thread(msg=f'Status: running anydesk on {ip} | {sname}...')
+        self.update_statusbar_messages_thread(msg=f'running anydesk on {ip} | {sname}...')
         try:
             self.local_tools.logIt_thread(self.log_path, msg=f'Sending anydesk command to {con}...')
             con.send('anydesk'.encode())
@@ -557,13 +556,13 @@ class App(tk.Tk):
             self.local_tools.logIt_thread(self.log_path, msg=f'Client response: {msg}.')
             if "OK" not in msg:
                 self.local_tools.logIt_thread(self.log_path, msg=f'Printing msg from client...')
-                self.update_statusbar_messages_thread(msg=f'Status: {ip} | {sname}: Anydesk not installed.')
+                self.update_statusbar_messages_thread(msg=f'{ip} | {sname}: Anydesk not installed.')
                 self.local_tools.logIt_thread(self.log_path, msg=f'Display popup confirmation for install anydesk...')
                 install_anydesk = messagebox.askyesno("Install Anydesk",
                                                       "Anydesk isn't installed on the remote machine. do you with to install?")
                 self.local_tools.logIt_thread(self.log_path, msg=f'Install anydesk: {install_anydesk}.')
                 if install_anydesk:
-                    self.update_statusbar_messages_thread(msg=f'Status: installing anydesk on {ip} | {sname}...')
+                    self.update_statusbar_messages_thread(msg=f'installing anydesk on {ip} | {sname}...')
                     self.local_tools.logIt_thread(self.log_path, msg=f'Sending install command to {con}...')
                     con.send('y'.encode())
                     self.local_tools.logIt_thread(self.log_path, msg=f'Send Completed.')
@@ -576,13 +575,13 @@ class App(tk.Tk):
                         textVar.set(msg)
                         self.local_tools.logIt_thread(self.log_path, msg=f'textVar: {textVar}')
                         if "OK" not in str(msg):
-                            self.update_statusbar_messages_thread(msg=f'Status: {msg}')
+                            self.update_statusbar_messages_thread(msg=f'{msg}')
 
                         else:
                             self.update_statusbar_messages_thread(msg=f'Status: {textVar}')
                             self.local_tools.logIt_thread(self.log_path, msg=f'Display popup infobox')
                             messagebox.showinfo(f"From {ip} | {sname}", f"Anydesk Running.\t\t\t\t")
-                            self.update_statusbar_messages_thread(msg=f'Status: anydesk running on {ip} | {sname}.')
+                            self.update_statusbar_messages_thread(msg=f'anydesk running on {ip} | {sname}.')
                             return True
 
                 else:
@@ -592,14 +591,14 @@ class App(tk.Tk):
                     return
 
             else:
-                self.update_statusbar_messages_thread(msg=f'Status: anydesk running on {ip} | {sname}.')
+                self.update_statusbar_messages_thread(msg=f'anydesk running on {ip} | {sname}.')
                 self.local_tools.logIt_thread(self.log_path, msg=f'Displaying popup window with "Anydesk Running"...')
                 messagebox.showinfo(f"From {ip} | {sname}", f"Anydesk Running.\t\t\t\t")
                 return True
 
         except (WindowsError, ConnectionError, socket.error, RuntimeError) as e:
             self.local_tools.logIt_thread(self.log_path, msg=f'Connection Error: {e}.')
-            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+            self.update_statusbar_messages_thread(msg=f'{e}.')
             self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip})...')
             self.remove_lost_connection(con, ip)
             return False
@@ -614,14 +613,14 @@ class App(tk.Tk):
             self.local_tools.logIt_thread(self.log_path, msg=f'Waiting for response from client...')
             msg = con.recv(4096).decode()
             self.local_tools.logIt_thread(self.log_path, msg=f'Client response: {msg}')
-            self.update_statusbar_messages_thread(msg=f'Status: restart for {sname}: {msg.split("|")[1][15:]}')
+            self.update_statusbar_messages_thread(msg=f'restart for {sname}: {msg.split("|")[1][15:]}')
             self.local_tools.logIt_thread(self.log_path, msg=f'Display popup with last restart info...')
             messagebox.showinfo(f"Last Restart for: {ip} | {sname}", f"\t{msg.split('|')[1][15:]}\t\t\t")
             return True
 
         except (WindowsError, socket.error, ConnectionResetError) as e:
             self.local_tools.logIt_thread(self.log_path, msg=f'Connection Error: {e}.')
-            self.update_statusbar_messages_thread(msg=f'Status: {e}')
+            self.update_statusbar_messages_thread(msg=f'{e}')
             self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip})...')
             self.remove_lost_connection(con, ip)
             return False
@@ -631,16 +630,13 @@ class App(tk.Tk):
         self.local_tools.logIt_thread(self.log_path, msg=f'Running self.sysinfo({con}, {ip}, {sname})...')
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread(sidebar=True)...')
         self.disable_buttons_thread(sidebar=True)
-        self.update_statusbar_messages_thread(msg=f'Status: waiting for system information from {ip} | {sname}...')
+        self.update_statusbar_messages_thread(msg=f'waiting for system information from {ip} | {sname}...')
         try:
             self.local_tools.logIt_thread(self.log_path, msg=f'Initializing Module: sysinfo...')
             sinfo = sysinfo.Sysinfo(con, self.ttl, self.path, self.tmp_availables, self.clients, self.log_path, ip)
             self.local_tools.logIt_thread(self.log_path, msg=f'Calling sysinfo.run()...')
             filepath = sinfo.run(ip)
-            self.update_statusbar_messages_thread(
-                msg=f'Status: system information file received from {ip} | {sname}.')
-
-            # Display file content in system information notebook TextBox
+            self.update_statusbar_messages_thread(msg=f'system information file received from {ip} | {sname}.')
             self.local_tools.logIt_thread(self.log_path,
                                           msg=f'Calling self.display_file_content(None, {filepath}, {self.system_information_tab}, txt="System Information")...')
             self.display_file_content(None, filepath, self.system_information_tab, txt='System Information')
@@ -649,7 +645,7 @@ class App(tk.Tk):
 
         except (WindowsError, socket.error, ConnectionResetError) as e:
             self.local_tools.logIt_thread(self.log_path, debug=True, msg=f'Connection Error: {e}.')
-            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+            self.update_statusbar_messages_thread(msg=f'{e}.')
             try:
                 self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip})...')
                 self.remove_lost_connection(con, ip)
@@ -682,7 +678,7 @@ class App(tk.Tk):
 
                 except (WindowsError, socket.error) as e:
                     self.local_tools.logIt_thread(self.log_path, msg=f'Error: {e}.')
-                    self.update_statusbar_messages_thread(msg=f"Status: {e}")
+                    self.update_statusbar_messages_thread(msg=f"{e}")
                     self.local_tools.logIt_thread(self.log_path,
                                                   msg=f'Calling self.remove_lost_connection({con}, {ip})...')
                     self.remove_lost_connection(con, ip)
@@ -703,7 +699,7 @@ class App(tk.Tk):
 
                 except (WindowsError, socket.error) as e:
                     self.local_tools.logIt_thread(self.log_path, msg=f'Error: {e}.')
-                    self.update_statusbar_messages_thread(msg=f"Status: {e}")
+                    self.update_statusbar_messages_thread(msg=f"{e}")
                     self.local_tools.logIt_thread(self.log_path,
                                                   msg=f'Calling self.remove_lost_connection({con}, {ip})...')
                     self.remove_lost_connection(con, ip)
@@ -724,7 +720,7 @@ class App(tk.Tk):
 
                 except (WindowsError, socket.error) as e:
                     self.local_tools.logIt_thread(self.log_path, msg=f'Error: {e}.')
-                    self.update_statusbar_messages_thread(msg=f"Status: {e}")
+                    self.update_statusbar_messages_thread(msg=f"{e}")
                     self.local_tools.logIt_thread(self.log_path,
                                                   msg=f'Calling self.remove_lost_connection({con}, {ip})...')
                     self.remove_lost_connection(con, ip)
@@ -742,7 +738,7 @@ class App(tk.Tk):
 
             except (WindowsError, socket.error) as e:
                 self.local_tools.logIt_thread(self.log_path, msg=f'Error: {e}.')
-                self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+                self.update_statusbar_messages_thread(msg=f'{e}.')
                 self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip})')
                 self.remove_lost_connection(con, ip)
                 return False
@@ -754,7 +750,7 @@ class App(tk.Tk):
 
             except (WindowsError, socket.error) as e:
                 self.local_tools.logIt_thread(self.log_path, msg=f'Error: {e}.')
-                self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+                self.update_statusbar_messages_thread(msg=f'{e}.')
                 self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip})')
                 self.remove_lost_connection(con, ip)
                 return False
@@ -766,7 +762,7 @@ class App(tk.Tk):
 
             except (WindowsError, socket.error) as e:
                 self.local_tools.logIt_thread(self.log_path, msg=f'Error: {e}.')
-                self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+                self.update_statusbar_messages_thread(msg=f'{e}.')
                 self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip})')
                 self.remove_lost_connection(con, ip)
                 return False
@@ -774,7 +770,7 @@ class App(tk.Tk):
             self.local_tools.logIt_thread(self.log_path, msg=f'Displaying {msg} in popup window...')
             messagebox.showinfo(f"From {ip} | {sname}", f"{msg}.\t\t\t\t\t\t\t\t")
             self.local_tools.logIt_thread(self.log_path, msg=f'Message received.')
-            self.update_statusbar_messages_thread(msg=f'Status: killed task {task_to_kill} on {ip} | {sname}.')
+            self.update_statusbar_messages_thread(msg=f'killed task {task_to_kill} on {ip} | {sname}.')
             self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.enable_buttons_thread()...')
             self.enable_buttons_thread()
             return True
@@ -782,7 +778,7 @@ class App(tk.Tk):
         # Disable controller buttons
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread()...')
         self.disable_buttons_thread(sidebar=True)
-        self.update_statusbar_messages_thread(msg=f'Status: running tasks command on {ip} | {sname}.')
+        self.update_statusbar_messages_thread(msg=f'running tasks command on {ip} | {sname}.')
         self.local_tools.logIt_thread(self.log_path, debug=False, msg=f'Initializing Module: tasks...')
         tsks = tasks.Tasks(con, ip, self.clients, self.connections,
                            self.targets, self.ips, self.tmp_availables,
@@ -829,7 +825,7 @@ class App(tk.Tk):
 
                 except (WindowsError, socket.error) as e:
                     self.local_tools.logIt_thread(self.log_path, msg=f'Error: {e}')
-                    self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+                    self.update_statusbar_messages_thread(msg=f'{e}.')
                     self.local_tools.logIt_thread(self.log_path,
                                                   msg=f'Calling self.remove_lost_connection({con}, {ip})...')
                     self.remove_lost_connection(con, ip)
@@ -840,14 +836,14 @@ class App(tk.Tk):
                 self.local_tools.logIt_thread(self.log_path, msg=f'Sending "n" to {ip}.')
                 con.send('n'.encode())
                 self.local_tools.logIt_thread(self.log_path, msg=f'Send completed.')
-                self.update_statusbar_messages_thread(msg=f'Status: tasks file received from {ip} | {sname}.')
+                self.update_statusbar_messages_thread(msg=f'tasks file received from {ip} | {sname}.')
                 self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.enable_buttons_thread()...')
                 self.enable_buttons_thread()
                 return True
 
             except (WindowsError, socket.error) as e:
                 self.local_tools.logIt_thread(self.log_path, msg=f'Error: {e}.')
-                self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+                self.update_statusbar_messages_thread(msg=f'{e}.')
                 self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip})...')
                 self.remove_lost_connection(con, ip)
                 return False
@@ -855,7 +851,7 @@ class App(tk.Tk):
     # Restart Client
     def restart(self, con: str, ip: str, sname: str) -> bool:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running restart({con}, {ip}, {sname})')
-        self.update_statusbar_messages_thread(msg=f'Status: waiting for restart confirmation...')
+        self.update_statusbar_messages_thread(msg=f' waiting for restart confirmation...')
         self.local_tools.logIt_thread(self.log_path, msg=f'Displaying self.sure() popup window...')
         self.sure = messagebox.askyesno(f"Restart for: {ip} | {sname}",
                                         f"Are you sure you want to restart {sname}?\t")
@@ -870,18 +866,18 @@ class App(tk.Tk):
                 self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.refresh()...')
                 self.refresh()
                 self.local_tools.logIt_thread(self.log_path, msg=f'Restart command completed.')
-                self.update_statusbar_messages_thread(msg=f'Status: restart command sent to {ip} | {sname}.')
+                self.update_statusbar_messages_thread(msg=f'restart command sent to {ip} | {sname}.')
                 return True
 
             except (RuntimeError, WindowsError, socket.error) as e:
                 self.local_tools.logIt_thread(self.log_path, msg=f'Connection Error: {e}')
-                self.update_statusbar_messages_thread(msg=f'Status: {e}')
+                self.update_statusbar_messages_thread(msg=f'{e}')
                 self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip})...')
                 self.remove_lost_connection(con, ip)
                 return False
 
         else:
-            self.update_statusbar_messages_thread(msg=f'Status: restart canceled.')
+            self.update_statusbar_messages_thread(msg=f'restart canceled.')
             return False
 
     # Browse local files by Clients Station Names
@@ -889,6 +885,29 @@ class App(tk.Tk):
         self.local_tools.logIt_thread(self.log_path, msg=fr'Opening explorer window focused on "{self.path}\{sname}"')
         return subprocess.Popen(rf"explorer {self.path}\{sname}")
 
+    # Update Selected Client
+    def update_selected_client(self, con: str, ip: str, sname: str) -> bool:
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running update_selected_client()...')
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread()...')
+        self.disable_buttons_thread()
+        self.local_tools.logIt_thread(self.log_path, msg=f'Sending update command to {ip} | {sname}...')
+        try:
+            con.send('update'.encode())
+            self.local_tools.logIt_thread(self.log_path, msg=f'Send Completed.')
+            self.local_tools.logIt_thread(self.log_path, msg=f'Waiting for response from {ip} | {sname}...')
+            msg = con.recv(1024).decode()
+            self.local_tools.logIt_thread(self.log_path, msg=f'{ip}|{sname}: {msg}')
+
+        except (WindowsError, socket.error) as e:
+            self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}.')
+            return False
+
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.refresh()...')
+        self.local_tools.logIt_thread(self.log_path, msg=f'Displaying update info popup window...')
+        time.sleep(2)
+        messagebox.showinfo(f"Update {sname}", "Update command sent.")
+        self.refresh()
+        return True
     # ==++==++==++== END Controller Buttons ==++==++==++==
 
     # # ==++==++==++== Server Processes ==++==++==++==
@@ -1064,7 +1083,7 @@ class App(tk.Tk):
         label = Label(self.top_bar_label,
                       text=f"\t\t\t\t\tServer IP: {self.serverIP}\t\tServer Port: {self.port}\t\t"
                            f"Last Boot: {datetime.fromtimestamp(last_reboot).replace(microsecond=0)}\t\t"
-                           f"Connected Stations: {len(self.targets)}", anchor=CENTER)
+                           f"Connected Stations: {len(self.targets)}", anchor=CENTER, background='cornsilk2')
         label.grid(row=0, sticky='w')
         return data
 
@@ -1072,12 +1091,12 @@ class App(tk.Tk):
     def vital_signs(self) -> bool:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running vital_signs()...')
         if len(self.targets) == 0:
-            self.update_statusbar_messages_thread(msg='Status: No connected stations.')
+            self.update_statusbar_messages_thread(msg='No connected stations.')
             return False
 
         callback = 'yes'
         i = 0
-        self.update_statusbar_messages_thread(msg=f'Status: running vitals check...')
+        self.update_statusbar_messages_thread(msg=f'running vitals check...')
         self.local_tools.logIt_thread(self.log_path, msg=f'Iterating Through Temp Connected Sockets List...')
         for t in self.targets:
             try:
@@ -1105,7 +1124,7 @@ class App(tk.Tk):
                                     for v, v1 in version.items():
                                         for n, ver in v1.items():
                                             self.update_statusbar_messages_thread(
-                                                msg=f'Status: Station IP: {self.ips[i]} | Station Name: {v} | Client Version: {ver} - ALIVE!')
+                                                msg=f'Station IP: {self.ips[i]} | Station Name: {v} | Client Version: {ver} - ALIVE!')
                                             i += 1
                                             time.sleep(0.5)
 
@@ -1122,7 +1141,7 @@ class App(tk.Tk):
                                     if ipKey == self.ips[i]:
                                         self.remove_lost_connection(conKey, ipKey)
 
-        self.update_statusbar_messages_thread(msg=f'Status: Vitals check completed.')
+        self.update_statusbar_messages_thread(msg=f'Vitals check completed.')
         self.local_tools.logIt_thread(self.log_path, msg=f'=== End of vital_signs() ===')
         return True
 
@@ -1197,7 +1216,7 @@ class App(tk.Tk):
     # Shell Connection to Client
     def shell(self, con: str, ip: str, sname: str) -> None:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running shell({con}, {ip})...')
-        self.update_statusbar_messages_thread(msg=f'Status: shell connected to {ip} | {sname}.')
+        self.update_statusbar_messages_thread(msg=f'shell connected to {ip} | {sname}.')
         while True:
             # Wait for User Input & hide print
             self.local_tools.logIt_thread(self.log_path, msg=f'Waiting for input...')
@@ -1249,7 +1268,7 @@ class App(tk.Tk):
 
                                     # Update statusbar message
                                     self.update_statusbar_messages_thread(
-                                        msg=f'Status: {ip} | {identValue} | {userValue} removed from connected list.')
+                                        msg=f'{ip} | {identValue} | {userValue} removed from connected list.')
 
             self.local_tools.logIt_thread(self.log_path, msg=f'Connections removed.')
             return True
@@ -1388,47 +1407,22 @@ class App(tk.Tk):
                 self.tabs += 1
                 return True
 
-    # Define GUI Styles
-    def make_style(self):
-        self.local_tools.logIt_thread(self.log_path, msg=f'Styling App...')
-        self.style.theme_create("Peach", parent='classic', settings={
-            "TNotebook": {"configure": {"tabmargins": [2, 5, 2, 0]}},
-            "TNotebook.Tab": {
-                "configure": {"padding": [5, 1], "background": 'white'},
-                "map": {"background": [("selected", 'green')],
-                        "expand": [("selected", [1, 1, 1, 0])]}},
+    # Set Options
+    def options(self):
+        options_window = tk.Toplevel()
+        # options_window.geometry('400x400')
+        options_window.title("Peach - Options")
+        options_window.iconbitmap('peach.ico')
 
-            "Treeview.Heading": {
-                "configure": {"padding": 2, "background": 'dark grey', 'relief': 'ridge'},
-                "map": {"background": [("selected", 'green')]}}})
+        # Update screen geometry variables
+        self.update_idletasks()
 
-        self.style.theme_use("Peach")
-        self.style.map("Treeview", background=[('selected', 'sea green')])
+        # Set Mid Screen Coordinates
+        x = (self.WIDTH / 2) - (400 / 2)
+        y = (self.HEIGHT / 2) - (400 / 2)
 
-    # Build Notebook
-    def create_notebook(self):
-        self.local_tools.logIt_thread(self.log_path, msg=f'Running create_notebook()...')
-        self.local_tools.logIt_thread(self.log_path, msg=f'Clearing frames list...')
-        self.frames.clear()
-        self.local_tools.logIt_thread(self.log_path, msg=f'Building notebook...')
-        self.notebook = ttk.Notebook(self.details_labelFrame, height=330)
-        self.notebook.pack(expand=False, pady=5, fill=X)
-        self.local_tools.logIt_thread(self.log_path, msg=f'Building tabs...')
-        self.screenshot_tab = Frame(self.notebook, height=330)
-        self.system_information_tab = Frame(self.notebook, height=330)
-        self.tasks_tab = Frame(self.notebook, height=330)
-        self.local_tools.logIt_thread(self.log_path, msg=f'Building sysinfo scrollbar...')
-        self.system_scrollbar = Scrollbar(self.system_information_tab, orient=VERTICAL)
-        self.system_scrollbar.pack(side=LEFT, fill=Y)
-        self.local_tools.logIt_thread(self.log_path, msg=f'Building sysinfo textbox...')
-        self.system_information_textbox = Text(self.system_information_tab, yscrollcommand=self.system_scrollbar.set)
-        self.system_information_textbox.pack(fill=BOTH)
-        self.local_tools.logIt_thread(self.log_path, msg=f'Building tasks scrollbar...')
-        self.tasks_scrollbar = Scrollbar(self.tasks_tab, orient=VERTICAL)
-        self.tasks_scrollbar.pack(side=LEFT, fill=Y)
-        self.local_tools.logIt_thread(self.log_path, msg=f'Building tasks textbox...')
-        self.tasks_tab_textbox = Text(self.tasks_tab, yscrollcommand=self.tasks_scrollbar.set)
-        self.tasks_tab_textbox.pack(fill=X)
+        # Set Window Size & Location & Center Window
+        options_window.geometry(f'{400}x{400}+{int(x)}+{int(y)}')
 
     # Manage Connected Table & Controller LabelFrame Buttons
     def select_item(self, event) -> bool:
@@ -1500,7 +1494,6 @@ class App(tk.Tk):
         # Respond to mouse clicks on connected table
         rowid = self.connected_table.identify_row(event.y)
         row = self.connected_table.item(rowid)['values']
-
         try:
             if not row[2] in self.temp.values():
                 self.local_tools.logIt_thread(self.log_path, msg=f'Updating self.temp dictionary...')
@@ -1513,7 +1506,7 @@ class App(tk.Tk):
         # Display Details LabelFrame
         self.local_tools.logIt_thread(self.log_path, msg=f'Building details LabelFrame...')
         self.details_labelFrame = LabelFrame(self.main_frame, text="Details", relief='ridge',
-                                             height=400, background='light grey')
+                                             height=400, background='cornsilk2')
         self.details_labelFrame.grid(row=3, sticky='news', columnspan=3)
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.create_notebook()...')
         self.create_notebook()
@@ -1594,6 +1587,9 @@ def on_icon_clicked(icon, item):
     if str(item) == "Restore":
         app.deiconify()
 
+    if str(item) == "Exit":
+        app.destroy()
+
 
 if __name__ == '__main__':
     icon_path = fr"{os.path.dirname(__file__)}\peach.png"
@@ -1601,7 +1597,8 @@ if __name__ == '__main__':
     # Configure system tray icon
     icon_image = PIL.Image.open(icon_path)
     icon = pystray.Icon("Peach", icon_image, menu=pystray.Menu(
-        pystray.MenuItem("Restore", on_icon_clicked)
+        pystray.MenuItem("Restore", on_icon_clicked),
+        pystray.MenuItem("Exit", on_icon_clicked)
     ))
 
     # Show system tray icon
