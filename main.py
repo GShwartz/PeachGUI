@@ -1460,6 +1460,18 @@ class App(tk.Tk):
 
     # About Window
     def about(self) -> None:
+        def on_github_hover(event):
+            github_label.config(image=github_purple)
+
+        def on_github_leave(event):
+            github_label.config(image=github_black)
+
+        def on_youtube_hover(event):
+            pass
+
+        def on_linkedIn_hover(event):
+            pass
+
         def on_github_click(url):
             return webbrowser.open_new_tab(url)
 
@@ -1527,6 +1539,8 @@ class App(tk.Tk):
         github_label = Label(about_window, image=github_black, background='slate gray')
         github_label.place(x=80, y=130)
         github_label.bind("<Button-1>", lambda x: on_github_click(github_url))
+        github_label.bind("<Enter>", on_github_hover)
+        github_label.bind("<Leave>", on_github_leave)
 
         youtube_label = Label(about_window, image=youtube_red, background='slate gray')
         youtube_label.place(x=173, y=130)
