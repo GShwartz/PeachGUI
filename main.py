@@ -57,7 +57,7 @@ class App(tk.Tk):
     ttl = 5
     hostname = socket.gethostname()
     serverIP = str(socket.gethostbyname(hostname))
-    path = r'c:\Peach'
+    path = r'c:\HandsOff'
     log_path = fr'{path}\server_log.txt'
 
     WIDTH = 1348
@@ -84,7 +84,7 @@ class App(tk.Tk):
 
         # ======== GUI Config ===========
         # Set main window preferences
-        self.title("Peach - By Gil Shwartz @2022")
+        self.title("HandsOff - By Gil Shwartz @2022")
         self.iconbitmap('peach.ico')
 
         # Update screen geometry variables
@@ -210,7 +210,7 @@ class App(tk.Tk):
     # Define GUI Styles
     def make_style(self):
         self.local_tools.logIt_thread(self.log_path, msg=f'Styling App...')
-        self.style.theme_create("Peach", parent='classic', settings={
+        self.style.theme_create("HandsOff", parent='classic', settings={
             "TNotebook": {"configure": {"tabmargins": [2, 5, 2, 1], 'background': 'gainsboro'}},
             "TNotebook.Tab": {
                 "configure": {"padding": [5, 2], "background": 'slate gray'},
@@ -225,7 +225,7 @@ class App(tk.Tk):
                 "map": {"background": [("selected", 'green')]}},
         })
 
-        self.style.theme_use("Peach")
+        self.style.theme_use("HandsOff")
         self.style.configure("Treeview.Heading", font=('Arial Bold', 8))
         self.style.map("Treeview", background=[('selected', 'sea green')])
 
@@ -1445,7 +1445,7 @@ class App(tk.Tk):
     def options(self) -> None:
         options_window = tk.Toplevel()
         # options_window.geometry('400x400')
-        options_window.title("Peach - Options")
+        options_window.title("HandsOff - Options")
         options_window.iconbitmap('peach.ico')
 
         # Update screen geometry variables
@@ -1480,19 +1480,25 @@ class App(tk.Tk):
         youtube_red = 'images/youtube_red.png'
         youtube_black = 'images/youtube_black.png'
 
-        github_black = PIL.ImageTk.PhotoImage(PIL.Image.open('images/github_black.png').resize((50, 50), PIL.Image.ANTIALIAS))
-        github_purple = PIL.ImageTk.PhotoImage(PIL.Image.open('images/github_purple.png').resize((200, 200), PIL.Image.ANTIALIAS))
-        linkedin_black = PIL.ImageTk.PhotoImage(PIL.Image.open('images/linkedin_black.png').resize((200, 200), PIL.Image.ANTIALIAS))
-        linkedin_blue = PIL.ImageTk.PhotoImage(PIL.Image.open('images/linkedin_blue.png').resize((200, 200), PIL.Image.ANTIALIAS))
-        youtube_red = PIL.ImageTk.PhotoImage(PIL.Image.open('images/youtube_red.png').resize((200, 200), PIL.Image.ANTIALIAS))
-        youtube_black = PIL.ImageTk.PhotoImage(PIL.Image.open('images/youtube_black.png').resize((200, 200), PIL.Image.ANTIALIAS))
+        github_black = PIL.ImageTk.PhotoImage(
+            PIL.Image.open('images/github_black.png').resize((50, 50), PIL.Image.ANTIALIAS))
+        github_purple = PIL.ImageTk.PhotoImage(
+            PIL.Image.open('images/github_purple.png').resize((50, 50), PIL.Image.ANTIALIAS))
+        linkedin_black = PIL.ImageTk.PhotoImage(
+            PIL.Image.open('images/linkedin_black.png').resize((50, 50), PIL.Image.ANTIALIAS))
+        linkedin_blue = PIL.ImageTk.PhotoImage(
+            PIL.Image.open('images/linkedin_blue.png').resize((50, 50), PIL.Image.ANTIALIAS))
+        youtube_red = PIL.ImageTk.PhotoImage(
+            PIL.Image.open('images/youtube_red.png').resize((50, 50), PIL.Image.ANTIALIAS))
+        youtube_black = PIL.ImageTk.PhotoImage(
+            PIL.Image.open('images/youtube_black.png').resize((50, 50), PIL.Image.ANTIALIAS))
 
         self.social_buttons.append([github_black, github_purple,
                                     youtube_red, youtube_black,
                                     linkedin_blue, linkedin_black])
 
         about_window = tk.Toplevel()
-        about_window.title("Peach - About")
+        about_window.title("HandsOff - About")
         about_window.iconbitmap('peach.ico')
 
         # Update screen geometry variables
@@ -1511,22 +1517,24 @@ class App(tk.Tk):
         about_window.minsize(400, 200)
 
         # Build GUI
-        app_name_label = Label(about_window, relief='ridge', background='ghost white', width=45)
+        app_name_label = Label(about_window, relief='ridge', background='ghost white', width=45, pady=4)
         app_name_label.configure(text='=====----=====\n'
-                                      'Peach App\n\n'
+                                      'HandsOff\n\n'
                                       'Copyright 2022 Gil Shwartz. All rights reserved.\n'
                                       '=====----=====\n')
         app_name_label.pack(ipady=10, ipadx=10)
 
-        github_label = Label(about_window, image=github_black)
-        github_label.place(x=45, y=130)
+        github_label = Label(about_window, image=github_black, background='slate gray')
+        github_label.place(x=80, y=130)
         github_label.bind("<Button-1>", lambda x: on_github_click(github_url))
-        # github_button = Button(about_window, image=github_black, width=10, height=2)
-        # github_button.place(x=45, y=150)
-        youtube_button = Button(about_window, text='YouTube', width=10, height=2)
-        youtube_button.place(x=162, y=150)
-        linkedin_button = Button(about_window, text='LinkedIn', width=10, height=2)
-        linkedin_button.place(x=280, y=150)
+
+        youtube_label = Label(about_window, image=youtube_red, background='slate gray')
+        youtube_label.place(x=173, y=130)
+        youtube_label.bind("<Button-1>", lambda x: on_youtube_click(youtube_url))
+
+        linkedIn_label = Label(about_window, image=linkedin_blue, background='slate gray')
+        linkedIn_label.place(x=264, y=130)
+        linkedIn_label.bind("<Button-1>", lambda x: on_youtube_click(linkedIn_url))
 
     # Display Connection History
     def connection_history(self) -> bool:
@@ -1798,7 +1806,7 @@ if __name__ == '__main__':
 
     # Configure system tray icon
     icon_image = PIL.Image.open(icon_path)
-    icon = pystray.Icon("Peach", icon_image, menu=pystray.Menu(
+    icon = pystray.Icon("HandsOff", icon_image, menu=pystray.Menu(
         pystray.MenuItem("Restore", on_icon_clicked),
         pystray.MenuItem("Exit", on_icon_clicked)
     ))
