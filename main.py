@@ -25,7 +25,8 @@ from Modules import freestyle
 from Modules import sysinfo
 from Modules import tasks
 
-# TODO: Add Tools menu to Menubar
+
+# TODO: Fill Options menu in Tools
 # TODO: Fill Help & About in Menubar
 
 
@@ -221,16 +222,17 @@ class App(tk.Tk):
         self.sidebar_frame = Frame(self, width=150, background="slate gray")
         self.sidebar_frame.grid(row=0, column=0, sticky="nswe")
         self.local_tools.logIt_thread(self.log_path, msg=f'Building main frame...')
-        self.main_frame = Frame(self, background="cornsilk2", relief="sunken", bd=5)
+        self.main_frame = Frame(self, background="cornsilk2", relief="raised", bd=1)
         self.main_frame.configure(border=1)
-        self.main_frame.grid(row=0, column=1, sticky="nswe", padx=3)
+        self.main_frame.grid(row=0, column=1, sticky="nswe", padx=1)
         self.main_frame.rowconfigure(5, weight=1)
         self.main_frame.columnconfigure(0, weight=1)
         self.local_tools.logIt_thread(self.log_path, msg=f'Building main frame top bar...')
         self.main_frame_top = Frame(self.main_frame, relief='flat')
         self.main_frame_top.grid(row=0, column=0, sticky="nwes")
         self.local_tools.logIt_thread(self.log_path, msg=f'Building main frame top bar labelFrame...')
-        self.top_bar_label = LabelFrame(self.main_frame, text="Server Information", relief='solid', background='cornsilk2')
+        self.top_bar_label = LabelFrame(self.main_frame, text="Server Information", relief='solid',
+                                        background='cornsilk2')
         self.top_bar_label.grid(row=0, column=0, sticky='news')
         self.local_tools.logIt_thread(self.log_path, msg=f'Building table frame in main frame...')
         self.main_frame_table = Frame(self.main_frame, relief='flat')
@@ -239,10 +241,12 @@ class App(tk.Tk):
         self.controller_frame = Frame(self.main_frame, relief='flat', background='cornsilk2')
         self.controller_frame.grid(row=2, column=0, sticky='news', pady=2)
         self.local_tools.logIt_thread(self.log_path, msg=f'Building controller buttons label frame in main frame...')
-        self.controller_btns = LabelFrame(self.controller_frame, text="Controller", relief='solid', height=60, background='cornsilk2')
+        self.controller_btns = LabelFrame(self.controller_frame, text="Controller", relief='solid', height=60,
+                                          background='cornsilk2')
         self.controller_btns.pack(fill=BOTH)
         self.local_tools.logIt_thread(self.log_path, msg=f'Building connected table in main frame...')
-        self.table_frame = LabelFrame(self.main_frame_table, text="Connected Stations")
+        self.table_frame = LabelFrame(self.main_frame_table, text="Connected Stations",
+                                      relief='solid', background='cornsilk2')
         self.table_frame.pack(fill=BOTH)
         self.local_tools.logIt_thread(self.log_path, msg=f'Building details frame in main frame...')
         self.details_frame = Frame(self.main_frame, relief='flat', pady=10)
@@ -267,8 +271,8 @@ class App(tk.Tk):
         self.btn_update_clients = tk.Button(self.sidebar_frame,
                                             text="Update All Clients", width=15, pady=10,
                                             command=lambda: self.update_all_clients_thread())
-        self.btn_update_clients.grid(row=2, sticky="nwes")
-        self.sidebar_buttons.append(self.btn_update_clients)
+        # self.btn_update_clients.grid(row=2, sticky="nwes")
+        # self.sidebar_buttons.append(self.btn_update_clients)
 
     # Create Treeview Table for connected stations
     def build_connected_table(self) -> None:
@@ -311,15 +315,15 @@ class App(tk.Tk):
         self.connected_table.bind("<Motion>", highlight)
 
         self.local_tools.logIt_thread(self.log_path, msg=f'Stying table row colors...')
-        self.connected_table.tag_configure('oddrow', background='floral white')
-        self.connected_table.tag_configure('evenrow', background='cornsilk')
+        self.connected_table.tag_configure('oddrow', background='snow')
+        self.connected_table.tag_configure('evenrow', background='ghost white')
 
     # Build Table for Connection History
     def create_connection_history_table(self) -> None:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running create_connection_history_table()...')
         self.local_tools.logIt_thread(self.log_path, msg=f'Displaying connection history labelFrame...')
         self.history_labelFrame = LabelFrame(self.main_frame, text="Connection History",
-                                             relief='ridge')
+                                             relief='solid', background='cornsilk2')
         self.history_labelFrame.grid(row=3, column=0, sticky='news')
         self.local_tools.logIt_thread(self.log_path, msg=f'Displaying Scrollbar in history labelFrame...')
         self.history_table_scrollbar = Scrollbar(self.history_labelFrame, orient=VERTICAL)
@@ -472,6 +476,7 @@ class App(tk.Tk):
         messagebox.showinfo("Update All Clients", "Update command sent.\nClick refresh to update the connected table.")
         self.refresh()
         return True
+
     # ==++==++==++== END SIDEBAR BUTTONS ==++==++==++==
 
     # ==++==++==++== GUI WINDOW ==++==++==++==
@@ -481,15 +486,20 @@ class App(tk.Tk):
         self.style.theme_create("Peach", parent='classic', settings={
             "TNotebook": {"configure": {"tabmargins": [2, 5, 2, 0], 'background': 'cornsilk2'}},
             "TNotebook.Tab": {
-                "configure": {"padding": [5, 1], "background": 'light cyan'},
+                "configure": {"padding": [5, 1], "background": 'slate gray'},
                 "map": {"background": [("selected", 'green')],
                         "expand": [("selected", [1, 1, 1, 0])]}},
 
             "Treeview.Heading": {
-                "configure": {"padding": 2, "background": 'slate grey', 'relief': 'ridge', 'foreground': 'white'},
-                "map": {"background": [("selected", 'green')]}}})
+                "configure": {"padding": 1,
+                              "background": 'slate grey',
+                              'relief': 'ridge',
+                              'foreground': 'ghost white'},
+                "map": {"background": [("selected", 'green')]}},
+        })
 
         self.style.theme_use("Peach")
+        self.style.configure("Treeview.Heading", font=('Arial Bold', 8))
         self.style.map("Treeview", background=[('selected', 'sea green')])
 
     # Close App
@@ -908,6 +918,7 @@ class App(tk.Tk):
         messagebox.showinfo(f"Update {sname}", "Update command sent.")
         self.refresh()
         return True
+
     # ==++==++==++== END Controller Buttons ==++==++==++==
 
     # # ==++==++==++== Server Processes ==++==++==++==
@@ -1297,7 +1308,8 @@ class App(tk.Tk):
                 button.config(state=DISABLED)
 
             for sbutton in list(self.sidebar_buttons):
-                self.local_tools.logIt_thread(self.log_path, msg=f'Disabling sidebar {sbutton.config("text")[-1]} button...')
+                self.local_tools.logIt_thread(self.log_path,
+                                              msg=f'Disabling sidebar {sbutton.config("text")[-1]} button...')
                 sbutton.config(state=DISABLED)
 
             return
@@ -1505,7 +1517,7 @@ class App(tk.Tk):
 
         # Display Details LabelFrame
         self.local_tools.logIt_thread(self.log_path, msg=f'Building details LabelFrame...')
-        self.details_labelFrame = LabelFrame(self.main_frame, text="Details", relief='ridge',
+        self.details_labelFrame = LabelFrame(self.main_frame, text="Details", relief='solid',
                                              height=400, background='cornsilk2')
         self.details_labelFrame.grid(row=3, sticky='news', columnspan=3)
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.create_notebook()...')
@@ -1520,7 +1532,8 @@ class App(tk.Tk):
                             for sname in vals.keys():
                                 self.local_tools.logIt_thread(self.log_path, msg=f'Calling make_buttons()...')
                                 make_buttons()
-                                self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.enable_buttons_thread...')
+                                self.local_tools.logIt_thread(self.log_path,
+                                                              msg=f'Calling self.enable_buttons_thread...')
                                 self.enable_buttons_thread()
                                 self.local_tools.logIt_thread(self.log_path, msg=f'Running shell thread...')
                                 shellThread = Thread(target=self.shell,
@@ -1607,8 +1620,6 @@ if __name__ == '__main__':
                         name="Icon Thread")
     iconThread.start()
 
-    # Initialize GUI app
-    app = App()
-
     # Run App
+    app = App()
     app.mainloop()
