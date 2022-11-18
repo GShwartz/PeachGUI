@@ -1461,16 +1461,22 @@ class App(tk.Tk):
     # About Window
     def about(self) -> None:
         def on_github_hover(event):
-            github_label.config(image=github_purple)
+            return github_label.config(image=github_black)
 
         def on_github_leave(event):
-            github_label.config(image=github_black)
+            return github_label.config(image=github_purple)
 
         def on_youtube_hover(event):
-            pass
+            return youtube_label.config(image=youtube_black)
+
+        def on_youtube_leave(event):
+            return youtube_label.config(image=youtube_red)
 
         def on_linkedIn_hover(event):
-            pass
+            return linkedIn_label.config(image=linkedin_black)
+
+        def on_linkedIn_leave(event):
+            return linkedIn_label.config(image=linkedin_blue)
 
         def on_github_click(url):
             return webbrowser.open_new_tab(url)
@@ -1536,7 +1542,7 @@ class App(tk.Tk):
                                       '=====----=====\n')
         app_name_label.pack(ipady=10, ipadx=10)
 
-        github_label = Label(about_window, image=github_black, background='slate gray')
+        github_label = Label(about_window, image=github_purple, background='slate gray')
         github_label.place(x=80, y=130)
         github_label.bind("<Button-1>", lambda x: on_github_click(github_url))
         github_label.bind("<Enter>", on_github_hover)
@@ -1545,10 +1551,14 @@ class App(tk.Tk):
         youtube_label = Label(about_window, image=youtube_red, background='slate gray')
         youtube_label.place(x=173, y=130)
         youtube_label.bind("<Button-1>", lambda x: on_youtube_click(youtube_url))
+        youtube_label.bind("<Enter>", on_youtube_hover)
+        youtube_label.bind("<Leave>", on_youtube_leave)
 
         linkedIn_label = Label(about_window, image=linkedin_blue, background='slate gray')
         linkedIn_label.place(x=264, y=130)
         linkedIn_label.bind("<Button-1>", lambda x: on_youtube_click(linkedIn_url))
+        linkedIn_label.bind("<Enter>", on_linkedIn_hover)
+        linkedIn_label.bind("<Leave>", on_linkedIn_leave)
 
     # Display Connection History
     def connection_history(self) -> bool:
