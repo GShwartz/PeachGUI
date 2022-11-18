@@ -27,8 +27,6 @@ from Modules import freestyle
 from Modules import sysinfo
 from Modules import tasks
 
-
-# TODO: Fill Options menu in Tools
 # TODO: Fill Help & About in Menubar
 
 
@@ -45,6 +43,7 @@ class App(tk.Tk):
     displayed_screenshot_files = []
     frames = []
     tabs = 0
+    notebooks = []
 
     # Temp dict to hold connected station's ID# & IP
     temp = {}
@@ -203,6 +202,27 @@ class App(tk.Tk):
         restartThread.start()
 
     # ==++==++==++== END THREADED FUNCS ==++==++==++== #
+    # Define GUI Styles
+    def make_style(self):
+        self.local_tools.logIt_thread(self.log_path, msg=f'Styling App...')
+        self.style.theme_create("Peach", parent='classic', settings={
+            "TNotebook": {"configure": {"tabmargins": [2, 5, 2, 1], 'background': 'gainsboro'}},
+            "TNotebook.Tab": {
+                "configure": {"padding": [5, 2], "background": 'slate gray'},
+                "map": {"background": [("selected", 'green')],
+                        "expand": [("selected", [1, 1, 1, 0])]}},
+
+            "Treeview.Heading": {
+                "configure": {"padding": 1,
+                              "background": 'slate grey',
+                              'relief': 'ridge',
+                              'foreground': 'ghost white'},
+                "map": {"background": [("selected", 'green')]}},
+        })
+
+        self.style.theme_use("Peach")
+        self.style.configure("Treeview.Heading", font=('Arial Bold', 8))
+        self.style.map("Treeview", background=[('selected', 'sea green')])
 
     # Create Menubar
     def build_menubar(self):
@@ -251,85 +271,6 @@ class App(tk.Tk):
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling connection_history()...')
         self.connection_history()
         self.update_statusbar_messages_thread(msg='refresh complete.')
-
-    # Display Connection History
-    def connection_history(self) -> bool:
-        self.local_tools.logIt_thread(self.log_path, msg=f'Running connection_history()...')
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.show_available_connections()...')
-        self.show_available_connections()
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread(sidebar=False)...')
-        self.disable_buttons_thread(sidebar=False)
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.create_connection_history_table()...')
-        self.create_connection_history_table()
-
-        self.update_statusbar_messages_thread(msg=f'Status: displaying connection history.')
-        c = 0  # Initiate Counter for Connection Number
-        try:
-            # Iterate Through Connection History List Items
-            self.local_tools.logIt_thread(self.log_path, msg=f'Iterating self.connHistory...')
-            for connection in self.connHistory:
-                for conKey, macValue in connection.items():
-                    for macKey, ipVal in macValue.items():
-                        for ipKey, identValue in ipVal.items():
-                            for identKey, userValue in identValue.items():
-                                for userKey, timeValue in userValue.items():
-                                    # Show results in GUI table
-                                    if c % 2 == 0:
-                                        self.history_table.insert('', 'end', values=(c, macKey, ipKey,
-                                                                                     identKey, userKey,
-                                                                                     timeValue), tags=('evenrow',))
-                                    else:
-                                        self.history_table.insert('', 'end', values=(c, macKey, ipKey,
-                                                                                     identKey, userKey,
-                                                                                     timeValue), tags=('oddrow',))
-
-                                    self.local_tools.logIt_thread(self.log_path, msg=f'Stying table row colors...')
-                                    self.history_table.tag_configure('oddrow', background='snow')
-                                    self.history_table.tag_configure('evenrow', background='ghost white')
-                        c += 1
-            return True
-
-        except (KeyError, socket.error, ConnectionResetError) as e:
-            self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}')
-            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
-            return False
-
-    # Broadcast update command to all connected stations
-    def update_all_clients(self) -> bool:
-        self.local_tools.logIt_thread(self.log_path, msg=f'Running update_all_clients()...')
-        if len(self.targets) == 0:
-            self.local_tools.logIt_thread(self.log_path, msg=f'Displaying popup window: "No connected stations"...')
-            messagebox.showwarning("Update All Clients", "No connected stations.")
-            return False
-
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread()...')
-        self.disable_buttons_thread(sidebar=False)
-        try:
-            for t in self.targets:
-                self.local_tools.logIt_thread(self.log_path,
-                                              msg=f'Sending update command to all connected stations...')
-                t.send('update'.encode())
-                self.local_tools.logIt_thread(self.log_path, msg=f'Send completed.')
-                try:
-                    msg = t.recv(1024).decode()
-                    self.local_tools.logIt_thread(self.log_path, msg=f'Station: {msg}')
-
-                except (WindowsError, socket.error) as e:
-                    self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}')
-                    self.update_statusbar_messages_thread(msg=f'ERROR: {e}')
-                    continue
-
-        except RuntimeError:
-            pass
-
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.refresh()...')
-        self.local_tools.logIt_thread(self.log_path, msg=f'Displaying update info popup window...')
-        time.sleep(2)
-        messagebox.showinfo("Update All Clients",
-                            "Update command sent.\nClick refresh to update the connected table.")
-        self.refresh()
-        return True
-
     # ==++==++==++== END SIDEBAR BUTTONS ==++==++==++==
 
     # Build Main Frame GUI
@@ -501,28 +442,6 @@ class App(tk.Tk):
     def update_statusbar_messages(self, msg=''):
         self.status_label.config(text=f"Status: {msg}")
 
-    # Define GUI Styles
-    def make_style(self):
-        self.local_tools.logIt_thread(self.log_path, msg=f'Styling App...')
-        self.style.theme_create("Peach", parent='classic', settings={
-            "TNotebook": {"configure": {"tabmargins": [2, 5, 2, 0], 'background': 'gainsboro'}},
-            "TNotebook.Tab": {
-                "configure": {"padding": [5, 2], "background": 'slate gray'},
-                "map": {"background": [("selected", 'green')],
-                        "expand": [("selected", [1, 1, 1, 0])]}},
-
-            "Treeview.Heading": {
-                "configure": {"padding": 1,
-                              "background": 'slate grey',
-                              'relief': 'ridge',
-                              'foreground': 'ghost white'},
-                "map": {"background": [("selected", 'green')]}},
-        })
-
-        self.style.theme_use("Peach")
-        self.style.configure("Treeview.Heading", font=('Arial Bold', 8))
-        self.style.map("Treeview", background=[('selected', 'sea green')])
-
     # Close App
     def on_closing(self, event=0) -> None:
         self.local_tools.logIt_thread(self.log_path, msg=f'Displaying minimize popup window...')
@@ -575,6 +494,84 @@ class App(tk.Tk):
                 button.config(state=DISABLED)
 
             return
+
+    # Display Connection History
+    def connection_history(self) -> bool:
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running connection_history()...')
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.show_available_connections()...')
+        self.show_available_connections()
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread(sidebar=False)...')
+        self.disable_buttons_thread(sidebar=False)
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.create_connection_history_table()...')
+        self.create_connection_history_table()
+
+        self.update_statusbar_messages_thread(msg=f'Status: displaying connection history.')
+        c = 0  # Initiate Counter for Connection Number
+        try:
+            # Iterate Through Connection History List Items
+            self.local_tools.logIt_thread(self.log_path, msg=f'Iterating self.connHistory...')
+            for connection in self.connHistory:
+                for conKey, macValue in connection.items():
+                    for macKey, ipVal in macValue.items():
+                        for ipKey, identValue in ipVal.items():
+                            for identKey, userValue in identValue.items():
+                                for userKey, timeValue in userValue.items():
+                                    # Show results in GUI table
+                                    if c % 2 == 0:
+                                        self.history_table.insert('', 'end', values=(c, macKey, ipKey,
+                                                                                     identKey, userKey,
+                                                                                     timeValue), tags=('evenrow',))
+                                    else:
+                                        self.history_table.insert('', 'end', values=(c, macKey, ipKey,
+                                                                                     identKey, userKey,
+                                                                                     timeValue), tags=('oddrow',))
+
+                                    self.local_tools.logIt_thread(self.log_path, msg=f'Stying table row colors...')
+                                    self.history_table.tag_configure('oddrow', background='snow')
+                                    self.history_table.tag_configure('evenrow', background='ghost white')
+                        c += 1
+            return True
+
+        except (KeyError, socket.error, ConnectionResetError) as e:
+            self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}')
+            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+            return False
+
+    # Broadcast update command to all connected stations
+    def update_all_clients(self) -> bool:
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running update_all_clients()...')
+        if len(self.targets) == 0:
+            self.local_tools.logIt_thread(self.log_path, msg=f'Displaying popup window: "No connected stations"...')
+            messagebox.showwarning("Update All Clients", "No connected stations.")
+            return False
+
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread()...')
+        self.disable_buttons_thread(sidebar=False)
+        try:
+            for t in self.targets:
+                self.local_tools.logIt_thread(self.log_path,
+                                              msg=f'Sending update command to all connected stations...')
+                t.send('update'.encode())
+                self.local_tools.logIt_thread(self.log_path, msg=f'Send completed.')
+                try:
+                    msg = t.recv(1024).decode()
+                    self.local_tools.logIt_thread(self.log_path, msg=f'Station: {msg}')
+
+                except (WindowsError, socket.error) as e:
+                    self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}')
+                    self.update_statusbar_messages_thread(msg=f'ERROR: {e}')
+                    continue
+
+        except RuntimeError:
+            pass
+
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.refresh()...')
+        self.local_tools.logIt_thread(self.log_path, msg=f'Displaying update info popup window...')
+        time.sleep(2)
+        messagebox.showinfo("Update All Clients",
+                            "Update command sent.\nClick refresh to update the connected table.")
+        self.refresh()
+        return True
 
     # Display file content in notebook
     def display_file_content(self, screenshot_path: str, filepath: str, tab: str, txt='') -> bool:
@@ -1081,7 +1078,6 @@ class App(tk.Tk):
         messagebox.showinfo(f"Update {sname}", "Update command sent.")
         self.refresh()
         return True
-
     # ==++==++==++== END Controller Buttons ==++==++==++==
 
     # # ==++==++==++== Server Processes ==++==++==++==
@@ -1451,6 +1447,7 @@ class App(tk.Tk):
             self.local_tools.logIt_thread(self.log_path, msg=f'Runtime Error: {e}.')
             return False
 
+    # ==++==++==++== GENERAL ==++==++==++==
     # Set Options
     def options(self):
         options_window = tk.Toplevel()
@@ -1481,13 +1478,19 @@ class App(tk.Tk):
         # Get Filename
         filename = filedialog.asksaveasfilename(initialdir=f"{saves}", defaultextension='.csv',
                                                 filetypes=(('CSV files', '.csv'), ('TXT files', '.txt')))
+
         if len(filename) == 0 or str(filename) == '':
             self.local_tools.logIt_thread(self.log_path, msg=f'Save canceled.')
             return False
 
         for name, ftype in file_types.items():
-            if str(filename).endswith('.csv'):
-                print(name+ftype)
+            if str(filename).endswith(ftype) and ftype == '.csv':
+                print(f"{filename}")
+                break
+
+            elif str(filename).endswith(ftype) and ftype == '.txt':
+                print(f"{filename}")
+                break
 
         # if not str(filename).endswith('.csv') or str(filename).endswith('.txt'):
         c = 0  # Initiate Counter for Connection Number
