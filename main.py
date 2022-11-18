@@ -495,48 +495,6 @@ class App(tk.Tk):
 
             return
 
-    # Display Connection History
-    def connection_history(self) -> bool:
-        self.local_tools.logIt_thread(self.log_path, msg=f'Running connection_history()...')
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.show_available_connections()...')
-        self.show_available_connections()
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread(sidebar=False)...')
-        self.disable_buttons_thread(sidebar=False)
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.create_connection_history_table()...')
-        self.create_connection_history_table()
-
-        self.update_statusbar_messages_thread(msg=f'Status: displaying connection history.')
-        c = 0  # Initiate Counter for Connection Number
-        try:
-            # Iterate Through Connection History List Items
-            self.local_tools.logIt_thread(self.log_path, msg=f'Iterating self.connHistory...')
-            for connection in self.connHistory:
-                for conKey, macValue in connection.items():
-                    for macKey, ipVal in macValue.items():
-                        for ipKey, identValue in ipVal.items():
-                            for identKey, userValue in identValue.items():
-                                for userKey, timeValue in userValue.items():
-                                    # Show results in GUI table
-                                    if c % 2 == 0:
-                                        self.history_table.insert('', 'end', values=(c, macKey, ipKey,
-                                                                                     identKey, userKey,
-                                                                                     timeValue), tags=('evenrow',))
-                                    else:
-                                        self.history_table.insert('', 'end', values=(c, macKey, ipKey,
-                                                                                     identKey, userKey,
-                                                                                     timeValue), tags=('oddrow',))
-
-                                    self.local_tools.logIt_thread(self.log_path, msg=f'Stying table row colors...')
-                                    self.history_table.tag_configure('oddrow', background='snow')
-                                    self.history_table.tag_configure('evenrow', background='ghost white')
-                        c += 1
-            return True
-
-        except (KeyError, socket.error, ConnectionResetError) as e:
-            self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}')
-            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
-            return False
-
     # Broadcast update command to all connected stations
     def update_all_clients(self) -> bool:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running update_all_clients()...')
@@ -1465,6 +1423,48 @@ class App(tk.Tk):
         # Set Window Size & Location & Center Window
         options_window.geometry(f'{400}x{400}+{int(x)}+{int(y)}')
 
+    # Display Connection History
+    def connection_history(self) -> bool:
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running connection_history()...')
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.show_available_connections()...')
+        self.show_available_connections()
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread(sidebar=False)...')
+        self.disable_buttons_thread(sidebar=False)
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.create_connection_history_table()...')
+        self.create_connection_history_table()
+
+        self.update_statusbar_messages_thread(msg=f'Status: displaying connection history.')
+        c = 0  # Initiate Counter for Connection Number
+        try:
+            # Iterate Through Connection History List Items
+            self.local_tools.logIt_thread(self.log_path, msg=f'Iterating self.connHistory...')
+            for connection in self.connHistory:
+                for conKey, macValue in connection.items():
+                    for macKey, ipVal in macValue.items():
+                        for ipKey, identValue in ipVal.items():
+                            for identKey, userValue in identValue.items():
+                                for userKey, timeValue in userValue.items():
+                                    # Show results in GUI table
+                                    if c % 2 == 0:
+                                        self.history_table.insert('', 'end', values=(c, macKey, ipKey,
+                                                                                     identKey, userKey,
+                                                                                     timeValue), tags=('evenrow',))
+                                    else:
+                                        self.history_table.insert('', 'end', values=(c, macKey, ipKey,
+                                                                                     identKey, userKey,
+                                                                                     timeValue), tags=('oddrow',))
+
+                                    self.local_tools.logIt_thread(self.log_path, msg=f'Stying table row colors...')
+                                    self.history_table.tag_configure('oddrow', background='snow')
+                                    self.history_table.tag_configure('evenrow', background='ghost white')
+                        c += 1
+            return True
+
+        except (KeyError, socket.error, ConnectionResetError) as e:
+            self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}')
+            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+            return False
+
     # Save History to file
     def save_connection_history(self):
         self.local_tools.logIt_thread(self.log_path, msg=f'Running self.save_connection_history()...')
@@ -1483,38 +1483,42 @@ class App(tk.Tk):
             self.local_tools.logIt_thread(self.log_path, msg=f'Save canceled.')
             return False
 
+        c = 0
         for name, ftype in file_types.items():
             if str(filename).endswith(ftype) and ftype == '.csv':
-                print(f"{filename}")
-                break
+                header = ['MAC', 'IP', 'Station', 'User', 'Time']
+                with open(filename, 'w') as file:
+                    writer = csv.writer(file)
+                    try:
+                        writer.writerow(header)
+                        for connection in self.connHistory:
+                            for conKey, macValue in connection.items():
+                                for macKey, ipVal in macValue.items():
+                                    for ipKey, identValue in ipVal.items():
+                                        for identKey, userValue in identValue.items():
+                                            for userKey, timeValue in userValue.items():
+                                                writer.writerow([macKey, ipKey, identKey, userKey, timeValue])
 
-            elif str(filename).endswith(ftype) and ftype == '.txt':
-                print(f"{filename}")
-                break
+                                c += 1
+                        return True
 
-        # if not str(filename).endswith('.csv') or str(filename).endswith('.txt'):
-        c = 0  # Initiate Counter for Connection Number
-        with open(filename, 'w') as file:
-            try:
-                # Iterate Through Connection History List Items
-                self.local_tools.logIt_thread(self.log_path, msg=f'Iterating self.connHistory...')
-                for connection in self.connHistory:
-                    for conKey, macValue in connection.items():
-                        for macKey, ipVal in macValue.items():
-                            for ipKey, identValue in ipVal.items():
-                                for identKey, userValue in identValue.items():
-                                    for userKey, timeValue in userValue.items():
-                                        # Show results in GUI table
-                                        file.write(
-                                            f"#{c} | MAC: {macKey} | IP: {ipKey} | Station: {identKey} | User: {userKey} | Time: {timeValue} \n")
-                            c += 1
+                    except Exception as e:
+                        self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}')
+                        self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+                        return False
 
-            except (KeyError, socket.error, ConnectionResetError) as e:
-                self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}')
-                self.update_statusbar_messages_thread(msg=f'Status: {e}.')
-                return False
-
-        return True
+            else:
+                with open(filename, 'w') as file:
+                    for connection in self.connHistory:
+                        for conKey, macValue in connection.items():
+                            for macKey, ipVal in macValue.items():
+                                for ipKey, identValue in ipVal.items():
+                                    for identKey, userValue in identValue.items():
+                                        for userKey, timeValue in userValue.items():
+                                            file.write(
+                                                f"#{c} | MAC: {macKey} | IP: {ipKey} | Station: {identKey} | User: {userKey} | Time: {timeValue} \n")
+                                c += 1
+                    return True
 
     # Manage Connected Table & Controller LabelFrame Buttons
     def select_item(self, event) -> bool:
