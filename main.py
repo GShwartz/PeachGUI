@@ -2,6 +2,7 @@ from datetime import datetime
 from threading import Thread
 import PIL.ImageTk
 import subprocess
+import webbrowser
 import PIL.Image
 import pystray
 import os.path
@@ -27,7 +28,10 @@ from Modules import freestyle
 from Modules import sysinfo
 from Modules import tasks
 
-# TODO: Fill Help & About in Menubar
+
+# TODO: Finish About in Menubar
+# TODO: Find a way to save & display entire notebooks
+# TODO: Create Maintenance for clients
 
 
 class App(tk.Tk):
@@ -38,12 +42,13 @@ class App(tk.Tk):
     targets = []
     buttons = []
     sidebar_buttons = []
+    social_buttons = []
 
     # List to hold captured screenshot images
     displayed_screenshot_files = []
     frames = []
     tabs = 0
-    notebooks = []
+    notebooks = {}
 
     # Temp dict to hold connected station's ID# & IP
     temp = {}
@@ -244,7 +249,7 @@ class App(tk.Tk):
         tools.add_command(label="Options", command=self.options)
 
         helpbar.add_command(label="Help")
-        helpbar.add_command(label="About")
+        helpbar.add_command(label="About", command=self.about)
 
         menubar.add_cascade(label='File', menu=file)
         menubar.add_cascade(label='Tools', menu=tools)
@@ -271,6 +276,7 @@ class App(tk.Tk):
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling connection_history()...')
         self.connection_history()
         self.update_statusbar_messages_thread(msg='refresh complete.')
+
     # ==++==++==++== END SIDEBAR BUTTONS ==++==++==++==
 
     # Build Main Frame GUI
@@ -961,6 +967,17 @@ class App(tk.Tk):
         self.local_tools.logIt_thread(self.log_path, msg=f'Displaying self.sure() popup window...')
         self.sure = messagebox.askyesno(f"Restart All Clients\t", "Are you sure?")
         self.local_tools.logIt_thread(self.log_path, msg=f'self.sure = {self.sure}')
+        for item in self.tmp_availables:
+            for conKey, ipValue in self.clients.items():
+                for macKey, ipVal in ipValue.items():
+                    for ipKey, identVal in ipVal.items():
+                        if item[2] == ipKey:
+                            session = item[0]
+                            stationMAC = item[1]
+                            stationIP = item[2]
+                            stationName = item[3]
+                            loggedUser = item[4]
+                            clientVersion = item[5]
         if self.sure:
             for t in self.targets:
                 try:
@@ -968,13 +985,23 @@ class App(tk.Tk):
                     t.send('restart'.encode())
                     msg = t.recv(1024).decode()
                     self.update_statusbar_messages_thread(msg=f"{msg}")
+                    self.remove_lost_connection(t, stationIP)
 
                 except (WindowsError, socket.error) as e:
                     self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}')
+                    self.remove_lost_connection(t, stationIP)
                     pass
 
-            time.sleep(1)
-            self.refresh()
+            for i in range(len(self.targets)):
+                refreshThread = Thread(target=self.refresh)
+                refreshThread.start()
+                time.sleep(0.5)
+                # self.refresh()
+
+            return True
+
+        else:
+            return False
 
     # Restart Client
     def restart(self, con: str, ip: str, sname: str) -> bool:
@@ -1036,6 +1063,14 @@ class App(tk.Tk):
         messagebox.showinfo(f"Update {sname}", "Update command sent.")
         self.refresh()
         return True
+
+    # Run Maintenance on Client
+    def run_maintenance(self) -> None:
+        # Commands:
+        # sfc /scannow - scan and replaces bad protected files
+        # DISM.exe /Online /Cleanup-image /Restorehealth - Using windows update to fix OS files
+        pass
+
     # ==++==++==++== END Controller Buttons ==++==++==++==
 
     # # ==++==++==++== Server Processes ==++==++==++==
@@ -1407,7 +1442,7 @@ class App(tk.Tk):
 
     # ==++==++==++== GENERAL ==++==++==++==
     # Set Options
-    def options(self):
+    def options(self) -> None:
         options_window = tk.Toplevel()
         # options_window.geometry('400x400')
         options_window.title("Peach - Options")
@@ -1422,6 +1457,76 @@ class App(tk.Tk):
 
         # Set Window Size & Location & Center Window
         options_window.geometry(f'{400}x{400}+{int(x)}+{int(y)}')
+
+    # About Window
+    def about(self) -> None:
+        def on_github_click(url):
+            return webbrowser.open_new_tab(url)
+
+        def on_youtube_click(url):
+            return webbrowser.open_new_tab(url)
+
+        def on_linkedin_click(url):
+            return webbrowser.open_new_tab(url)
+
+        github_url = 'https://github.com/GShwartz/PeachGUI'
+        youtube_url = 'https://www.youtube.com/channel/UC5jHVur21yVo7nu7nLnuyoQ'
+        linkedIn_url = 'https://www.linkedin.com/in/gilshwartz/'
+
+        github_black = 'images/github_black.png'
+        github_purple = 'images/github_purple.png'
+        linkedin_black = 'images/linkedin_black.png'
+        linkedin_blue = 'images/linkedin_blue.png'
+        youtube_red = 'images/youtube_red.png'
+        youtube_black = 'images/youtube_black.png'
+
+        github_black = PIL.ImageTk.PhotoImage(PIL.Image.open('images/github_black.png').resize((50, 50), PIL.Image.ANTIALIAS))
+        github_purple = PIL.ImageTk.PhotoImage(PIL.Image.open('images/github_purple.png').resize((200, 200), PIL.Image.ANTIALIAS))
+        linkedin_black = PIL.ImageTk.PhotoImage(PIL.Image.open('images/linkedin_black.png').resize((200, 200), PIL.Image.ANTIALIAS))
+        linkedin_blue = PIL.ImageTk.PhotoImage(PIL.Image.open('images/linkedin_blue.png').resize((200, 200), PIL.Image.ANTIALIAS))
+        youtube_red = PIL.ImageTk.PhotoImage(PIL.Image.open('images/youtube_red.png').resize((200, 200), PIL.Image.ANTIALIAS))
+        youtube_black = PIL.ImageTk.PhotoImage(PIL.Image.open('images/youtube_black.png').resize((200, 200), PIL.Image.ANTIALIAS))
+
+        self.social_buttons.append([github_black, github_purple,
+                                    youtube_red, youtube_black,
+                                    linkedin_blue, linkedin_black])
+
+        about_window = tk.Toplevel()
+        about_window.title("Peach - About")
+        about_window.iconbitmap('peach.ico')
+
+        # Update screen geometry variables
+        self.update_idletasks()
+
+        # Set Mid Screen Coordinates
+        x = (self.WIDTH / 2) - (400 / 2)
+        y = (self.HEIGHT / 2) - (200 / 2)
+
+        # Set Window Size & Location & Center Window
+        about_window.geometry(f'{400}x{200}+{int(x)}+{int(y)}')
+        about_window.configure(background='slate gray')
+        about_window.grid_columnconfigure(2, weight=1)
+        about_window.grid_rowconfigure(3, weight=1)
+        about_window.maxsize(400, 200)
+        about_window.minsize(400, 200)
+
+        # Build GUI
+        app_name_label = Label(about_window, relief='ridge', background='ghost white', width=45)
+        app_name_label.configure(text='=====----=====\n'
+                                      'Peach App\n\n'
+                                      'Copyright 2022 Gil Shwartz. All rights reserved.\n'
+                                      '=====----=====\n')
+        app_name_label.pack(ipady=10, ipadx=10)
+
+        github_label = Label(about_window, image=github_black)
+        github_label.place(x=45, y=130)
+        github_label.bind("<Button-1>", lambda x: on_github_click(github_url))
+        # github_button = Button(about_window, image=github_black, width=10, height=2)
+        # github_button.place(x=45, y=150)
+        youtube_button = Button(about_window, text='YouTube', width=10, height=2)
+        youtube_button.place(x=162, y=150)
+        linkedin_button = Button(about_window, text='LinkedIn', width=10, height=2)
+        linkedin_button.place(x=280, y=150)
 
     # Display Connection History
     def connection_history(self) -> bool:
@@ -1466,7 +1571,7 @@ class App(tk.Tk):
             return False
 
     # Save History to file
-    def save_connection_history(self):
+    def save_connection_history(self) -> bool:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running self.save_connection_history()...')
         file_types = {'CSV Files': '.csv', 'TXT Files': '.txt'}
 
