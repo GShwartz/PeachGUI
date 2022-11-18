@@ -232,21 +232,21 @@ class App(tk.Tk):
         self.main_frame_top.grid(row=0, column=0, sticky="nwes")
         self.local_tools.logIt_thread(self.log_path, msg=f'Building main frame top bar labelFrame...')
         self.top_bar_label = LabelFrame(self.main_frame, text="Server Information", relief='solid',
-                                        background='cornsilk2')
+                                        background='gainsboro')
         self.top_bar_label.grid(row=0, column=0, sticky='news')
         self.local_tools.logIt_thread(self.log_path, msg=f'Building table frame in main frame...')
         self.main_frame_table = Frame(self.main_frame, relief='flat')
         self.main_frame_table.grid(row=1, column=0, sticky="news", pady=2)
         self.local_tools.logIt_thread(self.log_path, msg=f'Building controller frame in main frame...')
-        self.controller_frame = Frame(self.main_frame, relief='flat', background='cornsilk2')
+        self.controller_frame = Frame(self.main_frame, relief='flat', background='gainsboro')
         self.controller_frame.grid(row=2, column=0, sticky='news', pady=2)
         self.local_tools.logIt_thread(self.log_path, msg=f'Building controller buttons label frame in main frame...')
         self.controller_btns = LabelFrame(self.controller_frame, text="Controller", relief='solid', height=60,
-                                          background='cornsilk2')
+                                          background='gainsboro')
         self.controller_btns.pack(fill=BOTH)
         self.local_tools.logIt_thread(self.log_path, msg=f'Building connected table in main frame...')
         self.table_frame = LabelFrame(self.main_frame_table, text="Connected Stations",
-                                      relief='solid', background='cornsilk2')
+                                      relief='solid', background='gainsboro')
         self.table_frame.pack(fill=BOTH)
         self.local_tools.logIt_thread(self.log_path, msg=f'Building details frame in main frame...')
         self.details_frame = Frame(self.main_frame, relief='flat', pady=10)
@@ -323,7 +323,7 @@ class App(tk.Tk):
         self.local_tools.logIt_thread(self.log_path, msg=f'Running create_connection_history_table()...')
         self.local_tools.logIt_thread(self.log_path, msg=f'Displaying connection history labelFrame...')
         self.history_labelFrame = LabelFrame(self.main_frame, text="Connection History",
-                                             relief='solid', background='cornsilk2')
+                                             relief='solid', background='gainsboro')
         self.history_labelFrame.grid(row=3, column=0, sticky='news')
         self.local_tools.logIt_thread(self.log_path, msg=f'Displaying Scrollbar in history labelFrame...')
         self.history_table_scrollbar = Scrollbar(self.history_labelFrame, orient=VERTICAL)
@@ -484,7 +484,7 @@ class App(tk.Tk):
     def make_style(self):
         self.local_tools.logIt_thread(self.log_path, msg=f'Styling App...')
         self.style.theme_create("Peach", parent='classic', settings={
-            "TNotebook": {"configure": {"tabmargins": [2, 5, 2, 0], 'background': 'cornsilk2'}},
+            "TNotebook": {"configure": {"tabmargins": [2, 5, 2, 0], 'background': 'gainsboro'}},
             "TNotebook.Tab": {
                 "configure": {"padding": [5, 1], "background": 'slate gray'},
                 "map": {"background": [("selected", 'green')],
@@ -1094,7 +1094,7 @@ class App(tk.Tk):
         label = Label(self.top_bar_label,
                       text=f"\t\t\t\t\t  Server IP: {self.serverIP}\t\tServer Port: {self.port}\t\t"
                            f"Last Boot: {datetime.fromtimestamp(last_reboot).replace(microsecond=0)}\t\t"
-                           f"Connected Stations: {len(self.targets)}", anchor=CENTER, background='cornsilk2')
+                           f"Connected Stations: {len(self.targets)}", anchor=CENTER, background='gainsboro')
         label.grid(row=0, sticky='w')
         return data
 
@@ -1360,7 +1360,7 @@ class App(tk.Tk):
             fr = Frame(self.notebook, height=350)
             self.frames.append(fr)
             tab = self.frames[-1]
-            button = Button(tab, image=self.last_screenshot, command=show_picture)
+            button = Button(tab, image=self.last_screenshot, command=show_picture_thread)
             button.pack()
             self.local_tools.logIt_thread(self.log_path, msg=f'Adding tab to notebook...')
             self.notebook.add(tab, text=f"{txt}")
@@ -1368,7 +1368,11 @@ class App(tk.Tk):
             self.notebook.select(tab)
             self.tabs += 1
             return True
-            
+
+        def show_picture_thread():
+            showThread = Thread(target=show_picture, daemon=True, name="Show Picture Thread")
+            showThread.start()
+
         def show_picture():
             self.sc.show()
 
@@ -1394,7 +1398,7 @@ class App(tk.Tk):
             else:
                 self.local_tools.logIt_thread(self.log_path, msg=f'Building working frame...')
                 tab = Frame(self.notebook, height=350)
-                button = Button(tab, image=self.last_screenshot, command=show_picture)
+                button = Button(tab, image=self.last_screenshot, command=show_picture_thread)
                 button.pack()
                 self.local_tools.logIt_thread(self.log_path, msg=f'Adding tab to notebook...')
                 self.notebook.add(tab, text=f"{txt}")
@@ -1502,7 +1506,7 @@ class App(tk.Tk):
         # Display Details LabelFrame
         self.local_tools.logIt_thread(self.log_path, msg=f'Building details LabelFrame...')
         self.details_labelFrame = LabelFrame(self.main_frame, text="Details", relief='solid',
-                                             height=400, background='cornsilk2')
+                                             height=400, background='gainsboro')
         self.details_labelFrame.grid(row=3, sticky='news', columnspan=3)
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.create_notebook()...')
         self.create_notebook()
