@@ -10,6 +10,7 @@ import psutil
 import time
 import glob
 import sys
+import csv
 
 # GUI
 from tkinter import simpledialog
@@ -189,10 +190,18 @@ class App(tk.Tk):
 
     # Save Connection History Thread
     def save_connection_history_thread(self):
-        saveThread = Thread(target=self.save_history_connections,
+        saveThread = Thread(target=self.save_connection_history,
                             daemon=True,
                             name="Save Connection History Thread")
         saveThread.start()
+
+    # Restart All Clients Thread
+    def restart_all_clients_thread(self):
+        restartThread = Thread(target=self.restart_all_clients,
+                               daemon=True,
+                               name="Restart All Clients Thread")
+        restartThread.start()
+
     # ==++==++==++== END THREADED FUNCS ==++==++==++== #
 
     # Create Menubar
@@ -209,6 +218,7 @@ class App(tk.Tk):
         file.add_command(label="Exit", command=self.on_closing)
 
         tools.add_command(label="Refresh", command=self.refresh)
+        tools.add_command(label="Restart all clients", command=self.restart_all_clients_thread)
         tools.add_command(label="Update all clients", command=self.update_all_clients_thread)
         tools.add_separator()
         tools.add_command(label="Options", command=self.options)
@@ -223,7 +233,106 @@ class App(tk.Tk):
         self.config(menu=menubar)
         return
 
-    # Build initial main frame GUI
+    # ==++==++==++== GUI WINDOW ==++==++==++==
+    # ==++==++==++== SIDEBAR BUTTONS ==++==++==++==
+    # Refresh server info & connected stations table with vital signs
+    def refresh(self) -> None:
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running refresh()...')
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self_disable_buttons_thread(sidebar=False)...')
+        self.disable_buttons_thread(sidebar=False)
+        self.local_tools.logIt_thread(self.log_path, msg=f'Resetting self.tmp_availables list...')
+        self.tmp_availables = []
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.vital_signs_thread()...')
+        self.vital_signs_thread()
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.server_information()...')
+        self.server_information()
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.show_available_connections()...')
+        self.show_available_connections()
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling connection_history()...')
+        self.connection_history()
+        self.update_statusbar_messages_thread(msg='refresh complete.')
+
+    # Display Connection History
+    def connection_history(self) -> bool:
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running connection_history()...')
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.show_available_connections()...')
+        self.show_available_connections()
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread(sidebar=False)...')
+        self.disable_buttons_thread(sidebar=False)
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.create_connection_history_table()...')
+        self.create_connection_history_table()
+
+        self.update_statusbar_messages_thread(msg=f'Status: displaying connection history.')
+        c = 0  # Initiate Counter for Connection Number
+        try:
+            # Iterate Through Connection History List Items
+            self.local_tools.logIt_thread(self.log_path, msg=f'Iterating self.connHistory...')
+            for connection in self.connHistory:
+                for conKey, macValue in connection.items():
+                    for macKey, ipVal in macValue.items():
+                        for ipKey, identValue in ipVal.items():
+                            for identKey, userValue in identValue.items():
+                                for userKey, timeValue in userValue.items():
+                                    # Show results in GUI table
+                                    if c % 2 == 0:
+                                        self.history_table.insert('', 'end', values=(c, macKey, ipKey,
+                                                                                     identKey, userKey,
+                                                                                     timeValue), tags=('evenrow',))
+                                    else:
+                                        self.history_table.insert('', 'end', values=(c, macKey, ipKey,
+                                                                                     identKey, userKey,
+                                                                                     timeValue), tags=('oddrow',))
+
+                                    self.local_tools.logIt_thread(self.log_path, msg=f'Stying table row colors...')
+                                    self.history_table.tag_configure('oddrow', background='snow')
+                                    self.history_table.tag_configure('evenrow', background='ghost white')
+                        c += 1
+            return True
+
+        except (KeyError, socket.error, ConnectionResetError) as e:
+            self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}')
+            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
+            return False
+
+    # Broadcast update command to all connected stations
+    def update_all_clients(self) -> bool:
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running update_all_clients()...')
+        if len(self.targets) == 0:
+            self.local_tools.logIt_thread(self.log_path, msg=f'Displaying popup window: "No connected stations"...')
+            messagebox.showwarning("Update All Clients", "No connected stations.")
+            return False
+
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread()...')
+        self.disable_buttons_thread(sidebar=False)
+        try:
+            for t in self.targets:
+                self.local_tools.logIt_thread(self.log_path,
+                                              msg=f'Sending update command to all connected stations...')
+                t.send('update'.encode())
+                self.local_tools.logIt_thread(self.log_path, msg=f'Send completed.')
+                try:
+                    msg = t.recv(1024).decode()
+                    self.local_tools.logIt_thread(self.log_path, msg=f'Station: {msg}')
+
+                except (WindowsError, socket.error) as e:
+                    self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}')
+                    self.update_statusbar_messages_thread(msg=f'ERROR: {e}')
+                    continue
+
+        except RuntimeError:
+            pass
+
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.refresh()...')
+        self.local_tools.logIt_thread(self.log_path, msg=f'Displaying update info popup window...')
+        time.sleep(2)
+        messagebox.showinfo("Update All Clients",
+                            "Update command sent.\nClick refresh to update the connected table.")
+        self.refresh()
+        return True
+
+    # ==++==++==++== END SIDEBAR BUTTONS ==++==++==++==
+
+    # Build Main Frame GUI
     def build_main_window_frames(self) -> None:
         self.local_tools.logIt_thread(self.log_path, msg=f'Running build_main_window_frames()...')
         self.local_tools.logIt_thread(self.log_path, msg=f'Building sidebar frame...')
@@ -248,7 +357,8 @@ class App(tk.Tk):
         self.local_tools.logIt_thread(self.log_path, msg=f'Building controller frame in main frame...')
         self.controller_frame = Frame(self.main_frame, relief='flat', background='gainsboro')
         self.controller_frame.grid(row=2, column=0, sticky='news', pady=2)
-        self.local_tools.logIt_thread(self.log_path, msg=f'Building controller buttons label frame in main frame...')
+        self.local_tools.logIt_thread(self.log_path,
+                                      msg=f'Building controller buttons label frame in main frame...')
         self.controller_btns = LabelFrame(self.controller_frame, text="Controller", relief='solid', height=60,
                                           background='gainsboro')
         self.controller_btns.pack(fill=BOTH)
@@ -387,106 +497,10 @@ class App(tk.Tk):
         self.tasks_tab_textbox = Text(self.tasks_tab, yscrollcommand=self.tasks_scrollbar.set)
         self.tasks_tab_textbox.pack(fill=X)
 
-    # Update status bar messages
+    # Update Status Bar Messages
     def update_statusbar_messages(self, msg=''):
         self.status_label.config(text=f"Status: {msg}")
 
-    # ==++==++==++== SIDEBAR BUTTONS ==++==++==++==
-    # Refresh server info & connected stations table with vital signs
-    def refresh(self) -> None:
-        self.local_tools.logIt_thread(self.log_path, msg=f'Running refresh()...')
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self_disable_buttons_thread(sidebar=False)...')
-        self.disable_buttons_thread(sidebar=False)
-        self.local_tools.logIt_thread(self.log_path, msg=f'Resetting self.tmp_availables list...')
-        self.tmp_availables = []
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.vital_signs_thread()...')
-        self.vital_signs_thread()
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.server_information()...')
-        self.server_information()
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.show_available_connections()...')
-        self.show_available_connections()
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling connection_history()...')
-        self.connection_history()
-        self.update_statusbar_messages_thread(msg='refresh complete.')
-
-    # Display Connection History
-    def connection_history(self) -> bool:
-        self.local_tools.logIt_thread(self.log_path, msg=f'Running connection_history()...')
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.show_available_connections()...')
-        self.show_available_connections()
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread(sidebar=False)...')
-        self.disable_buttons_thread(sidebar=False)
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.create_connection_history_table()...')
-        self.create_connection_history_table()
-
-        self.update_statusbar_messages_thread(msg=f'Status: displaying connection history.')
-        c = 0  # Initiate Counter for Connection Number
-        try:
-            # Iterate Through Connection History List Items
-            self.local_tools.logIt_thread(self.log_path, msg=f'Iterating self.connHistory...')
-            for connection in self.connHistory:
-                for conKey, macValue in connection.items():
-                    for macKey, ipVal in macValue.items():
-                        for ipKey, identValue in ipVal.items():
-                            for identKey, userValue in identValue.items():
-                                for userKey, timeValue in userValue.items():
-                                    # Show results in GUI table
-                                    if c % 2 == 0:
-                                        self.history_table.insert('', 'end', values=(c, macKey, ipKey,
-                                                                                     identKey, userKey,
-                                                                                     timeValue), tags=('evenrow',))
-                                    else:
-                                        self.history_table.insert('', 'end', values=(c, macKey, ipKey,
-                                                                                     identKey, userKey,
-                                                                                     timeValue), tags=('oddrow',))
-
-                                    self.local_tools.logIt_thread(self.log_path, msg=f'Stying table row colors...')
-                                    self.history_table.tag_configure('oddrow', background='snow')
-                                    self.history_table.tag_configure('evenrow', background='ghost white')
-                        c += 1
-            return True
-
-        except (KeyError, socket.error, ConnectionResetError) as e:
-            self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}')
-            self.update_statusbar_messages_thread(msg=f'Status: {e}.')
-            return False
-
-    # Broadcast update command to all connected stations
-    def update_all_clients(self) -> bool:
-        self.local_tools.logIt_thread(self.log_path, msg=f'Running update_all_clients()...')
-        if len(self.targets) == 0:
-            self.local_tools.logIt_thread(self.log_path, msg=f'Displaying popup window: "No connected stations"...')
-            messagebox.showwarning("Update All Clients", "No connected stations.")
-            return False
-
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread()...')
-        self.disable_buttons_thread(sidebar=False)
-        try:
-            for t in self.targets:
-                self.local_tools.logIt_thread(self.log_path, msg=f'Sending update command to all connected stations...')
-                t.send('update'.encode())
-                self.local_tools.logIt_thread(self.log_path, msg=f'Send completed.')
-                try:
-                    msg = t.recv(1024).decode()
-                    self.local_tools.logIt_thread(self.log_path, msg=f'Station: {msg}')
-
-                except (WindowsError, socket.error) as e:
-                    self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}')
-                    self.update_statusbar_messages_thread(msg=f'ERROR: {e}')
-                    continue
-
-        except RuntimeError:
-            pass
-
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.refresh()...')
-        self.local_tools.logIt_thread(self.log_path, msg=f'Displaying update info popup window...')
-        time.sleep(2)
-        messagebox.showinfo("Update All Clients", "Update command sent.\nClick refresh to update the connected table.")
-        self.refresh()
-        return True
-    # ==++==++==++== END SIDEBAR BUTTONS ==++==++==++==
-
-    # ==++==++==++== GUI WINDOW ==++==++==++==
     # Define GUI Styles
     def make_style(self):
         self.local_tools.logIt_thread(self.log_path, msg=f'Styling App...')
@@ -640,7 +654,7 @@ class App(tk.Tk):
                 self.local_tools.logIt_thread(self.log_path, msg=f'Building working frame...')
                 tab = Frame(self.notebook, height=350, background='black')
                 button = Button(tab, image=self.last_screenshot, command=show_picture_thread)
-                button.pack()
+                button.pack(padx=5, pady=10)
                 self.local_tools.logIt_thread(self.log_path, msg=f'Adding tab to notebook...')
                 self.notebook.add(tab, text=f"{txt}")
                 self.local_tools.logIt_thread(self.log_path, msg=f'Displaying latest notebook tab...')
@@ -984,6 +998,28 @@ class App(tk.Tk):
                 self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.remove_lost_connection({con}, {ip})...')
                 self.remove_lost_connection(con, ip)
                 return False
+
+    # Restart All Clients
+    def restart_all_clients(self):
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running restart_all_clients()...')
+        self.update_statusbar_messages_thread(msg=f'waiting for restart confirmation...')
+        self.local_tools.logIt_thread(self.log_path, msg=f'Displaying self.sure() popup window...')
+        self.sure = messagebox.askyesno(f"Restart All Clients\t", "Are you sure?")
+        self.local_tools.logIt_thread(self.log_path, msg=f'self.sure = {self.sure}')
+        if self.sure:
+            for t in self.targets:
+                try:
+                    self.update_statusbar_messages_thread(msg=f'Restarting {t}...')
+                    t.send('restart'.encode())
+                    msg = t.recv(1024).decode()
+                    self.update_statusbar_messages_thread(msg=f"{msg}")
+
+                except (WindowsError, socket.error) as e:
+                    self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}')
+                    pass
+
+            time.sleep(1)
+            self.refresh()
 
     # Restart Client
     def restart(self, con: str, ip: str, sname: str) -> bool:
@@ -1433,9 +1469,28 @@ class App(tk.Tk):
         options_window.geometry(f'{400}x{400}+{int(x)}+{int(y)}')
 
     # Save History to file
-    def save_history_connections(self):
+    def save_connection_history(self):
+        self.local_tools.logIt_thread(self.log_path, msg=f'Running self.save_connection_history()...')
+        file_types = {'CSV Files': '.csv', 'TXT Files': '.txt'}
+
+        # Create Saved Files Dir
+        saves = fr"{self.path}\Saves"
+        if not os.path.exists(saves):
+            os.makedirs(saves)
+
+        # Get Filename
+        filename = filedialog.asksaveasfilename(initialdir=f"{saves}", defaultextension='.csv',
+                                                filetypes=(('CSV files', '.csv'), ('TXT files', '.txt')))
+        if len(filename) == 0 or str(filename) == '':
+            self.local_tools.logIt_thread(self.log_path, msg=f'Save canceled.')
+            return False
+
+        for name, ftype in file_types.items():
+            if str(filename).endswith('.csv'):
+                print(name+ftype)
+
+        # if not str(filename).endswith('.csv') or str(filename).endswith('.txt'):
         c = 0  # Initiate Counter for Connection Number
-        filename = filedialog.asksaveasfilename()
         with open(filename, 'w') as file:
             try:
                 # Iterate Through Connection History List Items
@@ -1447,7 +1502,8 @@ class App(tk.Tk):
                                 for identKey, userValue in identValue.items():
                                     for userKey, timeValue in userValue.items():
                                         # Show results in GUI table
-                                        file.write(f"#{c} | MAC: {macKey} | IP: {ipKey} | Station: {identKey} | User: {userKey} | Time: {timeValue} \n")
+                                        file.write(
+                                            f"#{c} | MAC: {macKey} | IP: {ipKey} | Station: {identKey} | User: {userKey} | Time: {timeValue} \n")
                             c += 1
 
             except (KeyError, socket.error, ConnectionResetError) as e:
