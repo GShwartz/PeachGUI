@@ -28,8 +28,6 @@ from Modules import freestyle
 from Modules import sysinfo
 from Modules import tasks
 
-
-# TODO: Finish About in Menubar
 # TODO: Find a way to save & display entire notebooks
 # TODO: Create Maintenance for clients
 
@@ -336,8 +334,6 @@ class App(tk.Tk):
         self.btn_update_clients = tk.Button(self.sidebar_frame,
                                             text="Update All Clients", width=15, pady=10,
                                             command=lambda: self.update_all_clients_thread())
-        # self.btn_update_clients.grid(row=2, sticky="nwes")
-        # self.sidebar_buttons.append(self.btn_update_clients)
 
     # Create Treeview Table for connected stations
     def build_connected_table(self) -> None:
@@ -1535,12 +1531,12 @@ class App(tk.Tk):
         about_window.minsize(400, 200)
 
         # Build GUI
-        app_name_label = Label(about_window, relief='ridge', background='ghost white', width=45, pady=4)
+        app_name_label = Label(about_window, relief='ridge', background='ghost white', width=45)
         app_name_label.configure(text='=====----=====\n'
                                       'HandsOff\n\n'
                                       'Copyright 2022 Gil Shwartz. All rights reserved.\n'
                                       '=====----=====\n')
-        app_name_label.pack(ipady=10, ipadx=10)
+        app_name_label.pack(ipady=10, ipadx=10, pady=5)
 
         github_label = Label(about_window, image=github_purple, background='slate gray')
         github_label.place(x=80, y=130)
@@ -1573,8 +1569,6 @@ class App(tk.Tk):
         self.update_statusbar_messages_thread(msg=f'Status: displaying connection history.')
         c = 0  # Initiate Counter for Connection Number
         try:
-            # Iterate Through Connection History List Items
-            self.local_tools.logIt_thread(self.log_path, msg=f'Iterating self.connHistory...')
             for connection in self.connHistory:
                 for conKey, macValue in connection.items():
                     for macKey, ipVal in macValue.items():
@@ -1615,7 +1609,6 @@ class App(tk.Tk):
         # Get Filename
         filename = filedialog.asksaveasfilename(initialdir=f"{saves}", defaultextension='.csv',
                                                 filetypes=(('CSV files', '.csv'), ('TXT files', '.txt')))
-
         if len(filename) == 0 or str(filename) == '':
             self.local_tools.logIt_thread(self.log_path, msg=f'Save canceled.')
             return False
@@ -1765,6 +1758,11 @@ class App(tk.Tk):
 
                                 self.local_tools.logIt_thread(self.log_path, msg=f'Clearing self.temp dictionary...')
                                 self.temp.clear()
+                                temp_notebook = {clientIP: {sname: self.notebook}}
+                                if not temp_notebook[clientIP][sname] in self.notebooks:
+                                    self.notebooks.update(temp_notebook)
+                                    print(self.notebooks)
+
                                 return True
 
 
