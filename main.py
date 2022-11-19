@@ -1064,7 +1064,7 @@ class App(tk.Tk):
     # Run Maintenance on Client
     def run_maintenance(self, con: str, ip: str, sname: str) -> None:
         maintenance_window = tk.Toplevel()
-        maintenance_window.title("HandsOff - Maintenance")
+        maintenance_window.title(f"HandsOff - Maintenance for {ip} | {sname}")
         maintenance_window.iconbitmap('HandsOff.ico')
 
         # Update screen geometry variables
@@ -1076,11 +1076,62 @@ class App(tk.Tk):
 
         # Set Window Size & Location & Center Window
         maintenance_window.geometry(f'{500}x{500}+{int(x)}+{int(y)}')
-        maintenance_window.configure(background='slate gray')
-        maintenance_window.grid_columnconfigure(3, weight=1)
-        maintenance_window.grid_rowconfigure(3, weight=1)
+        maintenance_window.configure(background='slate gray', takefocus=True)
+        maintenance_window.grid_columnconfigure(0, weight=1)
+        maintenance_window.grid_rowconfigure(11, weight=1)
         maintenance_window.maxsize(500, 500)
         maintenance_window.minsize(500, 500)
+        maintenance_window.grab_set()
+
+        sfc_label = Label(maintenance_window, relief='solid', background='slate gray', foreground='white')
+        sfc_label.configure(width=20)
+        sfc_label.configure(text="SFC Maintenance")
+        sfc_label.grid(row=0, column=0, sticky='we', pady=5)
+
+        sfc_verify_button = Button(maintenance_window, text='SFC Verify Only',
+                                   relief='raised', background='SkyBlue2',
+                                   command='')
+        sfc_verify_button.grid(row=1, column=0, sticky='we', pady=5, ipadx=10)
+
+        sfc_scan_button = Button(maintenance_window, text='SFC Scan & Repair',
+                                 relief='raised', background='SkyBlue2',
+                                 command='')
+        sfc_scan_button.grid(row=2, column=0, sticky='we', pady=5, ipadx=10)
+
+        dism_label = Label(maintenance_window, relief='solid', background='slate gray', foreground='white')
+        dism_label.configure(width=20)
+        dism_label.configure(text="DISM Scan & Restore")
+        dism_label.grid(row=3, column=0, sticky='we', pady=5)
+
+        dism_online_button = Button(maintenance_window, text='DISM Online Health Restoration',
+                                    relief='raised', background='SkyBlue2',
+                                    command='')
+        dism_online_button.grid(row=4, column=0, sticky='we', pady=5, ipadx=10)
+
+        hard_disk_label = Label(maintenance_window, relief='solid', background='slate gray', foreground='white')
+        hard_disk_label.configure(width=20)
+        hard_disk_label.configure(text='Hard Disk Maintenance')
+        hard_disk_label.grid(row=5, column=0, sticky='ew', pady=5)
+
+        disk_cleanup_label = Label(maintenance_window, text='Disk Cleanup', background='slate gray', pady=5)
+        disk_cleanup_label.grid(row=6, column=0, sticky='we')
+        disk_cleanup_checkbox = Checkbutton(maintenance_window, variable='')
+        disk_cleanup_checkbox.grid(row=7, column=0)
+
+        optimize_label = Label(maintenance_window, text='Optimize HD', background='slate gray', pady=5)
+        optimize_label.grid(row=8, sticky='we')
+        optimize_label_checkbox = Checkbutton(maintenance_window, variable='')
+        optimize_label_checkbox.grid(row=9, column=0)
+
+        run_optimize_button = Button(maintenance_window, text='Run Disk Maintenance',
+                                     relief='raised', background='SkyBlue2',
+                                     command='')
+        run_optimize_button.grid(row=10, column=0, sticky='we', pady=5, ipadx=10)
+
+        close_button = Button(maintenance_window, text='Close',
+                              relief='raised', background='SkyBlue2',
+                              command='')
+        close_button.grid(row=11, column=0, sticky='ew', pady=10, ipady=5, padx=10, ipadx=5)
 
     # ==++==++==++== END Controller Buttons ==++==++==++==
 
@@ -1522,11 +1573,11 @@ class App(tk.Tk):
             PIL.Image.open('images/youtube_red.png').resize((50, 50), PIL.Image.ANTIALIAS))
         youtube_black = PIL.ImageTk.PhotoImage(
             PIL.Image.open('images/youtube_black.png').resize((50, 50), PIL.Image.ANTIALIAS))
-
         self.social_buttons.append([github_black, github_purple,
                                     youtube_red, youtube_black,
                                     linkedin_blue, linkedin_black])
 
+        # Build GUI
         about_window = tk.Toplevel()
         about_window.title("HandsOff - About")
         about_window.iconbitmap('HandsOff.ico')
@@ -1540,16 +1591,14 @@ class App(tk.Tk):
 
         # Set Window Size & Location & Center Window
         about_window.geometry(f'{400}x{200}+{int(x)}+{int(y)}')
-        about_window.configure(background='slate gray')
+        about_window.configure(background='slate gray', takefocus=True)
         about_window.grid_columnconfigure(2, weight=1)
         about_window.grid_rowconfigure(3, weight=1)
         about_window.maxsize(400, 200)
         about_window.minsize(400, 200)
 
-        # Build GUI
         app_name_label = Label(about_window, relief='ridge', background='ghost white', width=45)
-        app_name_label.configure(text='=====----=====\n'
-                                      'HandsOff\n\n'
+        app_name_label.configure(text='HandsOff\n\n'
                                       'Copyright 2022 Gil Shwartz. All rights reserved.\n'
                                       '=====----=====\n')
         app_name_label.pack(ipady=10, ipadx=10, pady=5)
