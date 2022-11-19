@@ -524,34 +524,77 @@ class App(tk.Tk):
 
             return
 
-    # Submit URL
-    def submit_url(self):
-        print(self.update_url.get())
-
     # Broadcast update command to all connected stations
     def update_all_clients(self) -> bool:
+        def submit_url(event=0):
+            url = self.update_url.get()
+            if not str(url).lower().endswith('client.exe'):
+                url_entry.delete(0, END)
+                print(f"url_entry: {url}")
+                return False
+
+            sure = messagebox.askyesno(f"New URL: {url}", "Are you sure?")
+            if sure:
+                try:
+                    for t in self.targets:
+                        self.local_tools.logIt_thread(self.log_path,
+                                                      msg=f'Sending update command to all connected stations...')
+                        try:
+                            t.send('update'.encode())
+                            self.local_tools.logIt_thread(self.log_path, msg=f'Send completed.')
+                            t.send(str(url).encode())
+                            msg = t.recv(1024).decode()
+                            self.local_tools.logIt_thread(self.log_path, msg=f'Station: {msg}')
+
+                        except (WindowsError, socket.error) as e:
+                            self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}')
+                            self.update_statusbar_messages_thread(msg=f'ERROR: {e}')
+                            continue
+
+                except RuntimeError:
+                    pass
+
+                self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.refresh()...')
+                self.local_tools.logIt_thread(self.log_path, msg=f'Displaying update info popup window...')
+                time.sleep(2)
+                messagebox.showinfo("Update All Clients",
+                                    "Update command sent.\nClick refresh to update the connected table.")
+
+                url_window.withdraw()
+                self.refresh()
+                return True
+
+            else:
+                return False
+
         url_window = tk.Toplevel()
         url_window.title("HandsOff - client.exe URL")
         url_window.iconbitmap('HandsOff.ico')
 
         # Set Mid Screen Coordinates
-        x = (self.WIDTH / 2) - (100 / 2)
-        y = (self.HEIGHT / 2) - (50 / 2)
+        x = (self.WIDTH / 2) - (300 / 2)
+        y = (self.HEIGHT / 2) - (100 / 2)
 
         # Set Window Size & Location & Center Window
-        url_window.geometry(f'{100}x{50}+{int(x)}+{int(y)}')
+        url_window.geometry(f'{300}x{100}+{int(x)}+{int(y)}')
         url_window.configure(background='slate gray', takefocus=True)
-        url_window.grid_columnconfigure(1, weight=1)
-        url_window.grid_rowconfigure(1, weight=1)
-        url_window.maxsize(100, 50)
-        url_window.minsize(100, 50)
+        url_window.grid_columnconfigure(0, weight=1)
+        url_window.grid_rowconfigure(2, weight=2)
+        url_window.maxsize(300, 100)
+        url_window.minsize(300, 100)
+        url_window.bind("<Return>", submit_url)
+
+        url_label = Label(url_window, text="EXE file URL",
+                          background='slate gray', foreground='white')
+        url_label.grid(row=0, sticky='n')
 
         url_entry = Entry(url_window, textvariable=self.update_url)
-        url_entry.grid(row=0, column=1, sticky='ew')
+        url_entry.grid(row=1, column=0, sticky='news')
+        url_entry.delete(0, END)
         url_entry.focus()
 
-        url_submit = Button(url_window, text="Submit", command=self.submit_url)
-        url_submit.grid(row=1, column=0, pady=5)
+        url_submit = Button(url_window, text="Submit", command=submit_url)
+        url_submit.grid(row=2, column=0, pady=5)
 
         self.local_tools.logIt_thread(self.log_path, msg=f'Running update_all_clients()...')
         if len(self.targets) == 0:
@@ -562,32 +605,6 @@ class App(tk.Tk):
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread()...')
         self.disable_buttons_thread(sidebar=False)
         url_window.wait_window(self)
-        try:
-            for t in self.targets:
-                self.local_tools.logIt_thread(self.log_path,
-                                              msg=f'Sending update command to all connected stations...')
-                try:
-                    t.send('update'.encode())
-                    self.local_tools.logIt_thread(self.log_path, msg=f'Send completed.')
-                    t.send(str(self.update_url).encode())
-                    msg = t.recv(1024).decode()
-                    self.local_tools.logIt_thread(self.log_path, msg=f'Station: {msg}')
-
-                except (WindowsError, socket.error) as e:
-                    self.local_tools.logIt_thread(self.log_path, msg=f'ERROR: {e}')
-                    self.update_statusbar_messages_thread(msg=f'ERROR: {e}')
-                    continue
-
-        except RuntimeError:
-            pass
-
-        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.refresh()...')
-        self.local_tools.logIt_thread(self.log_path, msg=f'Displaying update info popup window...')
-        time.sleep(2)
-        messagebox.showinfo("Update All Clients",
-                            "Update command sent.\nClick refresh to update the connected table.")
-        self.refresh()
-        return True
 
     # Display file content in notebook
     def display_file_content(self, screenshot_path: str, filepath: str, tab: str, txt='') -> bool:
