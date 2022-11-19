@@ -28,6 +28,7 @@ from Modules import freestyle
 from Modules import sysinfo
 from Modules import tasks
 
+
 # TODO: Find a way to save & display entire notebooks
 # TODO: Create Maintenance for clients
 
@@ -83,7 +84,7 @@ class App(tk.Tk):
         # ======== GUI Config ===========
         # Set main window preferences
         self.title("HandsOff - By Gil Shwartz @2022")
-        self.iconbitmap('peach.ico')
+        self.iconbitmap('HandsOff.ico')
 
         # Update screen geometry variables
         self.update_idletasks()
@@ -1061,11 +1062,25 @@ class App(tk.Tk):
         return True
 
     # Run Maintenance on Client
-    def run_maintenance(self) -> None:
-        # Commands:
-        # sfc /scannow - scan and replaces bad protected files
-        # DISM.exe /Online /Cleanup-image /Restorehealth - Using windows update to fix OS files
-        pass
+    def run_maintenance(self, con: str, ip: str, sname: str) -> None:
+        maintenance_window = tk.Toplevel()
+        maintenance_window.title("HandsOff - Maintenance")
+        maintenance_window.iconbitmap('HandsOff.ico')
+
+        # Update screen geometry variables
+        self.update_idletasks()
+
+        # Set Mid Screen Coordinates
+        x = (self.WIDTH / 2) - (500 / 2)
+        y = (self.HEIGHT / 2) - (500 / 2)
+
+        # Set Window Size & Location & Center Window
+        maintenance_window.geometry(f'{500}x{500}+{int(x)}+{int(y)}')
+        maintenance_window.configure(background='slate gray')
+        maintenance_window.grid_columnconfigure(3, weight=1)
+        maintenance_window.grid_rowconfigure(3, weight=1)
+        maintenance_window.maxsize(500, 500)
+        maintenance_window.minsize(500, 500)
 
     # ==++==++==++== END Controller Buttons ==++==++==++==
 
@@ -1442,7 +1457,7 @@ class App(tk.Tk):
         options_window = tk.Toplevel()
         # options_window.geometry('400x400')
         options_window.title("HandsOff - Options")
-        options_window.iconbitmap('peach.ico')
+        options_window.iconbitmap('HandsOff.ico')
 
         # Update screen geometry variables
         self.update_idletasks()
@@ -1453,6 +1468,7 @@ class App(tk.Tk):
 
         # Set Window Size & Location & Center Window
         options_window.geometry(f'{400}x{400}+{int(x)}+{int(y)}')
+        options_window.configure(background='slate gray')
 
     # About Window
     def about(self) -> None:
@@ -1513,7 +1529,7 @@ class App(tk.Tk):
 
         about_window = tk.Toplevel()
         about_window.title("HandsOff - About")
-        about_window.iconbitmap('peach.ico')
+        about_window.iconbitmap('HandsOff.ico')
 
         # Update screen geometry variables
         self.update_idletasks()
@@ -1702,6 +1718,10 @@ class App(tk.Tk):
                                         command=lambda: self.update_selected_client_thread(clientConn, clientIP, sname))
             self.update_client.grid(row=0, column=7, sticky="w", pady=5, padx=2, ipadx=2)
             self.buttons.append(self.update_client)
+            self.maintenance = Button(self.controller_btns, text="Maintenance", width=15, pady=5,
+                                      command=lambda: self.run_maintenance(clientConn, clientIP, sname))
+            self.maintenance.grid(row=0, column=7, sticky="w", pady=5, padx=2, ipadx=2)
+            self.buttons.append(self.maintenance)
 
         def client_system_information_thread(con: str, ip: str, sname: str):
             clientSystemInformationThread = Thread(target=self.sysinfo,
@@ -1824,7 +1844,7 @@ def on_icon_clicked(icon, item):
 
 
 if __name__ == '__main__':
-    icon_path = fr"{os.path.dirname(__file__)}\peach.png"
+    icon_path = fr"{os.path.dirname(__file__)}\HandsOff.png"
 
     # Configure system tray icon
     icon_image = PIL.Image.open(icon_path)
