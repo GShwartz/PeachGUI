@@ -1063,6 +1063,9 @@ class App(tk.Tk):
 
     # Run Maintenance on Client
     def run_maintenance(self, con: str, ip: str, sname: str) -> None:
+        def close():
+            maintenance_window.destroy()
+
         maintenance_window = tk.Toplevel()
         maintenance_window.title(f"HandsOff - Maintenance for {ip} | {sname}")
         maintenance_window.iconbitmap('HandsOff.ico')
@@ -1113,14 +1116,16 @@ class App(tk.Tk):
         hard_disk_label.configure(text='Hard Disk Maintenance')
         hard_disk_label.grid(row=5, column=0, sticky='ew', pady=5)
 
-        disk_cleanup_label = Label(maintenance_window, text='Disk Cleanup', background='slate gray', pady=5)
+        disk_cleanup_label = Label(maintenance_window, text='Disk Cleanup',
+                                   background='slate gray', pady=5, font=('Arial Black', 10), foreground='white')
         disk_cleanup_label.grid(row=6, column=0, sticky='we')
-        disk_cleanup_checkbox = Checkbutton(maintenance_window, variable='')
+        disk_cleanup_checkbox = Checkbutton(maintenance_window, variable='', background='slate gray')
         disk_cleanup_checkbox.grid(row=7, column=0)
 
-        optimize_label = Label(maintenance_window, text='Optimize HD', background='slate gray', pady=5)
+        optimize_label = Label(maintenance_window, text='Optimize HD', font=('Arial Black', 10), foreground='white',
+                               background='slate gray', pady=5)
         optimize_label.grid(row=8, sticky='we')
-        optimize_label_checkbox = Checkbutton(maintenance_window, variable='')
+        optimize_label_checkbox = Checkbutton(maintenance_window, variable='', background='slate gray')
         optimize_label_checkbox.grid(row=9, column=0)
 
         run_optimize_button = Button(maintenance_window, text='Run Disk Maintenance',
@@ -1130,7 +1135,7 @@ class App(tk.Tk):
 
         close_button = Button(maintenance_window, text='Close',
                               relief='raised', background='SkyBlue2',
-                              command='')
+                              command=close)
         close_button.grid(row=11, column=0, sticky='ew', pady=10, ipady=5, padx=10, ipadx=5)
 
     # ==++==++==++== END Controller Buttons ==++==++==++==
