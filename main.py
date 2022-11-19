@@ -484,10 +484,11 @@ class App(tk.Tk):
                                           msg=f'Enabling sidebar {sbutton.config("text")[-1]} button...')
             sbutton.config(state=NORMAL)
 
-        for mbutton in list(self.maintenance_buttons):
-            self.local_tools.logIt_thread(self.log_path,
-                                          msg=f'Enabling maintenance {sbutton.config("text")[-1]} button...')
-            mbutton.config(state=NORMAL)
+        if len(self.maintenance_buttons) > 0:
+            for mbutton in list(self.maintenance_buttons):
+                self.local_tools.logIt_thread(self.log_path,
+                                              msg=f'Enabling maintenance {sbutton.config("text")[-1]} button...')
+                mbutton.config(state=NORMAL)
 
     # Disable Controller Buttons
     def disable_buttons(self, sidebar=None, maintenance=None):
@@ -915,7 +916,6 @@ class App(tk.Tk):
 
         self.local_tools.logIt_thread(self.log_path,
                                       msg=f'Calling self.display_file_content(None, {filepath}, {self.system_information_tab}, txt="Tasks")...')
-        # Display file content in system information notebook TextBox
         self.display_file_content(None, filepath, self.system_information_tab, txt='Tasks')
         self.local_tools.logIt_thread(self.log_path, msg=f'Displaying popup to kill a task...')
         killTask = messagebox.askyesno(f"Tasks from {ip} | {sname}", "Kill Task?\t\t\t\t\t\t\t\t")
