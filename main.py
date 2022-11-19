@@ -66,6 +66,8 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.style = ttk.Style()
+        self.update_url = StringVar()
+        self.new_url = ''
         self.local_tools = Locals()
 
         # ======== Server Config ==========
@@ -206,6 +208,13 @@ class App(tk.Tk):
                                name="Restart All Clients Thread")
         restartThread.start()
 
+    # Show Help Thread
+    def show_help_thread(self):
+        helpThread = Thread(target=self.show_help,
+                            daemon=True,
+                            name="Show Help Thread")
+        helpThread.start()
+
     # ==++==++==++== END THREADED FUNCS ==++==++==++== #
     # ==++==++==++== GUI ==++==++==++==
     # Define GUI Styles
@@ -245,12 +254,12 @@ class App(tk.Tk):
 
         tools.add_command(label="Refresh", command=self.refresh)
         tools.add_command(label="Restart all clients", command=self.restart_all_clients_thread)
-        tools.add_command(label="Update all clients", command=self.update_all_clients_thread, state=DISABLED)
+        tools.add_command(label="Update all clients", command=self.update_all_clients_thread, state=NORMAL)
 
         tools.add_separator()
         tools.add_command(label="Options", command=self.options)
 
-        helpbar.add_command(label="Help")
+        helpbar.add_command(label="Help", command=self.show_help_thread)
         helpbar.add_command(label="About", command=self.about)
 
         menubar.add_cascade(label='File', menu=file)
@@ -515,9 +524,35 @@ class App(tk.Tk):
 
             return
 
+    # Submit URL
+    def submit_url(self):
+        print(self.update_url.get())
+
     # Broadcast update command to all connected stations
     def update_all_clients(self) -> bool:
-        # TODO: Send Update command & Send New Download URL
+        url_window = tk.Toplevel()
+        url_window.title("HandsOff - client.exe URL")
+        url_window.iconbitmap('HandsOff.ico')
+
+        # Set Mid Screen Coordinates
+        x = (self.WIDTH / 2) - (100 / 2)
+        y = (self.HEIGHT / 2) - (50 / 2)
+
+        # Set Window Size & Location & Center Window
+        url_window.geometry(f'{100}x{50}+{int(x)}+{int(y)}')
+        url_window.configure(background='slate gray', takefocus=True)
+        url_window.grid_columnconfigure(1, weight=1)
+        url_window.grid_rowconfigure(1, weight=1)
+        url_window.maxsize(100, 50)
+        url_window.minsize(100, 50)
+
+        url_entry = Entry(url_window, textvariable=self.update_url)
+        url_entry.grid(row=0, column=1, sticky='ew')
+        url_entry.focus()
+
+        url_submit = Button(url_window, text="Submit", command=self.submit_url)
+        url_submit.grid(row=1, column=0, pady=5)
+
         self.local_tools.logIt_thread(self.log_path, msg=f'Running update_all_clients()...')
         if len(self.targets) == 0:
             self.local_tools.logIt_thread(self.log_path, msg=f'Displaying popup window: "No connected stations"...')
@@ -526,13 +561,15 @@ class App(tk.Tk):
 
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.disable_buttons_thread()...')
         self.disable_buttons_thread(sidebar=False)
+        url_window.wait_window(self)
         try:
             for t in self.targets:
                 self.local_tools.logIt_thread(self.log_path,
                                               msg=f'Sending update command to all connected stations...')
-                t.send('update'.encode())
-                self.local_tools.logIt_thread(self.log_path, msg=f'Send completed.')
                 try:
+                    t.send('update'.encode())
+                    self.local_tools.logIt_thread(self.log_path, msg=f'Send completed.')
+                    t.send(str(self.update_url).encode())
                     msg = t.recv(1024).decode()
                     self.local_tools.logIt_thread(self.log_path, msg=f'Station: {msg}')
 
@@ -591,7 +628,7 @@ class App(tk.Tk):
             fr = Frame(self.notebook, height=350, background='black')
             self.frames.append(fr)
             tab = self.frames[-1]
-            button = Button(tab, image=self.last_screenshot, command=show_picture_thread)
+            button = Button(tab, image=self.last_screenshot, command=show_picture_thread, border=5, bd=3)
             button.pack()
             self.local_tools.logIt_thread(self.log_path, msg=f'Adding tab to notebook...')
             self.notebook.add(tab, text=f"{txt}")
@@ -629,7 +666,7 @@ class App(tk.Tk):
             else:
                 self.local_tools.logIt_thread(self.log_path, msg=f'Building working frame...')
                 tab = Frame(self.notebook, height=350, background='black')
-                button = Button(tab, image=self.last_screenshot, command=show_picture_thread)
+                button = Button(tab, image=self.last_screenshot, command=show_picture_thread, border=5, bd=3)
                 button.pack(padx=5, pady=10)
                 self.local_tools.logIt_thread(self.log_path, msg=f'Adding tab to notebook...')
                 self.notebook.add(tab, text=f"{txt}")
@@ -1634,6 +1671,11 @@ class App(tk.Tk):
         options_window.geometry(f'{400}x{400}+{int(x)}+{int(y)}')
         options_window.configure(background='slate gray')
 
+    # Show Help
+    def show_help(self):
+        github_url = 'https://github.com/GShwartz/PeachGUI'
+        return webbrowser.open_new_tab(github_url)
+
     # About Window
     def about(self) -> None:
         def on_github_hover(event):
@@ -1998,6 +2040,9 @@ class Locals:
 
 
 def on_icon_clicked(icon, item):
+    if str(item) == "About":
+        app.about()
+
     if str(item) == "Restore":
         app.deiconify()
 
@@ -2011,6 +2056,7 @@ if __name__ == '__main__':
     # Configure system tray icon
     icon_image = PIL.Image.open(icon_path)
     icon = pystray.Icon("HandsOff", icon_image, menu=pystray.Menu(
+        pystray.MenuItem("About", on_icon_clicked),
         pystray.MenuItem("Restore", on_icon_clicked),
         pystray.MenuItem("Exit", on_icon_clicked)
     ))
