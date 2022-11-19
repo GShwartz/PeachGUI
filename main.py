@@ -533,6 +533,11 @@ class App(tk.Tk):
                 print(f"url_entry: {url}")
                 return False
 
+            if not str(url).lower()[:4] == 'http':
+                url_entry.delete(0, END)
+                print(f"url_entry: {url}")
+                return False
+
             sure = messagebox.askyesno(f"New URL: {url}", "Are you sure?")
             if sure:
                 try:
@@ -544,6 +549,7 @@ class App(tk.Tk):
                             self.local_tools.logIt_thread(self.log_path, msg=f'Send completed.')
                             t.send(str(url).encode())
                             msg = t.recv(1024).decode()
+                            self.update_statusbar_messages_thread(msg=f'{msg}')
                             self.local_tools.logIt_thread(self.log_path, msg=f'Station: {msg}')
 
                         except (WindowsError, socket.error) as e:
@@ -557,9 +563,7 @@ class App(tk.Tk):
                 self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.refresh()...')
                 self.local_tools.logIt_thread(self.log_path, msg=f'Displaying update info popup window...')
                 time.sleep(2)
-                messagebox.showinfo("Update All Clients",
-                                    "Update command sent.\nClick refresh to update the connected table.")
-
+                messagebox.showinfo("Update All Clients", "Update command sent.")
                 url_window.withdraw()
                 self.refresh()
                 return True
@@ -1181,6 +1185,12 @@ class App(tk.Tk):
         def on_run_optimize_leave(event):
             run_optimize_button.config(background='SkyBlue2')
 
+        def on_cleanup_checkbox_hover(event):
+            disk_cleanup_checkbox.config(background='slate gray')
+
+        def on_optimize_hover(event):
+            optimize_checkbox.config(background='slate gray')
+
         def on_close_hover(event):
             close_button.config(background='ghost white')
 
@@ -1237,7 +1247,7 @@ class App(tk.Tk):
 
         sfc_label = Label(maintenance_window, relief='solid', background='slate gray', foreground='white')
         sfc_label.configure(width=20)
-        sfc_label.configure(text="SFC Maintenance")
+        sfc_label.configure(text="OS Scan & Repair")
         sfc_label.grid(row=0, column=0, sticky='we', pady=5)
 
         sfc_verify_button = Button(maintenance_window, text='SFC Verify Only',
@@ -1256,15 +1266,15 @@ class App(tk.Tk):
         sfc_scan_button.bind("<Leave>", on_scan_leave)
         self.maintenance_buttons.append(sfc_scan_button)
 
-        dism_label = Label(maintenance_window, relief='solid', background='slate gray', foreground='white')
-        dism_label.configure(width=20)
-        dism_label.configure(text="DISM Scan & Restore")
-        dism_label.grid(row=3, column=0, sticky='we', pady=5)
+        # dism_label = Label(maintenance_window, relief='solid', background='slate gray', foreground='white')
+        # dism_label.configure(width=20)
+        # dism_label.configure(text="DISM Scan & Restore")
+        # dism_label.grid(row=3, column=0, sticky='we', pady=5)
 
         dism_online_button = Button(maintenance_window, text='DISM Online Health Restoration',
                                     relief='raised', background='SkyBlue2',
                                     command='')
-        dism_online_button.grid(row=4, column=0, sticky='we', pady=5, ipadx=10)
+        dism_online_button.grid(row=3, column=0, sticky='we', pady=5, ipadx=10)
         dism_online_button.bind("<Enter>", on_dism_online_hover)
         dism_online_button.bind("<Leave>", on_dism_online_leave)
         self.maintenance_buttons.append(dism_online_button)
@@ -1272,24 +1282,30 @@ class App(tk.Tk):
         hard_disk_label = Label(maintenance_window, relief='solid', background='slate gray', foreground='white')
         hard_disk_label.configure(width=20)
         hard_disk_label.configure(text='Hard Disk Maintenance')
-        hard_disk_label.grid(row=5, column=0, sticky='ew', pady=5)
+        hard_disk_label.grid(row=4, column=0, sticky='ew', pady=5)
 
         disk_cleanup_label = Label(maintenance_window, text='Disk Cleanup',
                                    background='slate gray', pady=5, font=('Arial Black', 10), foreground='white')
-        disk_cleanup_label.grid(row=6, column=0, sticky='we')
-        disk_cleanup_checkbox = Checkbutton(maintenance_window, variable='', background='slate gray')
-        disk_cleanup_checkbox.grid(row=7, column=0)
+        disk_cleanup_label.grid(row=5, column=0, sticky='we')
+        disk_cleanup_checkbox = Checkbutton(maintenance_window, variable='',
+                                            background='slate gray', selectcolor='ghost white',
+                                            activebackground='slate gray')
+        disk_cleanup_checkbox.grid(row=6, column=0)
+        disk_cleanup_checkbox.bind("<Enter>", on_cleanup_checkbox_hover)
 
         optimize_label = Label(maintenance_window, text='Optimize HD', font=('Arial Black', 10), foreground='white',
                                background='slate gray', pady=5)
-        optimize_label.grid(row=8, sticky='we')
-        optimize_label_checkbox = Checkbutton(maintenance_window, variable='', background='slate gray')
-        optimize_label_checkbox.grid(row=9, column=0)
+        optimize_label.grid(row=7, sticky='we')
+        optimize_checkbox = Checkbutton(maintenance_window, variable='',
+                                        background='slate gray', selectcolor='ghost white',
+                                        activebackground='slate gray')
+        optimize_checkbox.grid(row=8, column=0)
+        optimize_checkbox.bind("<Enter>", on_optimize_hover)
 
         run_optimize_button = Button(maintenance_window, text='Run Disk Maintenance',
                                      relief='raised', background='SkyBlue2',
                                      command='')
-        run_optimize_button.grid(row=10, column=0, sticky='we', pady=5, ipadx=10)
+        run_optimize_button.grid(row=9, column=0, sticky='we', pady=5, ipadx=10)
         run_optimize_button.bind("<Enter>", on_run_optimize_hover)
         run_optimize_button.bind("<Leave>", on_run_optimize_leave)
         self.maintenance_buttons.append(run_optimize_button)
@@ -1297,7 +1313,7 @@ class App(tk.Tk):
         close_button = Button(maintenance_window, text='Close',
                               relief='raised', background='SkyBlue2',
                               command=close)
-        close_button.grid(row=11, column=0, sticky='ew', pady=10, ipady=5, padx=10, ipadx=5)
+        close_button.grid(row=10, column=0, sticky='ew', pady=10, ipady=5, padx=10, ipadx=5)
         close_button.bind("<Enter>", on_close_hover)
         close_button.bind("<Leave>", on_close_leave)
     # ==++==++==++== END Controller Buttons ==++==++==++==
@@ -1525,13 +1541,17 @@ class App(tk.Tk):
 
             else:
                 self.local_tools.logIt_thread(self.log_path, msg=f'Iterating self.clients dictionary...')
-                for conKey, macValue in self.clients.items():
-                    for con in self.targets:
-                        if conKey == con:
-                            for macKey, ipVal in macValue.items():
-                                for ipKey, identValue in ipVal.items():
-                                    if ipKey == self.ips[i]:
-                                        self.remove_lost_connection(conKey, ipKey)
+                try:
+                    for conKey, macValue in self.clients.items():
+                        for con in self.targets:
+                            if conKey == con:
+                                for macKey, ipVal in macValue.items():
+                                    for ipKey, identValue in ipVal.items():
+                                        if ipKey == self.ips[i]:
+                                            self.remove_lost_connection(conKey, ipKey)
+
+                except (IndexError, RuntimeError):
+                    pass
 
         self.update_statusbar_messages_thread(msg=f'Vitals check completed.')
         self.local_tools.logIt_thread(self.log_path, msg=f'=== End of vital_signs() ===')
