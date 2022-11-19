@@ -416,6 +416,12 @@ class App(tk.Tk):
 
     # Build Notebook
     def create_notebook(self):
+        self.local_tools.logIt_thread(self.log_path, msg=f'Building details LabelFrame...')
+        self.details_labelFrame = LabelFrame(self.main_frame, text="Details", relief='solid',
+                                             height=400, background='gainsboro')
+        self.details_labelFrame.grid(row=3, sticky='news', columnspan=3)
+        self.local_tools.logIt_thread(self.log_path, msg=f'Calling self.create_notebook()...')
+
         self.local_tools.logIt_thread(self.log_path, msg=f'Running create_notebook()...')
         self.local_tools.logIt_thread(self.log_path, msg=f'Clearing frames list...')
         self.frames.clear()
@@ -1065,6 +1071,36 @@ class App(tk.Tk):
         def close():
             maintenance_window.destroy()
 
+        def on_verify_hover(event):
+            sfc_verify_button.config(background='ghost white')
+
+        def on_verify_leave(event):
+            sfc_verify_button.config(background='SkyBlue2')
+
+        def on_scan_hover(event):
+            sfc_scan_button.config(background='ghost white')
+
+        def on_scan_leave(event):
+            sfc_scan_button.config(background='SkyBlue2')
+
+        def on_dism_online_hover(event):
+            dism_online_button.config(background='ghost white')
+
+        def on_dism_online_leave(event):
+            dism_online_button.config(background='SkyBlue2')
+
+        def on_run_optimize_hover(event):
+            run_optimize_button.config(background='ghost white')
+
+        def on_run_optimize_leave(event):
+            run_optimize_button.config(background='SkyBlue2')
+
+        def on_close_hover(event):
+            close_button.config(background='ghost white')
+
+        def on_close_leave(event):
+            close_button.config(background='SkyBlue2')
+
         maintenance_window = tk.Toplevel()
         maintenance_window.title(f"HandsOff - Maintenance for {ip} | {sname}")
         maintenance_window.iconbitmap('HandsOff.ico')
@@ -1094,11 +1130,15 @@ class App(tk.Tk):
                                    relief='raised', background='SkyBlue2',
                                    command='')
         sfc_verify_button.grid(row=1, column=0, sticky='we', pady=5, ipadx=10)
+        sfc_verify_button.bind("<Enter>", on_verify_hover)
+        sfc_verify_button.bind("<Leave>", on_verify_leave)
 
         sfc_scan_button = Button(maintenance_window, text='SFC Scan & Repair',
                                  relief='raised', background='SkyBlue2',
                                  command='')
         sfc_scan_button.grid(row=2, column=0, sticky='we', pady=5, ipadx=10)
+        sfc_scan_button.bind("<Enter>", on_scan_hover)
+        sfc_scan_button.bind("<Leave>", on_scan_leave)
 
         dism_label = Label(maintenance_window, relief='solid', background='slate gray', foreground='white')
         dism_label.configure(width=20)
@@ -1109,6 +1149,8 @@ class App(tk.Tk):
                                     relief='raised', background='SkyBlue2',
                                     command='')
         dism_online_button.grid(row=4, column=0, sticky='we', pady=5, ipadx=10)
+        dism_online_button.bind("<Enter>", on_dism_online_hover)
+        dism_online_button.bind("<Leave>", on_dism_online_leave)
 
         hard_disk_label = Label(maintenance_window, relief='solid', background='slate gray', foreground='white')
         hard_disk_label.configure(width=20)
@@ -1131,12 +1173,15 @@ class App(tk.Tk):
                                      relief='raised', background='SkyBlue2',
                                      command='')
         run_optimize_button.grid(row=10, column=0, sticky='we', pady=5, ipadx=10)
+        run_optimize_button.bind("<Enter>", on_run_optimize_hover)
+        run_optimize_button.bind("<Leave>", on_run_optimize_leave)
 
         close_button = Button(maintenance_window, text='Close',
                               relief='raised', background='SkyBlue2',
                               command=close)
         close_button.grid(row=11, column=0, sticky='ew', pady=10, ipady=5, padx=10, ipadx=5)
-
+        close_button.bind("<Enter>", on_close_hover)
+        close_button.bind("<Leave>", on_close_leave)
     # ==++==++==++== END Controller Buttons ==++==++==++==
 
     # # ==++==++==++== Server Processes ==++==++==++==
