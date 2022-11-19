@@ -1,5 +1,4 @@
 from datetime import datetime
-from termcolor import colored
 from threading import Thread
 import ntpath
 import socket
@@ -87,8 +86,6 @@ class Tasks:
 
     def tasks(self, ip) -> str:
         self.logIt_thread(self.log_path, msg=f'Running tasks({ip})...')
-        # print(f"[{colored('*', 'cyan')}]Retrieving remote station's task list\n"
-        #       f"[{colored('*', 'cyan')}]Please wait...")
         try:
             self.logIt_thread(self.log_path, msg=f'Sending tasks command to {ip}...')
             self.con.send('tasks'.encode())
@@ -99,7 +96,7 @@ class Tasks:
             self.logIt_thread(self.log_path, msg=f'Filename: {filenameRecv}.')
 
             self.logIt_thread(self.log_path, msg=f'Sleeping for {0.5} seconds...')
-            time.sleep(0.5)
+            time.sleep(1)
 
             self.logIt_thread(self.log_path, msg=f'Waiting for file size from {ip}...')
             size = self.con.recv(4)
@@ -134,19 +131,14 @@ class Tasks:
             self.logIt_thread(self.log_path, msg=f'Printing file content to screen...')
             with open(filenameRecv, 'r') as file:
                 data = file.read()
-                # print(data)
-
-            self.logIt_thread(self.log_path, msg=f'Renaming {filenameRecv} to send to {ip}...')
-            name = ntpath.basename(str(filenameRecv))
 
             self.logIt_thread(self.log_path, msg=f'Sending confirmation to {ip}...')
-            self.con.send(f"Received file: {name}\n".encode())
+            self.con.send(f"Received file: {filenameRecv}\n".encode())
             self.logIt_thread(self.log_path, msg=f'Send complete.')
 
             self.logIt_thread(self.log_path, msg=f'Waiting for closer from {ip}...')
             msg = self.con.recv(1024).decode()
             self.logIt_thread(self.log_path, msg=f'{ip}: {msg}')
-            # print(f"[{colored('@', 'green')}]{msg}")
 
             # Move screenshot file to directory
             src = os.path.abspath(filenameRecv)
@@ -159,7 +151,7 @@ class Tasks:
             except FileExistsError:
                 pass
 
-            return dst + filenameRecv[8:]
+            return dst + filenameRecv[11:]
 
         except (WindowsError, socket.error) as e:
             self.logIt_thread(self.log_path, msg=f'Error: {e}')
@@ -179,10 +171,6 @@ class Tasks:
 
                                 del self.connections[con]
                                 del self.clients[con]
-                                # print(f"[{colored('*', 'red')}]{colored(f'{ip}', 'yellow')} | "
-                                #       f"{colored(f'{identKey}', 'yellow')} | "
-                                #       f"{colored(f'{userValue}', 'yellow')} "
-                                #       f"Removed from Availables list.\n")
             return False
 
         except Exception as e:

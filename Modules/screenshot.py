@@ -1,5 +1,4 @@
 from datetime import datetime
-from termcolor import colored
 from threading import Thread
 from PIL import Image
 import subprocess

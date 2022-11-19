@@ -83,7 +83,6 @@ class Sysinfo:
             self.logIt_thread(self.log_path, msg=f'Waiting for results from {self.con}...')
             result = self.con.recv(4096).decode()
             self.logIt_thread(self.log_path, msg=f'Results: {result}\n')
-            # print(result)
 
             self.logIt_thread(self.log_path, msg=f'Writing results to {self.sysinfo}...')
             if not os.path.exists(self.sysinfo):
@@ -114,7 +113,7 @@ class Sysinfo:
         name, user, path = self.make_dir(ip)
 
         self.logIt_thread(self.log_path, msg=f'Creating sysinfo file...')
-        self.sysinfo = rf'C:\Peach\{name}\sysinfo {dt}.txt'
+        self.sysinfo = rf'C:\HandsOff\{name}\sysinfo {dt}.txt'
 
         self.logIt_thread(self.log_path, msg=f'Calling self.run_command()...')
 
