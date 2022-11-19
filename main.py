@@ -186,7 +186,7 @@ class App(tk.Tk):
         disable.start()
 
     # Enable Controller Buttons Thread
-    def enable_buttons_thread(self) -> None:
+    def enable_buttons_thread(self, maintenance=None) -> None:
         enable = Thread(target=self.enable_buttons,
                         daemon=True,
                         name="Enable Controller Buttons Thread")
@@ -207,7 +207,7 @@ class App(tk.Tk):
         restartThread.start()
 
     # ==++==++==++== END THREADED FUNCS ==++==++==++== #
-
+    # ==++==++==++== GUI ==++==++==++==
     # Define GUI Styles
     def make_style(self):
         self.local_tools.logIt_thread(self.log_path, msg=f'Styling App...')
@@ -245,7 +245,8 @@ class App(tk.Tk):
 
         tools.add_command(label="Refresh", command=self.refresh)
         tools.add_command(label="Restart all clients", command=self.restart_all_clients_thread)
-        tools.add_command(label="Update all clients", command=self.update_all_clients_thread)
+        tools.add_command(label="Update all clients", command=self.update_all_clients_thread, state=DISABLED)
+
         tools.add_separator()
         tools.add_command(label="Options", command=self.options)
 
@@ -259,7 +260,6 @@ class App(tk.Tk):
         self.config(menu=menubar)
         return
 
-    # ==++==++==++== GUI WINDOW ==++==++==++==
     # ==++==++==++== SIDEBAR BUTTONS ==++==++==++==
     # Refresh server info & connected stations table with vital signs
     def refresh(self) -> None:
@@ -277,7 +277,6 @@ class App(tk.Tk):
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling connection_history()...')
         self.connection_history()
         self.update_statusbar_messages_thread(msg='refresh complete.')
-
     # ==++==++==++== END SIDEBAR BUTTONS ==++==++==++==
 
     # Build Main Frame GUI
@@ -473,7 +472,7 @@ class App(tk.Tk):
         return self.withdraw()
 
     # Enable Controller Buttons
-    def enable_buttons(self):
+    def enable_buttons(self, maintenance=None):
         self.local_tools.logIt_thread(self.log_path, msg=f'Running enable_buttons()...')
         for button in list(self.buttons):
             self.local_tools.logIt_thread(self.log_path, msg=f'Enabling {button.config("text")[-1]} button...')
@@ -484,7 +483,7 @@ class App(tk.Tk):
                                           msg=f'Enabling sidebar {sbutton.config("text")[-1]} button...')
             sbutton.config(state=NORMAL)
 
-        if len(self.maintenance_buttons) > 0:
+        if maintenance:
             for mbutton in list(self.maintenance_buttons):
                 self.local_tools.logIt_thread(self.log_path,
                                               msg=f'Enabling maintenance {sbutton.config("text")[-1]} button...')
@@ -518,6 +517,7 @@ class App(tk.Tk):
 
     # Broadcast update command to all connected stations
     def update_all_clients(self) -> bool:
+        # TODO: Send Update command & Send New Download URL
         self.local_tools.logIt_thread(self.log_path, msg=f'Running update_all_clients()...')
         if len(self.targets) == 0:
             self.local_tools.logIt_thread(self.log_path, msg=f'Displaying popup window: "No connected stations"...')
@@ -1083,7 +1083,7 @@ class App(tk.Tk):
         self.disable_buttons_thread(maintenance=True)
         print('disabled')
         time.sleep(3)
-        self.enable_buttons_thread()
+        self.enable_buttons_thread(maintenance=True)
         print('enabled')
 
     # Run SFC Scan & Repair
@@ -1882,7 +1882,7 @@ class App(tk.Tk):
             self.buttons.append(self.update_client)
             self.maintenance = Button(self.controller_btns, text="Maintenance", width=15, pady=5,
                                       command=lambda: self.run_maintenance(clientConn, clientIP, sname))
-            self.maintenance.grid(row=0, column=7, sticky="w", pady=5, padx=2, ipadx=2)
+            self.maintenance.grid(row=0, column=8, sticky="w", pady=5, padx=2, ipadx=2)
             self.buttons.append(self.maintenance)
 
         def client_system_information_thread(con: str, ip: str, sname: str):
