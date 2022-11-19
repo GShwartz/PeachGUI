@@ -42,6 +42,7 @@ class App(tk.Tk):
     buttons = []
     sidebar_buttons = []
     social_buttons = []
+    maintenance_buttons = []
 
     # List to hold captured screenshot images
     displayed_screenshot_files = []
@@ -177,7 +178,7 @@ class App(tk.Tk):
         connhistThread.start()
 
     # Disable Controller Buttons Thread
-    def disable_buttons_thread(self, sidebar=None) -> None:
+    def disable_buttons_thread(self, sidebar=None, maintenance=None) -> None:
         disable = Thread(target=self.disable_buttons,
                          args=(sidebar,),
                          daemon=True,
@@ -204,6 +205,7 @@ class App(tk.Tk):
                                daemon=True,
                                name="Restart All Clients Thread")
         restartThread.start()
+
     # ==++==++==++== END THREADED FUNCS ==++==++==++== #
 
     # Define GUI Styles
@@ -275,6 +277,7 @@ class App(tk.Tk):
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling connection_history()...')
         self.connection_history()
         self.update_statusbar_messages_thread(msg='refresh complete.')
+
     # ==++==++==++== END SIDEBAR BUTTONS ==++==++==++==
 
     # Build Main Frame GUI
@@ -481,8 +484,13 @@ class App(tk.Tk):
                                           msg=f'Enabling sidebar {sbutton.config("text")[-1]} button...')
             sbutton.config(state=NORMAL)
 
+        for mbutton in list(self.maintenance_buttons):
+            self.local_tools.logIt_thread(self.log_path,
+                                          msg=f'Enabling maintenance {sbutton.config("text")[-1]} button...')
+            mbutton.config(state=NORMAL)
+
     # Disable Controller Buttons
-    def disable_buttons(self, sidebar=None):
+    def disable_buttons(self, sidebar=None, maintenance=None):
         self.local_tools.logIt_thread(self.log_path, msg=f'Running disable_buttons(sidebar=None)...')
         if sidebar:
             for button in list(self.buttons):
@@ -494,7 +502,11 @@ class App(tk.Tk):
                                               msg=f'Disabling sidebar {sbutton.config("text")[-1]} button...')
                 sbutton.config(state=DISABLED)
 
-            return
+        if maintenance:
+            for mbutton in list(self.maintenance_buttons):
+                self.local_tools.logIt_thread(self.log_path,
+                                              msg=f'Disabling maintenance {mbutton.config("text")[-1]} button...')
+                mbutton.config(state=DISABLED)
 
         else:
             for button in list(self.buttons):
@@ -594,7 +606,7 @@ class App(tk.Tk):
         def show_picture():
             self.sc.show()
 
-        if len(filepath) > 0:
+        if len(filepath) > 0 and filepath.endswith('.txt'):
             self.local_tools.logIt_thread(self.log_path, msg=f'Calling text()...')
             text()
 
@@ -1066,6 +1078,26 @@ class App(tk.Tk):
         self.refresh()
         return True
 
+    # Run SFC Verify
+    def maintenance_verify(self, con: str, ip: str, sname: str):
+        self.disable_buttons_thread(maintenance=True)
+        print('disabled')
+        time.sleep(3)
+        self.enable_buttons_thread()
+        print('enabled')
+
+    # Run SFC Scan & Repair
+    def maintenance_scan(self, con: str, ip: str, sname: str):
+        pass
+
+    # Run DISM Online Restore
+    def maintenance_dism_online(self, con: str, ip: str, sname: str):
+        pass
+
+    # Run Disk Optimizing
+    def maintenance_optimize(self, con: str, ip: str, sname: str):
+        pass
+
     # Run Maintenance on Client
     def run_maintenance(self, con: str, ip: str, sname: str) -> None:
         def close():
@@ -1101,6 +1133,34 @@ class App(tk.Tk):
         def on_close_leave(event):
             close_button.config(background='SkyBlue2')
 
+        def verify_thread():
+            verifyThread = Thread(target=self.maintenance_verify,
+                                  args=(con, ip, sname),
+                                  daemon=True,
+                                  name="Maintenance Verify Thread")
+            verifyThread.start()
+
+        def scan_thread():
+            scanThread = Thread(target=self.maintenance_scan,
+                                args=(con, ip, sname),
+                                daemon=True,
+                                name="Maintenance Scan Thread")
+            scanThread.start()
+
+        def dism_online_thread():
+            dismOnlineThread = Thread(target=self.maintenance_dism_online,
+                                      args=(con, ip, sname),
+                                      daemon=True,
+                                      name="Maintenance DISM Online Thread")
+            dismOnlineThread.start()
+
+        def optimize_thread():
+            optimizeThread = Thread(target=self.maintenance_optimize,
+                                    args=(con, ip, sname),
+                                    daemon=True,
+                                    name="Maintenance Optimize Thread")
+            optimizeThread.start()
+
         maintenance_window = tk.Toplevel()
         maintenance_window.title(f"HandsOff - Maintenance for {ip} | {sname}")
         maintenance_window.iconbitmap('HandsOff.ico')
@@ -1128,10 +1188,11 @@ class App(tk.Tk):
 
         sfc_verify_button = Button(maintenance_window, text='SFC Verify Only',
                                    relief='raised', background='SkyBlue2',
-                                   command='')
+                                   command=verify_thread)
         sfc_verify_button.grid(row=1, column=0, sticky='we', pady=5, ipadx=10)
         sfc_verify_button.bind("<Enter>", on_verify_hover)
         sfc_verify_button.bind("<Leave>", on_verify_leave)
+        self.maintenance_buttons.append(sfc_verify_button)
 
         sfc_scan_button = Button(maintenance_window, text='SFC Scan & Repair',
                                  relief='raised', background='SkyBlue2',
@@ -1139,6 +1200,7 @@ class App(tk.Tk):
         sfc_scan_button.grid(row=2, column=0, sticky='we', pady=5, ipadx=10)
         sfc_scan_button.bind("<Enter>", on_scan_hover)
         sfc_scan_button.bind("<Leave>", on_scan_leave)
+        self.maintenance_buttons.append(sfc_scan_button)
 
         dism_label = Label(maintenance_window, relief='solid', background='slate gray', foreground='white')
         dism_label.configure(width=20)
@@ -1151,6 +1213,7 @@ class App(tk.Tk):
         dism_online_button.grid(row=4, column=0, sticky='we', pady=5, ipadx=10)
         dism_online_button.bind("<Enter>", on_dism_online_hover)
         dism_online_button.bind("<Leave>", on_dism_online_leave)
+        self.maintenance_buttons.append(dism_online_button)
 
         hard_disk_label = Label(maintenance_window, relief='solid', background='slate gray', foreground='white')
         hard_disk_label.configure(width=20)
@@ -1175,6 +1238,7 @@ class App(tk.Tk):
         run_optimize_button.grid(row=10, column=0, sticky='we', pady=5, ipadx=10)
         run_optimize_button.bind("<Enter>", on_run_optimize_hover)
         run_optimize_button.bind("<Leave>", on_run_optimize_leave)
+        self.maintenance_buttons.append(run_optimize_button)
 
         close_button = Button(maintenance_window, text='Close',
                               relief='raised', background='SkyBlue2',
@@ -1879,7 +1943,7 @@ class App(tk.Tk):
                                 temp_notebook = {clientIP: {sname: self.notebook}}
                                 if not temp_notebook[clientIP][sname] in self.notebooks:
                                     self.notebooks.update(temp_notebook)
-                                    print(self.notebooks)
+                                    # print(self.notebooks)
 
                                 return True
 
