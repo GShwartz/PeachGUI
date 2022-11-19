@@ -204,8 +204,8 @@ class App(tk.Tk):
                                daemon=True,
                                name="Restart All Clients Thread")
         restartThread.start()
-
     # ==++==++==++== END THREADED FUNCS ==++==++==++== #
+
     # Define GUI Styles
     def make_style(self):
         self.local_tools.logIt_thread(self.log_path, msg=f'Styling App...')
@@ -275,7 +275,6 @@ class App(tk.Tk):
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling connection_history()...')
         self.connection_history()
         self.update_statusbar_messages_thread(msg='refresh complete.')
-
     # ==++==++==++== END SIDEBAR BUTTONS ==++==++==++==
 
     # Build Main Frame GUI
@@ -1084,7 +1083,7 @@ class App(tk.Tk):
         maintenance_window.grid_rowconfigure(11, weight=1)
         maintenance_window.maxsize(500, 500)
         maintenance_window.minsize(500, 500)
-        maintenance_window.grab_set()
+        maintenance_window.focus_set()
 
         sfc_label = Label(maintenance_window, relief='solid', background='slate gray', foreground='white')
         sfc_label.configure(width=20)
