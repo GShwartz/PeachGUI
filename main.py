@@ -61,7 +61,7 @@ class App(tk.Tk):
     log_path = fr'{path}\server_log.txt'
 
     WIDTH = 1348
-    HEIGHT = 765
+    HEIGHT = 775
 
     def __init__(self):
         super().__init__()
@@ -286,6 +286,7 @@ class App(tk.Tk):
         self.local_tools.logIt_thread(self.log_path, msg=f'Calling connection_history()...')
         self.connection_history()
         self.update_statusbar_messages_thread(msg='refresh complete.')
+
     # ==++==++==++== END SIDEBAR BUTTONS ==++==++==++==
 
     # Build Main Frame GUI
@@ -1136,186 +1137,10 @@ class App(tk.Tk):
         self.refresh()
         return True
 
-    # Run SFC Verify
-    def maintenance_verify(self, con: str, ip: str, sname: str):
-        self.disable_buttons_thread(maintenance=True)
-        print('disabled')
-        time.sleep(3)
-        self.enable_buttons_thread(maintenance=True)
-        print('enabled')
-
-    # Run SFC Scan & Repair
-    def maintenance_scan(self, con: str, ip: str, sname: str):
-        pass
-
-    # Run DISM Online Restore
-    def maintenance_dism_online(self, con: str, ip: str, sname: str):
-        pass
-
-    # Run Disk Optimizing
-    def maintenance_optimize(self, con: str, ip: str, sname: str):
-        pass
-
     # Run Maintenance on Client
     def run_maintenance(self, con: str, ip: str, sname: str) -> None:
-        def close():
-            maintenance_window.destroy()
-
-        def on_verify_hover(event):
-            sfc_verify_button.config(background='ghost white')
-
-        def on_verify_leave(event):
-            sfc_verify_button.config(background='SkyBlue2')
-
-        def on_scan_hover(event):
-            sfc_scan_button.config(background='ghost white')
-
-        def on_scan_leave(event):
-            sfc_scan_button.config(background='SkyBlue2')
-
-        def on_dism_online_hover(event):
-            dism_online_button.config(background='ghost white')
-
-        def on_dism_online_leave(event):
-            dism_online_button.config(background='SkyBlue2')
-
-        def on_run_optimize_hover(event):
-            run_optimize_button.config(background='ghost white')
-
-        def on_run_optimize_leave(event):
-            run_optimize_button.config(background='SkyBlue2')
-
-        def on_cleanup_checkbox_hover(event):
-            disk_cleanup_checkbox.config(background='slate gray')
-
-        def on_optimize_hover(event):
-            optimize_checkbox.config(background='slate gray')
-
-        def on_close_hover(event):
-            close_button.config(background='ghost white')
-
-        def on_close_leave(event):
-            close_button.config(background='SkyBlue2')
-
-        def verify_thread():
-            verifyThread = Thread(target=self.maintenance_verify,
-                                  args=(con, ip, sname),
-                                  daemon=True,
-                                  name="Maintenance Verify Thread")
-            verifyThread.start()
-
-        def scan_thread():
-            scanThread = Thread(target=self.maintenance_scan,
-                                args=(con, ip, sname),
-                                daemon=True,
-                                name="Maintenance Scan Thread")
-            scanThread.start()
-
-        def dism_online_thread():
-            dismOnlineThread = Thread(target=self.maintenance_dism_online,
-                                      args=(con, ip, sname),
-                                      daemon=True,
-                                      name="Maintenance DISM Online Thread")
-            dismOnlineThread.start()
-
-        def optimize_thread():
-            optimizeThread = Thread(target=self.maintenance_optimize,
-                                    args=(con, ip, sname),
-                                    daemon=True,
-                                    name="Maintenance Optimize Thread")
-            optimizeThread.start()
-
-        maintenance_window = tk.Toplevel()
-        maintenance_window.title(f"HandsOff - Maintenance for {ip} | {sname}")
-        maintenance_window.iconbitmap('HandsOff.ico')
-
-        # Update screen geometry variables
-        self.update_idletasks()
-
-        # Set Mid Screen Coordinates
-        x = (self.WIDTH / 2) - (500 / 2)
-        y = (self.HEIGHT / 2) - (500 / 2)
-
-        # Set Window Size & Location & Center Window
-        maintenance_window.geometry(f'{500}x{500}+{int(x)}+{int(y)}')
-        maintenance_window.configure(background='slate gray', takefocus=True)
-        maintenance_window.grid_columnconfigure(0, weight=1)
-        maintenance_window.grid_rowconfigure(11, weight=1)
-        maintenance_window.maxsize(500, 500)
-        maintenance_window.minsize(500, 500)
-        maintenance_window.focus_set()
-
-        sfc_label = Label(maintenance_window, relief='solid', background='slate gray', foreground='white')
-        sfc_label.configure(width=20)
-        sfc_label.configure(text="OS Scan & Repair")
-        sfc_label.grid(row=0, column=0, sticky='we', pady=5)
-
-        sfc_verify_button = Button(maintenance_window, text='SFC Verify Only',
-                                   relief='raised', background='SkyBlue2',
-                                   command=verify_thread)
-        sfc_verify_button.grid(row=1, column=0, sticky='we', pady=5, ipadx=10)
-        sfc_verify_button.bind("<Enter>", on_verify_hover)
-        sfc_verify_button.bind("<Leave>", on_verify_leave)
-        self.maintenance_buttons.append(sfc_verify_button)
-
-        sfc_scan_button = Button(maintenance_window, text='SFC Scan & Repair',
-                                 relief='raised', background='SkyBlue2',
-                                 command='')
-        sfc_scan_button.grid(row=2, column=0, sticky='we', pady=5, ipadx=10)
-        sfc_scan_button.bind("<Enter>", on_scan_hover)
-        sfc_scan_button.bind("<Leave>", on_scan_leave)
-        self.maintenance_buttons.append(sfc_scan_button)
-
-        # dism_label = Label(maintenance_window, relief='solid', background='slate gray', foreground='white')
-        # dism_label.configure(width=20)
-        # dism_label.configure(text="DISM Scan & Restore")
-        # dism_label.grid(row=3, column=0, sticky='we', pady=5)
-
-        dism_online_button = Button(maintenance_window, text='DISM Online Health Restoration',
-                                    relief='raised', background='SkyBlue2',
-                                    command='')
-        dism_online_button.grid(row=3, column=0, sticky='we', pady=5, ipadx=10)
-        dism_online_button.bind("<Enter>", on_dism_online_hover)
-        dism_online_button.bind("<Leave>", on_dism_online_leave)
-        self.maintenance_buttons.append(dism_online_button)
-
-        hard_disk_label = Label(maintenance_window, relief='solid', background='slate gray', foreground='white')
-        hard_disk_label.configure(width=20)
-        hard_disk_label.configure(text='Hard Disk Maintenance')
-        hard_disk_label.grid(row=4, column=0, sticky='ew', pady=5)
-
-        disk_cleanup_label = Label(maintenance_window, text='Disk Cleanup',
-                                   background='slate gray', pady=5, font=('Arial Black', 10), foreground='white')
-        disk_cleanup_label.grid(row=5, column=0, sticky='we')
-        disk_cleanup_checkbox = Checkbutton(maintenance_window, variable='',
-                                            background='slate gray', selectcolor='ghost white',
-                                            activebackground='slate gray')
-        disk_cleanup_checkbox.grid(row=6, column=0)
-        disk_cleanup_checkbox.bind("<Enter>", on_cleanup_checkbox_hover)
-
-        optimize_label = Label(maintenance_window, text='Optimize HD', font=('Arial Black', 10), foreground='white',
-                               background='slate gray', pady=5)
-        optimize_label.grid(row=7, sticky='we')
-        optimize_checkbox = Checkbutton(maintenance_window, variable='',
-                                        background='slate gray', selectcolor='ghost white',
-                                        activebackground='slate gray')
-        optimize_checkbox.grid(row=8, column=0)
-        optimize_checkbox.bind("<Enter>", on_optimize_hover)
-
-        run_optimize_button = Button(maintenance_window, text='Run Disk Maintenance',
-                                     relief='raised', background='SkyBlue2',
-                                     command='')
-        run_optimize_button.grid(row=9, column=0, sticky='we', pady=5, ipadx=10)
-        run_optimize_button.bind("<Enter>", on_run_optimize_hover)
-        run_optimize_button.bind("<Leave>", on_run_optimize_leave)
-        self.maintenance_buttons.append(run_optimize_button)
-
-        close_button = Button(maintenance_window, text='Close',
-                              relief='raised', background='SkyBlue2',
-                              command=close)
-        close_button.grid(row=10, column=0, sticky='ew', pady=10, ipady=5, padx=10, ipadx=5)
-        close_button.bind("<Enter>", on_close_hover)
-        close_button.bind("<Leave>", on_close_leave)
+        maintenance = Maintenance(con, ip, sname)
+        maintenance.run()
     # ==++==++==++== END Controller Buttons ==++==++==++==
 
     # # ==++==++==++== Server Processes ==++==++==++==
@@ -2025,6 +1850,235 @@ class App(tk.Tk):
                                     # print(self.notebooks)
 
                                 return True
+
+
+class Maintenance:
+    def __init__(self, con, ip, sname):
+        self.con = con
+        self.ip = ip
+        self.sname = sname
+        self.local_tools = Locals()
+
+        self.WIDTH = app.WIDTH
+        self.HEIGHT = app.HEIGHT
+        self.maintenance_window = tk.Toplevel()
+        self.maintenance_window.title(f"HandsOff - Maintenance for {ip} | {sname}")
+        self.maintenance_window.iconbitmap('HandsOff.ico')
+
+        # Update screen geometry variables
+        app.update_idletasks()
+
+        # Set Mid Screen Coordinates
+        x = (self.WIDTH / 2) - (500 / 2)
+        y = (self.HEIGHT / 2) - (500 / 2)
+
+        # Set Window Size & Location & Center Window
+        self.maintenance_window.geometry(f'{500}x{500}+{int(x)}+{int(y)}')
+        self.maintenance_window.configure(background='slate gray', takefocus=True)
+        self.maintenance_window.grid_columnconfigure(0, weight=1)
+        self.maintenance_window.grid_rowconfigure(11, weight=1)
+        self.maintenance_window.maxsize(500, 500)
+        self.maintenance_window.minsize(500, 500)
+        self.maintenance_window.focus_set()
+
+    def run(self):
+        self.sfc_label = Label(self.maintenance_window, relief='solid',
+                               background='slate gray', foreground='white')
+        self.sfc_label.configure(width=20)
+        self.sfc_label.configure(text="OS Scan & Repair")
+        self.sfc_label.grid(row=0, column=0, sticky='we', pady=5)
+
+        self.sfc_verify_button = Button(self.maintenance_window, text='SFC Verify Only',
+                                        relief='raised', background='SkyBlue2',
+                                        command=self.verify_thread)
+        self.sfc_verify_button.grid(row=1, column=0, sticky='we', pady=5, ipadx=10)
+        self.sfc_verify_button.bind("<Enter>", self.on_verify_hover)
+        self.sfc_verify_button.bind("<Leave>", self.on_verify_leave)
+        app.maintenance_buttons.append(self.sfc_verify_button)
+
+        self.sfc_scan_button = Button(self.maintenance_window, text='SFC Scan & Repair',
+                                      relief='raised', background='SkyBlue2',
+                                      command='')
+        self.sfc_scan_button.grid(row=2, column=0, sticky='we', pady=5, ipadx=10)
+        self.sfc_scan_button.bind("<Enter>", self.on_scan_hover)
+        self.sfc_scan_button.bind("<Leave>", self.on_scan_leave)
+        app.maintenance_buttons.append(self.sfc_scan_button)
+
+        self.dism_online_button = Button(self.maintenance_window, text='DISM Online Health Restoration',
+                                         relief='raised', background='SkyBlue2',
+                                         command='')
+        self.dism_online_button.grid(row=3, column=0, sticky='we', pady=5, ipadx=10)
+        self.dism_online_button.bind("<Enter>", self.on_dism_online_hover)
+        self.dism_online_button.bind("<Leave>", self.on_dism_online_leave)
+        app.maintenance_buttons.append(self.dism_online_button)
+
+        self.hard_disk_label = Label(self.maintenance_window, relief='solid', background='slate gray',
+                                     foreground='white')
+        self.hard_disk_label.configure(width=20)
+        self.hard_disk_label.configure(text='Hard Disk Maintenance')
+        self.hard_disk_label.grid(row=4, column=0, sticky='ew', pady=5)
+
+        self.disk_cleanup_label = Label(self.maintenance_window, text='Disk Cleanup',
+                                        background='slate gray', pady=5, font=('Arial Black', 10), foreground='white')
+        self.disk_cleanup_label.grid(row=5, column=0, sticky='we')
+        self.disk_cleanup_checkbox = Checkbutton(self.maintenance_window, variable='',
+                                                 background='slate gray', selectcolor='ghost white',
+                                                 activebackground='slate gray')
+        self.disk_cleanup_checkbox.grid(row=6, column=0)
+
+        self.optimize_label = Label(self.maintenance_window, text='Optimize HD', font=('Arial Black', 10),
+                                    foreground='white',
+                                    background='slate gray', pady=5)
+        self.optimize_label.grid(row=7, sticky='we')
+        self.optimize_checkbox = Checkbutton(self.maintenance_window, variable='',
+                                             background='slate gray', selectcolor='ghost white',
+                                             activebackground='slate gray')
+        self.optimize_checkbox.grid(row=8, column=0)
+
+        self.run_optimize_button = Button(self.maintenance_window, text='Run Disk Maintenance',
+                                          relief='raised', background='SkyBlue2',
+                                          command='')
+        self.run_optimize_button.grid(row=9, column=0, sticky='we', pady=5, ipadx=10)
+        self.run_optimize_button.bind("<Enter>", self.on_run_optimize_hover)
+        self.run_optimize_button.bind("<Leave>", self.on_run_optimize_leave)
+        app.maintenance_buttons.append(self.run_optimize_button)
+
+        self.close_button = Button(self.maintenance_window, text='Close',
+                                   relief='raised', background='SkyBlue2',
+                                   command=self.close)
+        self.close_button.grid(row=10, column=0, sticky='ew', pady=10, ipady=5, padx=10, ipadx=5)
+        self.close_button.bind("<Enter>", self.on_close_hover)
+        self.close_button.bind("<Leave>", self.on_close_leave)
+
+    def close(self) -> None:
+        self.maintenance_window.destroy()
+
+    def on_verify_hover(self, event) -> None:
+        self.sfc_verify_button.config(background='ghost white')
+
+    def on_verify_leave(self, event) -> None:
+        self.sfc_verify_button.config(background='SkyBlue2')
+
+    def on_scan_hover(self, event) -> None:
+        self.sfc_scan_button.config(background='ghost white')
+
+    def on_scan_leave(self, event) -> None:
+        self.sfc_scan_button.config(background='SkyBlue2')
+
+    def on_dism_online_hover(self, event) -> None:
+        self.dism_online_button.config(background='ghost white')
+
+    def on_dism_online_leave(self, event) -> None:
+        self.dism_online_button.config(background='SkyBlue2')
+
+    def on_run_optimize_hover(self, event) -> None:
+        self.run_optimize_button.config(background='ghost white')
+
+    def on_run_optimize_leave(self, event) -> None:
+        self.run_optimize_button.config(background='SkyBlue2')
+
+    def on_close_hover(self, event) -> None:
+        self.close_button.config(background='ghost white')
+
+    def on_close_leave(self, event) -> None:
+        self.close_button.config(background='SkyBlue2')
+
+    def verify_thread(self) -> None:
+        verifyThread = Thread(target=self.verify,
+                              daemon=True,
+                              name="Maintenance Verify Thread")
+        verifyThread.start()
+
+    def scan_thread(self) -> None:
+        scanThread = Thread(target=self.sfc_scan,
+                            daemon=True,
+                            name="Maintenance Scan Thread")
+        scanThread.start()
+
+    def dism_online_thread(self) -> None:
+        dismOnlineThread = Thread(target=self.dism_online,
+                                  daemon=True,
+                                  name="Maintenance DISM Online Thread")
+        dismOnlineThread.start()
+
+    def optimize_thread(self) -> None:
+        optimizeThread = Thread(target=self.hard_disk,
+                                daemon=True,
+                                name="Maintenance Optimize Thread")
+        optimizeThread.start()
+
+    def verify(self) -> bool:
+        try:
+            app.local_tools.logIt_thread(app.log_path, msg=f'Sending verify command to {self.ip}...')
+            self.con.send('sfcverify'.encode())
+            app.local_tools.logIt_thread(app.log_path, msg=f'Send complete.')
+            app.local_tools.logIt_thread(app.log_path, msg=f'Waiting for response from {self.ip}...')
+            msg = self.con.recv(1024).decode()
+            app.local_tools.logIt_thread(app.log_path, msg=f'Response: {msg}')
+            app.update_statusbar_messages_thread(msg=f'{self.ip}| {self.sname}: {self.msg}')
+            print(msg)
+            return True
+
+        except (WindowsError, socket.error) as e:
+            app.local_tools.logIt_thread(app.log_path, msg=f'ERROR: {e}...')
+            app.local_tools.logIt_thread(app.log_path, msg=f'Calling self.remove_lost_connection({self.con}, {self.ip})')
+            app.remove_lost_connection(self.con, self.ip)
+            return False
+
+    def sfc_scan(self) -> bool:
+        try:
+            app.local_tools.logIt_thread(app.log_path, msg=f'Sending verify command to {self.ip}...')
+            self.con.send('sfcscan'.encode())
+            app.local_tools.logIt_thread(app.log_path, msg=f'Send complete.')
+            app.local_tools.logIt_thread(app.log_path, msg=f'Waiting for response from {self.ip}...')
+            msg = self.con.recv(1024).decode()
+            self.local_tools.logIt_thread(app.log_path, msg=f'Response: {msg}')
+            app.update_statusbar_messages_thread(msg=f'{self.ip}| {self.sname}: {self.msg}')
+            print(msg)
+            return True
+
+        except (WindowsError, socket.error) as e:
+            app.local_tools.logIt_thread(app.log_path, msg=f'ERROR: {e}...')
+            app.local_tools.logIt_thread(app.log_path, msg=f'Calling self.remove_lost_connection({self.con}, {self.ip})')
+            app.remove_lost_connection(self.con, self.ip)
+            return False
+
+    def dism_online(self) -> bool:
+        try:
+            app.local_tools.logIt_thread(app.log_path, msg=f'Sending verify command to {self.ip}...')
+            self.con.send('dismonline'.encode())
+            app.local_tools.logIt_thread(app.log_path, msg=f'Send complete.')
+            app.local_tools.logIt_thread(app.log_path, msg=f'Waiting for response from {self.ip}...')
+            msg = self.con.recv(1024).decode()
+            app.local_tools.logIt_thread(app.log_path, msg=f'Response: {msg}')
+            app.update_statusbar_messages_thread(msg=f'{self.ip}| {self.sname}: {self.msg}')
+            print(msg)
+            return True
+
+        except (WindowsError, socket.error) as e:
+            app.local_tools.logIt_thread(app.log_path, msg=f'ERROR: {e}...')
+            app.local_tools.logIt_thread(app.log_path, msg=f'Calling self.remove_lost_connection({self.con}, {self.ip})')
+            app.remove_lost_connection(self.con, self.ip)
+            return False
+
+    def hard_disk(self) -> bool:
+        if cleanup is True and optimize is True:
+            try:
+                app.local_tools.logIt_thread(app.log_path, msg=f'Sending verify command to {self.ip}...')
+                self.con.send('full'.encode())
+                app.local_tools.logIt_thread(app.log_path, msg=f'Send complete.')
+                app.local_tools.logIt_thread(app.log_path, msg=f'Waiting for response from {self.ip}...')
+                msg = self.con.recv(1024).decode()
+                app.local_tools.logIt_thread(app.log_path, msg=f'Response: {msg}')
+                app.update_statusbar_messages_thread(msg=f'{self.ip}| {self.sname}: {self.msg}')
+                print(msg)
+                return True
+
+            except (WindowsError, socket.error) as e:
+                app.local_tools.logIt_thread(app.log_path, msg=f'ERROR: {e}...')
+                app.local_tools.logIt_thread(app.log_path, msg=f'Calling self.remove_lost_connection({self.con}, {self.ip})')
+                app.remove_lost_connection(self.con, self.ip)
+                return False
 
 
 class Locals:
