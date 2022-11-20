@@ -1857,6 +1857,8 @@ class Maintenance:
         self.con = con
         self.ip = ip
         self.sname = sname
+        self.cleanup = BooleanVar()
+        self.opt = BooleanVar()
         self.local_tools = Locals()
 
         self.WIDTH = app.WIDTH
@@ -1921,7 +1923,8 @@ class Maintenance:
         self.disk_cleanup_label = Label(self.maintenance_window, text='Disk Cleanup',
                                         background='slate gray', pady=5, font=('Arial Black', 10), foreground='white')
         self.disk_cleanup_label.grid(row=5, column=0, sticky='we')
-        self.disk_cleanup_checkbox = Checkbutton(self.maintenance_window, variable='',
+        self.disk_cleanup_checkbox = Checkbutton(self.maintenance_window, variable=self.cleanup,
+                                                 onvalue=True, offvalue=False,
                                                  background='slate gray', selectcolor='ghost white',
                                                  activebackground='slate gray')
         self.disk_cleanup_checkbox.grid(row=6, column=0)
@@ -1930,14 +1933,15 @@ class Maintenance:
                                     foreground='white',
                                     background='slate gray', pady=5)
         self.optimize_label.grid(row=7, sticky='we')
-        self.optimize_checkbox = Checkbutton(self.maintenance_window, variable='',
+        self.optimize_checkbox = Checkbutton(self.maintenance_window, variable=self.opt,
+                                             onvalue=True, offvalue=False,
                                              background='slate gray', selectcolor='ghost white',
                                              activebackground='slate gray')
         self.optimize_checkbox.grid(row=8, column=0)
 
         self.run_optimize_button = Button(self.maintenance_window, text='Run Disk Maintenance',
                                           relief='raised', background='SkyBlue2',
-                                          command='')
+                                          command=self.optimize_thread)
         self.run_optimize_button.grid(row=9, column=0, sticky='we', pady=5, ipadx=10)
         self.run_optimize_button.bind("<Enter>", self.on_run_optimize_hover)
         self.run_optimize_button.bind("<Leave>", self.on_run_optimize_leave)
@@ -2062,23 +2066,23 @@ class Maintenance:
             return False
 
     def hard_disk(self) -> bool:
-        if cleanup is True and optimize is True:
-            try:
-                app.local_tools.logIt_thread(app.log_path, msg=f'Sending verify command to {self.ip}...')
-                self.con.send('full'.encode())
-                app.local_tools.logIt_thread(app.log_path, msg=f'Send complete.')
-                app.local_tools.logIt_thread(app.log_path, msg=f'Waiting for response from {self.ip}...')
-                msg = self.con.recv(1024).decode()
-                app.local_tools.logIt_thread(app.log_path, msg=f'Response: {msg}')
-                app.update_statusbar_messages_thread(msg=f'{self.ip}| {self.sname}: {self.msg}')
-                print(msg)
-                return True
-
-            except (WindowsError, socket.error) as e:
-                app.local_tools.logIt_thread(app.log_path, msg=f'ERROR: {e}...')
-                app.local_tools.logIt_thread(app.log_path, msg=f'Calling self.remove_lost_connection({self.con}, {self.ip})')
-                app.remove_lost_connection(self.con, self.ip)
-                return False
+        print(self.cleanup.get(), self.opt.get())
+            # try:
+            #     app.local_tools.logIt_thread(app.log_path, msg=f'Sending verify command to {self.ip}...')
+            #     self.con.send('full'.encode())
+            #     app.local_tools.logIt_thread(app.log_path, msg=f'Send complete.')
+            #     app.local_tools.logIt_thread(app.log_path, msg=f'Waiting for response from {self.ip}...')
+            #     msg = self.con.recv(1024).decode()
+            #     app.local_tools.logIt_thread(app.log_path, msg=f'Response: {msg}')
+            #     app.update_statusbar_messages_thread(msg=f'{self.ip}| {self.sname}: {self.msg}')
+            #     print(msg)
+            #     return True
+            #
+            # except (WindowsError, socket.error) as e:
+            #     app.local_tools.logIt_thread(app.log_path, msg=f'ERROR: {e}...')
+            #     app.local_tools.logIt_thread(app.log_path, msg=f'Calling self.remove_lost_connection({self.con}, {self.ip})')
+            #     app.remove_lost_connection(self.con, self.ip)
+            #     return False
 
 
 class Locals:
